@@ -547,14 +547,14 @@ export default function ShopScreen({
       <nav className="fixed bottom-0 left-0 right-0 z-40 bg-[#080808]/95 backdrop-blur-md border-t border-[#181818] flex justify-center pb-safe">
         <div className="w-full max-w-[440px] h-[64px] px-3 flex items-center justify-between relative">
           {/* 1. Home */}
-          <Link
-            href="/home"
-            prefetch={true}
+          <button
+            type="button"
+            onClick={navigateToHome}
             className="flex flex-col items-center justify-center flex-1 text-[#8e8e93] hover:text-white transition-colors gap-1 cursor-pointer"
           >
             <Home className="w-5 h-5" />
             <span className="text-[11px] font-normal">Home</span>
-          </Link>
+          </button>
 
           {/* 2. Shop (ACTIVE) */}
           <button
@@ -568,9 +568,9 @@ export default function ShopScreen({
 
           {/* 3. Center Elevated Cart Button */}
           <div className="flex flex-col items-center justify-center flex-1 relative">
-            <Link
-              href="/cart"
-              prefetch={true}
+            <button
+              type="button"
+              onClick={navigateToCart}
               className="w-[52px] h-[52px] rounded-full bg-[#f0a939] hover:bg-[#f5b842] text-[#111111] flex items-center justify-center shadow-[0_4px_20px_rgba(240,169,57,0.4)] -translate-y-5 transition-transform active:scale-95 cursor-pointer relative"
             >
               <ShoppingCart className="w-5 h-5 stroke-[2.2]" />
@@ -579,7 +579,7 @@ export default function ShopScreen({
                   {cartCount}
                 </span>
               )}
-            </Link>
+            </button>
             <span className="text-[11px] text-[#8e8e93] -mt-4">Cart</span>
           </div>
 
@@ -594,14 +594,14 @@ export default function ShopScreen({
           </button>
 
           {/* 5. Account */}
-          <Link
-            href="/account"
-            prefetch={true}
+          <button
+            type="button"
+            onClick={navigateToAccount}
             className="flex flex-col items-center justify-center flex-1 text-[#8e8e93] hover:text-white transition-colors gap-1 cursor-pointer"
           >
             <User className="w-5 h-5" />
             <span className="text-[11px] font-normal">Account</span>
-          </Link>
+          </button>
         </div>
       </nav>
     </div>

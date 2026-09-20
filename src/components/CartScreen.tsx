@@ -191,7 +191,7 @@ export default function CartScreen({
         setOrderSuccess(data.order.orderNumber);
         setNotification(`Order placed successfully! Order #${data.order.orderNumber}`);
         setTimeout(() => {
-          router.push("/account");
+          navAccount();
         }, 2000);
       } else {
         setNotification(data.message || "Failed to place order. Please try again.");
@@ -224,13 +224,14 @@ export default function CartScreen({
 
         {/* Top Header Bar */}
         <div className="flex items-center justify-between py-2 mb-3">
-          <Link
-            href="/shop"
+          <button
+            type="button"
+            onClick={navShop}
             className="w-9 h-9 rounded-full bg-[#141414] border border-[#262626] flex items-center justify-center text-white hover:text-[#e5a93c] transition-colors cursor-pointer"
             title="Continue Shopping"
           >
             <ArrowLeft className="w-4 h-4" />
-          </Link>
+          </button>
           <h1 className="text-base font-serif font-medium text-white">Your Cart</h1>
           <button
             onClick={onClearCart}
@@ -348,13 +349,14 @@ export default function CartScreen({
             <p className="text-[#8e8e93] text-[13px] max-w-[260px] mb-6">
               Add wholesale jewelry items to your cart to meet the ₹3,000 B2B minimum.
             </p>
-            <Link
-              href="/shop"
+            <button
+              type="button"
+              onClick={navShop}
               className="w-full h-[46px] rounded-[13px] bg-[#141109] border border-[#e5a93c] hover:bg-[#e5a93c] hover:text-black text-[#e5a93c] font-medium text-[13.5px] flex items-center justify-center gap-2 transition-all cursor-pointer"
             >
               <span>Browse Products</span>
               <ArrowRight className="w-4 h-4" />
-            </Link>
+            </button>
           </div>
         )}
 
@@ -474,24 +476,24 @@ export default function CartScreen({
       <nav className="fixed bottom-0 left-0 right-0 z-40 bg-[#080808]/95 backdrop-blur-md border-t border-[#181818] flex justify-center pb-safe">
         <div className="w-full max-w-[440px] h-[64px] px-3 flex items-center justify-between relative">
           {/* 1. Home */}
-          <Link
-            href="/home"
-            prefetch={true}
+          <button
+            type="button"
+            onClick={navHome}
             className="flex flex-col items-center justify-center flex-1 text-[#8e8e93] hover:text-white transition-colors gap-1 cursor-pointer"
           >
             <Home className="w-5 h-5" />
             <span className="text-[11px] font-normal">Home</span>
-          </Link>
+          </button>
 
           {/* 2. Shop */}
-          <Link
-            href="/shop"
-            prefetch={true}
+          <button
+            type="button"
+            onClick={navShop}
             className="flex flex-col items-center justify-center flex-1 text-[#8e8e93] hover:text-white transition-colors gap-1 cursor-pointer"
           >
             <ShoppingBag className="w-5 h-5" />
             <span className="text-[11px] font-normal">Shop</span>
-          </Link>
+          </button>
 
           {/* 3. Center Elevated Cart Button (ACTIVE) */}
           <div className="flex flex-col items-center justify-center flex-1 relative">
@@ -521,14 +523,14 @@ export default function CartScreen({
           </button>
 
           {/* 5. Account */}
-          <Link
-            href="/account"
-            prefetch={true}
+          <button
+            type="button"
+            onClick={navAccount}
             className="flex flex-col items-center justify-center flex-1 text-[#8e8e93] hover:text-white transition-colors gap-1 cursor-pointer"
           >
             <User className="w-5 h-5" />
             <span className="text-[11px] font-normal">Account</span>
-          </Link>
+          </button>
         </div>
       </nav>
     </div>

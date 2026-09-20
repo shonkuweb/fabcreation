@@ -341,19 +341,14 @@ export default function AccountScreen({
       <div className="w-full max-w-[440px] flex flex-col px-4 pt-3">
         {/* Top Header Bar */}
         <div className="flex items-center justify-between py-1 mb-3">
-          <Link
-            href="/home"
-            onClick={(e) => {
-              if (onNavigateHome) {
-                e.preventDefault();
-                onNavigateHome();
-              }
-            }}
+          <button
+            type="button"
+            onClick={navHome}
             className="w-9 h-9 rounded-full bg-[#141414] border border-[#262626] flex items-center justify-center text-white hover:text-[#e5a93c] transition-colors cursor-pointer"
             title="Back to Home"
           >
             <ArrowLeft className="w-4 h-4" />
-          </Link>
+          </button>
           <span className="text-xs font-serif tracking-widest text-[#e5a93c] uppercase">Account & Orders</span>
           <div className="w-9" />
         </div>
@@ -1030,30 +1025,30 @@ export default function AccountScreen({
       <nav className="fixed bottom-0 left-0 right-0 z-40 bg-[#080808]/95 backdrop-blur-md border-t border-[#181818] flex justify-center pb-safe">
         <div className="w-full max-w-[440px] h-[64px] px-3 flex items-center justify-between relative">
           {/* 1. Home */}
-          <Link
-            href="/home"
-            prefetch={true}
+          <button
+            type="button"
+            onClick={navHome}
             className="flex flex-col items-center justify-center flex-1 text-[#8e8e93] hover:text-white transition-colors gap-1 cursor-pointer"
           >
             <Home className="w-5 h-5" />
             <span className="text-[11px] font-normal">Home</span>
-          </Link>
+          </button>
 
           {/* 2. Shop */}
-          <Link
-            href="/shop"
-            prefetch={true}
+          <button
+            type="button"
+            onClick={navShop}
             className="flex flex-col items-center justify-center flex-1 text-[#8e8e93] hover:text-white transition-colors gap-1 cursor-pointer"
           >
             <ShoppingBag className="w-5 h-5" />
             <span className="text-[11px] font-normal">Shop</span>
-          </Link>
+          </button>
 
           {/* 3. Center Elevated Cart Button */}
           <div className="flex flex-col items-center justify-center flex-1 relative">
-            <Link
-              href="/cart"
-              prefetch={true}
+            <button
+              type="button"
+              onClick={navCart}
               className="w-[52px] h-[52px] rounded-full bg-[#f0a939] hover:bg-[#f5b842] text-[#111111] flex items-center justify-center shadow-[0_4px_20px_rgba(240,169,57,0.4)] -translate-y-5 transition-transform active:scale-95 cursor-pointer relative"
             >
               <ShoppingBag className="w-5 h-5 stroke-[2.2]" />
@@ -1062,7 +1057,7 @@ export default function AccountScreen({
                   {cartCount}
                 </span>
               )}
-            </Link>
+            </button>
             <span className="text-[11px] text-[#8e8e93] -mt-4">Cart</span>
           </div>
 

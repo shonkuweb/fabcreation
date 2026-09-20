@@ -547,20 +547,20 @@ export default function HomeScreen({
           </button>
 
           {/* Shop */}
-          <Link
-            href="/shop"
-            prefetch={true}
+          <button
+            type="button"
+            onClick={navigateToShop}
             className="flex flex-col items-center justify-center flex-1 text-[#8e8e93] hover:text-white transition-colors gap-1 cursor-pointer"
           >
             <ShoppingBag className="w-5 h-5" />
             <span className="text-[11px] font-normal">Shop</span>
-          </Link>
+          </button>
 
           {/* Elevated Center Cart Button */}
           <div className="flex flex-col items-center justify-center flex-1 relative">
-            <Link
-              href="/cart"
-              prefetch={true}
+            <button
+              type="button"
+              onClick={navigateToCart}
               className="w-[52px] h-[52px] rounded-full bg-[#f0a939] hover:bg-[#f5b842] text-[#111111] flex items-center justify-center shadow-[0_4px_20px_rgba(240,169,57,0.4)] -translate-y-5 transition-transform active:scale-95 cursor-pointer relative"
             >
               <ShoppingCart className="w-5 h-5 stroke-[2.2]" />
@@ -569,7 +569,7 @@ export default function HomeScreen({
                   {cartCount}
                 </span>
               )}
-            </Link>
+            </button>
             <span className="text-[11px] text-[#8e8e93] -mt-4">Cart</span>
           </div>
 
@@ -584,14 +584,14 @@ export default function HomeScreen({
           </button>
 
           {/* Account */}
-          <Link
-            href="/account"
-            prefetch={true}
+          <button
+            type="button"
+            onClick={navigateToAccount}
             className="flex flex-col items-center justify-center flex-1 text-[#8e8e93] hover:text-white transition-colors gap-1 cursor-pointer"
           >
             <User className="w-5 h-5" />
             <span className="text-[11px] font-normal">Account</span>
-          </Link>
+          </button>
         </div>
       </nav>
     </div>

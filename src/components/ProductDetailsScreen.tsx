@@ -41,6 +41,7 @@ interface ProductDetailsScreenProps {
   onNavigateAccount?: () => void;
   onSelectCategory?: (category: string | null) => void;
   onSignOut?: () => void;
+  onBack?: () => void;
 }
 
 export default function ProductDetailsScreen({
@@ -58,6 +59,7 @@ export default function ProductDetailsScreen({
   onNavigateAccount,
   onSelectCategory,
   onSignOut,
+  onBack,
 }: ProductDetailsScreenProps) {
   const router = useRouter();
   const [product, setProduct] = useState<Product | null>(initialProduct);
@@ -271,13 +273,13 @@ export default function ProductDetailsScreen({
         <p className="text-[#8e8e93] text-sm mb-6 max-w-[280px]">
           Please select a product from our shop to view its wholesale details.
         </p>
-        <Link
-          href="/shop"
-          onClick={() => navShop()}
+        <button
+          type="button"
+          onClick={navShop}
           className="px-6 py-2.5 rounded-full bg-[#e5a93c] text-black font-semibold text-sm hover:bg-[#f5c767] transition-all cursor-pointer"
         >
           Go to Shop
-        </Link>
+        </button>
       </div>
     );
   }
@@ -299,8 +301,11 @@ export default function ProductDetailsScreen({
         {/* Top Navigation Bar */}
         <div className="flex items-center justify-between py-1">
           <button
+            type="button"
             onClick={() => {
-              if (typeof window !== "undefined" && window.history.length > 1) {
+              if (onBack) {
+                onBack();
+              } else if (typeof window !== "undefined" && window.history.length > 1) {
                 window.history.back();
               } else {
                 navShop();
@@ -312,8 +317,9 @@ export default function ProductDetailsScreen({
             <ArrowLeft className="w-4 h-4" />
           </button>
           <span className="text-xs font-serif tracking-widest text-[#e5a93c] uppercase">Fab Creations</span>
-          <Link
-            href="/cart"
+          <button
+            type="button"
+            onClick={navCart}
             className="w-9 h-9 rounded-full bg-[#141414] border border-[#262626] flex items-center justify-center text-white hover:text-[#e5a93c] transition-colors cursor-pointer relative"
             title="View Cart"
           >
@@ -323,7 +329,7 @@ export default function ProductDetailsScreen({
                 {cartCount}
               </span>
             )}
-          </Link>
+          </button>
         </div>
 
         {/* 1. Big Image Showcase */}
@@ -357,23 +363,23 @@ export default function ProductDetailsScreen({
         <div className="space-y-1.5">
           {/* Breadcrumbs */}
           <div className="flex items-center gap-1.5 text-[11px] text-[#8e8e93]">
-            <Link
-              href="/home"
-              onClick={() => navHome()}
+            <button
+              type="button"
+              onClick={navHome}
               className="hover:text-white transition-colors cursor-pointer"
             >
               Home
-            </Link>
+            </button>
             <span>/</span>
-            <Link
-              href="/shop"
-              onClick={() => navShop()}
+            <button
+              type="button"
+              onClick={navShop}
               className="hover:text-white transition-colors cursor-pointer"
             >
               Shop
-            </Link>
+            </button>
             <span>/</span>
-            <span className="text-[#e5a93c]">{product.category}</span>
+            <span className="text-[#e5a93c] truncate max-w-[140px]">{product.name}</span>
           </div>
 
           {/* Title & SKU */}
@@ -526,13 +532,13 @@ export default function ProductDetailsScreen({
               <h3 className="text-white text-[18px] font-serif font-medium tracking-tight">
                 You May Also Like
               </h3>
-              <Link
-                href="/shop"
-                onClick={() => navShop()}
-                className="text-[#e5a93c] text-xs font-medium hover:text-[#f5c767] transition-colors"
+              <button
+                type="button"
+                onClick={navShop}
+                className="text-[#e5a93c] text-xs font-medium hover:text-[#f5c767] transition-colors cursor-pointer"
               >
                 View More
-              </Link>
+              </button>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -599,30 +605,30 @@ export default function ProductDetailsScreen({
       <nav className="fixed bottom-0 left-0 right-0 z-40 bg-[#080808]/95 backdrop-blur-md border-t border-[#181818] flex justify-center pb-safe">
         <div className="w-full max-w-[440px] h-[64px] px-3 flex items-center justify-between relative">
           {/* Home */}
-          <Link
-            href="/home"
-            prefetch={true}
+          <button
+            type="button"
+            onClick={navHome}
             className="flex flex-col items-center justify-center flex-1 text-[#8e8e93] hover:text-white transition-colors gap-1 cursor-pointer"
           >
             <Home className="w-5 h-5" />
             <span className="text-[11px] font-normal">Home</span>
-          </Link>
+          </button>
 
           {/* Shop */}
-          <Link
-            href="/shop"
-            prefetch={true}
+          <button
+            type="button"
+            onClick={navShop}
             className="flex flex-col items-center justify-center flex-1 text-[#8e8e93] hover:text-white transition-colors gap-1 cursor-pointer"
           >
             <ShoppingBag className="w-5 h-5" />
             <span className="text-[11px] font-normal">Shop</span>
-          </Link>
+          </button>
 
           {/* Elevated Center Cart Button */}
           <div className="flex flex-col items-center justify-center flex-1 relative">
-            <Link
-              href="/cart"
-              prefetch={true}
+            <button
+              type="button"
+              onClick={navCart}
               className="w-[52px] h-[52px] rounded-full bg-[#f0a939] hover:bg-[#f5b842] text-[#111111] flex items-center justify-center shadow-[0_4px_20px_rgba(240,169,57,0.4)] -translate-y-5 transition-transform active:scale-95 cursor-pointer relative"
             >
               <ShoppingCart className="w-5 h-5 stroke-[2.2]" />
@@ -631,7 +637,7 @@ export default function ProductDetailsScreen({
                   {cartCount}
                 </span>
               )}
-            </Link>
+            </button>
             <span className="text-[11px] text-[#8e8e93] -mt-4">Cart</span>
           </div>
 
@@ -646,14 +652,14 @@ export default function ProductDetailsScreen({
           </button>
 
           {/* Account */}
-          <Link
-            href="/account"
-            prefetch={true}
+          <button
+            type="button"
+            onClick={navAccount}
             className="flex flex-col items-center justify-center flex-1 text-[#8e8e93] hover:text-white transition-colors gap-1 cursor-pointer"
           >
             <User className="w-5 h-5" />
             <span className="text-[11px] font-normal">Account</span>
-          </Link>
+          </button>
         </div>
       </nav>
     </div>

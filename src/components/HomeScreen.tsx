@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Search,
@@ -16,7 +17,7 @@ import {
 } from "lucide-react";
 import Footer from "@/components/Footer";
 import CategoriesModal from "@/components/CategoriesModal";
-import { Product, Category } from "@/lib/db";
+import type { Product, Category } from "@/lib/db";
 
 interface HomeScreenProps {
   products?: Product[];
@@ -168,9 +169,21 @@ export default function HomeScreen({
   const navigateToHome = onNavigateHome || (() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   });
-  const navigateToShop = onNavigateShop || (() => { router.push("/shop"); });
-  const navigateToCart = onNavigateCart || (() => { router.push("/cart"); });
-  const navigateToAccount = onNavigateAccount || (() => { router.push("/account"); });
+
+  const navigateToShop = () => {
+    if (onNavigateShop) onNavigateShop();
+    else router.push("/shop");
+  };
+
+  const navigateToCart = () => {
+    if (onNavigateCart) onNavigateCart();
+    else router.push("/cart");
+  };
+
+  const navigateToAccount = () => {
+    if (onNavigateAccount) onNavigateAccount();
+    else router.push("/account");
+  };
 
   // Filter featured or first 4 products
   const featured = products.filter((p) => p.featured);
@@ -373,7 +386,7 @@ export default function HomeScreen({
                       src={product.image}
                       alt={product.name}
                       fill
-                      unoptimized
+                      sizes="(max-width: 640px) 50vw, 220px"
                       onError={(e) => {
                         (e.target as HTMLImageElement).src = "/images/products/moon-necklace.jpg";
                       }}
@@ -474,16 +487,20 @@ export default function HomeScreen({
         onClose={() => setIsCategoriesOpen(false)}
         categories={categories}
         onSelectCategory={(catName) => {
-          onSelectCategory?.(catName);
-          navigateToShop();
+          if (onSelectCategory) {
+            onSelectCategory(catName);
+          } else {
+            navigateToShop();
+          }
         }}
       />
 
       {/* Fixed Bottom Navigation Bar */}
       <nav className="fixed bottom-0 left-0 right-0 z-40 bg-[#080808]/95 backdrop-blur-md border-t border-[#181818] flex justify-center pb-safe">
         <div className="w-full max-w-[440px] h-[64px] px-3 flex items-center justify-between relative">
-          {/* Home */}
+          {/* Home (ACTIVE) */}
           <button
+            type="button"
             onClick={navigateToHome}
             className="flex flex-col items-center justify-center flex-1 text-[#e5a93c] gap-1 cursor-pointer"
           >
@@ -492,18 +509,20 @@ export default function HomeScreen({
           </button>
 
           {/* Shop */}
-          <button
-            onClick={navigateToShop}
+          <Link
+            href="/shop"
+            onClick={() => navigateToShop()}
             className="flex flex-col items-center justify-center flex-1 text-[#8e8e93] hover:text-white transition-colors gap-1 cursor-pointer"
           >
             <ShoppingBag className="w-5 h-5" />
             <span className="text-[11px] font-normal">Shop</span>
-          </button>
+          </Link>
 
           {/* Elevated Center Cart Button */}
           <div className="flex flex-col items-center justify-center flex-1 relative">
-            <button
-              onClick={navigateToCart}
+            <Link
+              href="/cart"
+              onClick={() => navigateToCart()}
               className="w-[52px] h-[52px] rounded-full bg-[#f0a939] hover:bg-[#f5b842] text-[#111111] flex items-center justify-center shadow-[0_4px_20px_rgba(240,169,57,0.4)] -translate-y-5 transition-transform active:scale-95 cursor-pointer relative"
             >
               <ShoppingCart className="w-5 h-5 stroke-[2.2]" />
@@ -512,12 +531,13 @@ export default function HomeScreen({
                   {cartCount}
                 </span>
               )}
-            </button>
+            </Link>
             <span className="text-[11px] text-[#8e8e93] -mt-4">Cart</span>
           </div>
 
           {/* Categories */}
           <button
+            type="button"
             onClick={() => setIsCategoriesOpen(true)}
             className="flex flex-col items-center justify-center flex-1 text-[#8e8e93] hover:text-[#e5a93c] transition-colors gap-1 cursor-pointer"
           >
@@ -526,13 +546,14 @@ export default function HomeScreen({
           </button>
 
           {/* Account */}
-          <button
-            onClick={navigateToAccount}
+          <Link
+            href="/account"
+            onClick={() => navigateToAccount()}
             className="flex flex-col items-center justify-center flex-1 text-[#8e8e93] hover:text-white transition-colors gap-1 cursor-pointer"
           >
             <User className="w-5 h-5" />
             <span className="text-[11px] font-normal">Account</span>
-          </button>
+          </Link>
         </div>
       </nav>
     </div>

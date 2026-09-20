@@ -11,7 +11,7 @@ export async function GET() {
       { success: true, categories },
       {
         headers: {
-          "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+          "Cache-Control": "public, max-age=30, stale-while-revalidate=120",
         },
       }
     );

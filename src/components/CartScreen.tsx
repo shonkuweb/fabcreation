@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Trash2,
@@ -16,7 +17,7 @@ import {
   CheckCircle,
 } from "lucide-react";
 import CategoriesModal from "@/components/CategoriesModal";
-import { OrderItem, Category } from "@/lib/db";
+import type { OrderItem, Category } from "@/lib/db";
 
 interface CartScreenProps {
   cart?: OrderItem[];
@@ -88,9 +89,20 @@ export default function CartScreen({
   }, [initialCategories]);
 
   // Navigation helpers with fallback
-  const navHome = () => (onNavigateHome ? onNavigateHome() : router.push("/home"));
-  const navShop = () => (onNavigateShop ? onNavigateShop() : router.push("/shop"));
-  const navAccount = () => (onNavigateAccount ? onNavigateAccount() : router.push("/account"));
+  const navHome = () => {
+    if (onNavigateHome) onNavigateHome();
+    else router.push("/home");
+  };
+
+  const navShop = () => {
+    if (onNavigateShop) onNavigateShop();
+    else router.push("/shop");
+  };
+
+  const navAccount = () => {
+    if (onNavigateAccount) onNavigateAccount();
+    else router.push("/account");
+  };
 
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
@@ -209,13 +221,14 @@ export default function CartScreen({
 
         {/* Top Header Bar */}
         <div className="flex items-center justify-between py-2 mb-3">
-          <button
-            onClick={navShop}
+          <Link
+            href="/shop"
+            onClick={() => onNavigateShop?.()}
             className="w-9 h-9 rounded-full bg-[#141414] border border-[#262626] flex items-center justify-center text-white hover:text-[#e5a93c] transition-colors cursor-pointer"
             title="Continue Shopping"
           >
             <ArrowLeft className="w-4 h-4" />
-          </button>
+          </Link>
           <h1 className="text-base font-serif font-medium text-white">Your Cart</h1>
           <button
             onClick={onClearCart}
@@ -447,8 +460,11 @@ export default function CartScreen({
         onClose={() => setIsCategoriesOpen(false)}
         categories={categories}
         onSelectCategory={(catName) => {
-          onSelectCategory?.(catName);
-          navShop();
+          if (onSelectCategory) {
+            onSelectCategory(catName);
+          } else {
+            navShop();
+          }
         }}
       />
 
@@ -456,26 +472,29 @@ export default function CartScreen({
       <nav className="fixed bottom-0 left-0 right-0 z-40 bg-[#080808]/95 backdrop-blur-md border-t border-[#181818] flex justify-center pb-safe">
         <div className="w-full max-w-[440px] h-[64px] px-3 flex items-center justify-between relative">
           {/* 1. Home */}
-          <button
-            onClick={navHome}
+          <Link
+            href="/home"
+            onClick={() => onNavigateHome?.()}
             className="flex flex-col items-center justify-center flex-1 text-[#8e8e93] hover:text-white transition-colors gap-1 cursor-pointer"
           >
             <Home className="w-5 h-5" />
             <span className="text-[11px] font-normal">Home</span>
-          </button>
+          </Link>
 
           {/* 2. Shop */}
-          <button
-            onClick={navShop}
+          <Link
+            href="/shop"
+            onClick={() => onNavigateShop?.()}
             className="flex flex-col items-center justify-center flex-1 text-[#8e8e93] hover:text-white transition-colors gap-1 cursor-pointer"
           >
             <ShoppingBag className="w-5 h-5" />
             <span className="text-[11px] font-normal">Shop</span>
-          </button>
+          </Link>
 
           {/* 3. Center Elevated Cart Button (ACTIVE) */}
           <div className="flex flex-col items-center justify-center flex-1 relative">
             <button
+              type="button"
               onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
               className="w-[52px] h-[52px] rounded-full bg-[#f0a939] hover:bg-[#f5b842] text-[#111111] flex items-center justify-center shadow-[0_4px_20px_rgba(240,169,57,0.4)] -translate-y-5 transition-transform active:scale-95 cursor-pointer relative"
             >
@@ -491,6 +510,7 @@ export default function CartScreen({
 
           {/* 4. Categories */}
           <button
+            type="button"
             onClick={() => setIsCategoriesOpen(true)}
             className="flex flex-col items-center justify-center flex-1 text-[#8e8e93] hover:text-[#e5a93c] transition-colors gap-1 cursor-pointer"
           >
@@ -499,13 +519,14 @@ export default function CartScreen({
           </button>
 
           {/* 5. Account */}
-          <button
-            onClick={navAccount}
+          <Link
+            href="/account"
+            onClick={() => onNavigateAccount?.()}
             className="flex flex-col items-center justify-center flex-1 text-[#8e8e93] hover:text-white transition-colors gap-1 cursor-pointer"
           >
             <User className="w-5 h-5" />
             <span className="text-[11px] font-normal">Account</span>
-          </button>
+          </Link>
         </div>
       </nav>
     </div>

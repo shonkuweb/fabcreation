@@ -15,19 +15,23 @@ export default function AccountPage() {
     } catch {}
   }, []);
 
+  const navigateTo = (path: string) => {
+    router.push(path);
+  };
+
   return (
     <AccountScreen
       userMobile={userMobile}
-      onNavigateHome={() => router.push("/home")}
-      onNavigateShop={() => router.push("/shop")}
-      onNavigateCart={() => router.push("/cart")}
-      onSelectProduct={(p) => router.push(`/product?id=${p.id}`)}
-      onSelectCategory={(catName) => router.push(`/shop?cat=${encodeURIComponent(catName || "")}`)}
+      onNavigateHome={() => navigateTo("/home")}
+      onNavigateShop={() => navigateTo("/shop")}
+      onNavigateCart={() => navigateTo("/cart")}
+      onSelectProduct={(p) => navigateTo(`/product?id=${p.id}`)}
+      onSelectCategory={(catName) => navigateTo(catName ? `/shop?cat=${encodeURIComponent(catName)}` : "/shop")}
       onSignOut={() => {
         try {
           localStorage.removeItem("fc_user_logged_in");
         } catch {}
-        router.push("/");
+        navigateTo("/");
       }}
     />
   );

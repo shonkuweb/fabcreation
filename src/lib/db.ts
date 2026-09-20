@@ -66,39 +66,56 @@ const defaultData: DatabaseData = {
   orders: [],
 };
 
-// Ensure database file exists
+// In-memory RAM cache for 0ms read operations
+let cachedDb: DatabaseData | null = null;
+
+// Ensure database file exists and load into memory
 function getDb(): DatabaseData {
+  if (cachedDb) {
+    return cachedDb;
+  }
+
   if (!fs.existsSync(DB_DIR)) {
-    fs.mkdirSync(DB_DIR, { recursive: true });
+    fs.mkdirSync(DB_DIR, { recursive: true, mode: 0o777 });
   }
 
   if (!fs.existsSync(DB_FILE)) {
     fs.writeFileSync(DB_FILE, JSON.stringify(defaultData, null, 2), "utf-8");
-    return { ...defaultData };
+    cachedDb = { ...defaultData };
+    return cachedDb;
   }
 
   try {
     const raw = fs.readFileSync(DB_FILE, "utf-8");
     const parsed = JSON.parse(raw);
-    return {
+    cachedDb = {
       products: Array.isArray(parsed.products) ? parsed.products : [],
       categories: Array.isArray(parsed.categories) ? parsed.categories : [],
       orders: Array.isArray(parsed.orders) ? parsed.orders : [],
     };
+    return cachedDb;
   } catch {
-    return {
+    cachedDb = {
       products: [],
       categories: [],
       orders: [],
     };
+    return cachedDb;
   }
 }
 
 function saveDb(data: DatabaseData): void {
-  if (!fs.existsSync(DB_DIR)) {
-    fs.mkdirSync(DB_DIR, { recursive: true });
+  // Update RAM cache immediately
+  cachedDb = data;
+  try {
+    if (!fs.existsSync(DB_DIR)) {
+      fs.mkdirSync(DB_DIR, { recursive: true, mode: 0o777 });
+    }
+    fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), "utf-8");
+  } catch (err) {
+    console.error(`[DB Error] Failed to write database to ${DB_FILE}:`, err);
+    throw err;
   }
-  fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), "utf-8");
 }
 
 // ---------------- PRODUCTS ----------------

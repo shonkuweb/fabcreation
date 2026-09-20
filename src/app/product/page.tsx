@@ -1,25 +1,27 @@
-"use client";
-
+import React, { Suspense } from "react";
 import ProductDetailsScreen from "@/components/ProductDetailsScreen";
-import { useRouter } from "next/navigation";
+import { getProducts, getCategories } from "@/lib/db";
 
-export default function ProductPage() {
-  const router = useRouter();
+export const dynamic = "force-dynamic";
+
+export default function ProductPage({
+  searchParams,
+}: {
+  searchParams?: { id?: string };
+}) {
+  const allProducts = getProducts();
+  const categories = getCategories();
+  const product = searchParams?.id
+    ? allProducts.find((p) => p.id === searchParams.id) || null
+    : allProducts[0] || null;
 
   return (
-    <ProductDetailsScreen
-      onNavigateHome={() => router.push("/home")}
-      onNavigateShop={() => router.push("/shop")}
-      onNavigateCart={() => router.push("/cart")}
-      onNavigateAccount={() => router.push("/account")}
-      onSelectProduct={(p) => router.push(`/product?id=${p.id}`)}
-      onSelectCategory={(catName) => router.push(`/shop?cat=${encodeURIComponent(catName || "")}`)}
-      onSignOut={() => {
-        try {
-          localStorage.removeItem("fc_user_logged_in");
-        } catch {}
-        router.push("/");
-      }}
-    />
+    <Suspense fallback={<div className="min-h-screen bg-[#050505]" />}>
+      <ProductDetailsScreen
+        product={product}
+        allProducts={allProducts}
+        categories={categories}
+      />
+    </Suspense>
   );
 }

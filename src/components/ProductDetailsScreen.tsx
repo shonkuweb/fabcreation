@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Heart,
@@ -252,12 +253,13 @@ export default function ProductDetailsScreen({
         <p className="text-[#8e8e93] text-sm mb-6 max-w-[280px]">
           Please select a product from our shop to view its wholesale details.
         </p>
-        <button
-          onClick={navShop}
+        <Link
+          href="/shop"
+          onClick={() => navShop()}
           className="px-6 py-2.5 rounded-full bg-[#e5a93c] text-black font-semibold text-sm hover:bg-[#f5c767] transition-all cursor-pointer"
         >
           Go to Shop
-        </button>
+        </Link>
       </div>
     );
   }
@@ -292,8 +294,9 @@ export default function ProductDetailsScreen({
             <ArrowLeft className="w-4 h-4" />
           </button>
           <span className="text-xs font-serif tracking-widest text-[#e5a93c] uppercase">Fab Creations</span>
-          <button
-            onClick={navCart}
+          <Link
+            href="/cart"
+            onClick={() => navCart()}
             className="w-9 h-9 rounded-full bg-[#141414] border border-[#262626] flex items-center justify-center text-white hover:text-[#e5a93c] transition-colors cursor-pointer relative"
             title="View Cart"
           >
@@ -303,7 +306,7 @@ export default function ProductDetailsScreen({
                 {cartCount}
               </span>
             )}
-          </button>
+          </Link>
         </div>
 
         {/* 1. Big Image Showcase */}
@@ -313,7 +316,7 @@ export default function ProductDetailsScreen({
             alt={product.name}
             fill
             priority
-            unoptimized
+            sizes="(max-width: 640px) 100vw, 440px"
             onError={(e) => {
               (e.target as HTMLImageElement).src = "/images/products/moon-necklace.jpg";
             }}
@@ -337,19 +340,21 @@ export default function ProductDetailsScreen({
         <div className="space-y-1.5">
           {/* Breadcrumbs */}
           <div className="flex items-center gap-1.5 text-[11px] text-[#8e8e93]">
-            <button
-              onClick={navHome}
+            <Link
+              href="/home"
+              onClick={() => navHome()}
               className="hover:text-white transition-colors cursor-pointer"
             >
               Home
-            </button>
+            </Link>
             <span>/</span>
-            <button
-              onClick={navShop}
+            <Link
+              href="/shop"
+              onClick={() => navShop()}
               className="hover:text-white transition-colors cursor-pointer"
             >
               Shop
-            </button>
+            </Link>
             <span>/</span>
             <span className="text-[#e5a93c]">{product.category}</span>
           </div>
@@ -504,12 +509,13 @@ export default function ProductDetailsScreen({
               <h3 className="text-white text-[18px] font-serif font-medium tracking-tight">
                 You May Also Like
               </h3>
-              <button
-                onClick={navShop}
+              <Link
+                href="/shop"
+                onClick={() => navShop()}
                 className="text-[#e5a93c] text-xs font-medium hover:text-[#f5c767] transition-colors"
               >
                 View More
-              </button>
+              </Link>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
@@ -524,7 +530,7 @@ export default function ProductDetailsScreen({
                       src={p.image}
                       alt={p.name}
                       fill
-                      unoptimized
+                      sizes="(max-width: 640px) 50vw, 220px"
                       onError={(e) => {
                         (e.target as HTMLImageElement).src = "/images/products/moon-necklace.jpg";
                       }}
@@ -576,27 +582,30 @@ export default function ProductDetailsScreen({
       <nav className="fixed bottom-0 left-0 right-0 z-40 bg-[#080808]/95 backdrop-blur-md border-t border-[#181818] flex justify-center pb-safe">
         <div className="w-full max-w-[440px] h-[64px] px-3 flex items-center justify-between relative">
           {/* Home */}
-          <button
-            onClick={navHome}
+          <Link
+            href="/home"
+            onClick={() => navHome()}
             className="flex flex-col items-center justify-center flex-1 text-[#8e8e93] hover:text-white transition-colors gap-1 cursor-pointer"
           >
             <Home className="w-5 h-5" />
             <span className="text-[11px] font-normal">Home</span>
-          </button>
+          </Link>
 
           {/* Shop */}
-          <button
-            onClick={navShop}
+          <Link
+            href="/shop"
+            onClick={() => navShop()}
             className="flex flex-col items-center justify-center flex-1 text-[#8e8e93] hover:text-white transition-colors gap-1 cursor-pointer"
           >
             <ShoppingBag className="w-5 h-5" />
             <span className="text-[11px] font-normal">Shop</span>
-          </button>
+          </Link>
 
           {/* Elevated Center Cart Button */}
           <div className="flex flex-col items-center justify-center flex-1 relative">
-            <button
-              onClick={navCart}
+            <Link
+              href="/cart"
+              onClick={() => navCart()}
               className="w-[52px] h-[52px] rounded-full bg-[#f0a939] hover:bg-[#f5b842] text-[#111111] flex items-center justify-center shadow-[0_4px_20px_rgba(240,169,57,0.4)] -translate-y-5 transition-transform active:scale-95 cursor-pointer relative"
             >
               <ShoppingCart className="w-5 h-5 stroke-[2.2]" />
@@ -605,12 +614,13 @@ export default function ProductDetailsScreen({
                   {cartCount}
                 </span>
               )}
-            </button>
+            </Link>
             <span className="text-[11px] text-[#8e8e93] -mt-4">Cart</span>
           </div>
 
           {/* Categories */}
           <button
+            type="button"
             onClick={() => setIsCategoriesOpen(true)}
             className="flex flex-col items-center justify-center flex-1 text-[#8e8e93] hover:text-[#e5a93c] transition-colors gap-1 cursor-pointer"
           >
@@ -619,13 +629,14 @@ export default function ProductDetailsScreen({
           </button>
 
           {/* Account */}
-          <button
-            onClick={navAccount}
+          <Link
+            href="/account"
+            onClick={() => navAccount()}
             className="flex flex-col items-center justify-center flex-1 text-[#8e8e93] hover:text-white transition-colors gap-1 cursor-pointer"
           >
             <User className="w-5 h-5" />
             <span className="text-[11px] font-normal">Account</span>
-          </button>
+          </Link>
         </div>
       </nav>
     </div>

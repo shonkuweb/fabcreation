@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { uploadToR2 } from "@/lib/r2";
+import sharp from "sharp";
 
 export async function POST(req: Request) {
   try {
@@ -14,13 +15,34 @@ export async function POST(req: Request) {
     }
 
     const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
+    const rawBuffer = Buffer.from(arrayBuffer);
 
-    // Sanitize filename and create R2 key
-    const cleanName = file.name.replace(/[^a-zA-Z0-9.-]/g, "_");
-    const key = `fab-creations/products/${Date.now()}-${cleanName}`;
+    // Optimize image: resize to max 1200x1200px and compress to webp (quality 80)
+    let optimizedBuffer: Buffer;
+    let contentType = "image/webp";
+    let fileExt = "webp";
 
-    const cdnUrl = await uploadToR2(buffer, key, file.type || "image/jpeg");
+    try {
+      optimizedBuffer = await sharp(rawBuffer)
+        .resize(1200, 1200, {
+          fit: "inside",
+          withoutEnlargement: true,
+        })
+        .webp({ quality: 80 })
+        .toBuffer();
+    } catch (sharpError) {
+      console.warn("Sharp compression skipped/failed, using raw buffer:", sharpError);
+      optimizedBuffer = rawBuffer;
+      contentType = file.type || "image/jpeg";
+      fileExt = file.name.split(".").pop() || "jpg";
+    }
+
+    // Sanitize base name
+    const rawName = file.name.substring(0, file.name.lastIndexOf(".")) || file.name;
+    const cleanBase = rawName.replace(/[^a-zA-Z0-9_-]/g, "_");
+    const key = `fab-creations/products/${Date.now()}-${cleanBase}.${fileExt}`;
+
+    const cdnUrl = await uploadToR2(optimizedBuffer, key, contentType);
 
     return NextResponse.json({ success: true, url: cdnUrl });
   } catch (err) {

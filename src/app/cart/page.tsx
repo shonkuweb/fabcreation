@@ -15,18 +15,22 @@ export default function CartPage() {
     } catch {}
   }, []);
 
+  const navigateTo = (path: string) => {
+    router.push(path);
+  };
+
   return (
     <CartScreen
       userMobile={userMobile}
-      onNavigateHome={() => router.push("/home")}
-      onNavigateShop={() => router.push("/shop")}
-      onNavigateAccount={() => router.push("/account")}
-      onSelectCategory={(catName) => router.push(`/shop?cat=${encodeURIComponent(catName || "")}`)}
+      onNavigateHome={() => navigateTo("/home")}
+      onNavigateShop={() => navigateTo("/shop")}
+      onNavigateAccount={() => navigateTo("/account")}
+      onSelectCategory={(catName) => navigateTo(catName ? `/shop?cat=${encodeURIComponent(catName)}` : "/shop")}
       onSignOut={() => {
         try {
           localStorage.removeItem("fc_user_logged_in");
         } catch {}
-        router.push("/");
+        navigateTo("/");
       }}
     />
   );

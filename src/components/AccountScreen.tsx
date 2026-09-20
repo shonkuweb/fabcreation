@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   User,
@@ -29,7 +30,7 @@ import {
   X,
 } from "lucide-react";
 import CategoriesModal from "@/components/CategoriesModal";
-import { Order, Category, Product } from "@/lib/db";
+import type { Order, Category, Product } from "@/lib/db";
 
 export interface UserAddress {
   id: string;
@@ -87,9 +88,20 @@ export default function AccountScreen({
   const [wishlistProducts, setWishlistProducts] = useState<Product[]>(initialWishlistProducts);
 
   // Navigation helpers with fallback
-  const navHome = () => (onNavigateHome ? onNavigateHome() : router.push("/home"));
-  const navShop = () => (onNavigateShop ? onNavigateShop() : router.push("/shop"));
-  const navCart = () => (onNavigateCart ? onNavigateCart() : router.push("/cart"));
+  const navHome = () => {
+    if (onNavigateHome) onNavigateHome();
+    else router.push("/home");
+  };
+
+  const navShop = () => {
+    if (onNavigateShop) onNavigateShop();
+    else router.push("/shop");
+  };
+
+  const navCart = () => {
+    if (onNavigateCart) onNavigateCart();
+    else router.push("/cart");
+  };
 
   // Profile state with localStorage persistence
   const [isEditingProfile, setIsEditingProfile] = useState(false);
@@ -329,13 +341,19 @@ export default function AccountScreen({
       <div className="w-full max-w-[440px] flex flex-col px-4 pt-3">
         {/* Top Header Bar */}
         <div className="flex items-center justify-between py-1 mb-3">
-          <button
-            onClick={navHome}
+          <Link
+            href="/home"
+            onClick={(e) => {
+              if (onNavigateHome) {
+                e.preventDefault();
+                onNavigateHome();
+              }
+            }}
             className="w-9 h-9 rounded-full bg-[#141414] border border-[#262626] flex items-center justify-center text-white hover:text-[#e5a93c] transition-colors cursor-pointer"
             title="Back to Home"
           >
             <ArrowLeft className="w-4 h-4" />
-          </button>
+          </Link>
           <span className="text-xs font-serif tracking-widest text-[#e5a93c] uppercase">Account & Orders</span>
           <div className="w-9" />
         </div>
@@ -1000,8 +1018,11 @@ export default function AccountScreen({
         onClose={() => setIsCategoriesOpen(false)}
         categories={categories}
         onSelectCategory={(catName) => {
-          onSelectCategory?.(catName);
-          navShop();
+          if (onSelectCategory) {
+            onSelectCategory(catName);
+          } else {
+            navShop();
+          }
         }}
       />
 
@@ -1009,27 +1030,30 @@ export default function AccountScreen({
       <nav className="fixed bottom-0 left-0 right-0 z-40 bg-[#080808]/95 backdrop-blur-md border-t border-[#181818] flex justify-center pb-safe">
         <div className="w-full max-w-[440px] h-[64px] px-3 flex items-center justify-between relative">
           {/* 1. Home */}
-          <button
-            onClick={navHome}
+          <Link
+            href="/home"
+            onClick={() => onNavigateHome?.()}
             className="flex flex-col items-center justify-center flex-1 text-[#8e8e93] hover:text-white transition-colors gap-1 cursor-pointer"
           >
             <Home className="w-5 h-5" />
             <span className="text-[11px] font-normal">Home</span>
-          </button>
+          </Link>
 
           {/* 2. Shop */}
-          <button
-            onClick={navShop}
+          <Link
+            href="/shop"
+            onClick={() => onNavigateShop?.()}
             className="flex flex-col items-center justify-center flex-1 text-[#8e8e93] hover:text-white transition-colors gap-1 cursor-pointer"
           >
             <ShoppingBag className="w-5 h-5" />
             <span className="text-[11px] font-normal">Shop</span>
-          </button>
+          </Link>
 
           {/* 3. Center Elevated Cart Button */}
           <div className="flex flex-col items-center justify-center flex-1 relative">
-            <button
-              onClick={navCart}
+            <Link
+              href="/cart"
+              onClick={() => onNavigateCart?.()}
               className="w-[52px] h-[52px] rounded-full bg-[#f0a939] hover:bg-[#f5b842] text-[#111111] flex items-center justify-center shadow-[0_4px_20px_rgba(240,169,57,0.4)] -translate-y-5 transition-transform active:scale-95 cursor-pointer relative"
             >
               <ShoppingBag className="w-5 h-5 stroke-[2.2]" />
@@ -1038,12 +1062,13 @@ export default function AccountScreen({
                   {cartCount}
                 </span>
               )}
-            </button>
+            </Link>
             <span className="text-[11px] text-[#8e8e93] -mt-4">Cart</span>
           </div>
 
           {/* 4. Categories */}
           <button
+            type="button"
             onClick={() => setIsCategoriesOpen(true)}
             className="flex flex-col items-center justify-center flex-1 text-[#8e8e93] hover:text-[#e5a93c] transition-colors gap-1 cursor-pointer"
           >
@@ -1053,6 +1078,7 @@ export default function AccountScreen({
 
           {/* 5. Account (ACTIVE) */}
           <button
+            type="button"
             onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
             className="flex flex-col items-center justify-center flex-1 text-[#e5a93c] gap-1 cursor-pointer"
           >

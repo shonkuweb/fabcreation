@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Search,
@@ -17,7 +18,7 @@ import {
 } from "lucide-react";
 import Footer from "@/components/Footer";
 import CategoriesModal from "@/components/CategoriesModal";
-import { Product, Category } from "@/lib/db";
+import type { Product, Category } from "@/lib/db";
 
 interface ShopScreenProps {
   products?: Product[];
@@ -167,9 +168,20 @@ export default function ShopScreen({
     }
   };
 
-  const navigateToHome = onNavigateHome || (() => { router.push("/home"); });
-  const navigateToCart = onNavigateCart || (() => { router.push("/cart"); });
-  const navigateToAccount = onNavigateAccount || (() => { router.push("/account"); });
+  const navigateToHome = () => {
+    if (onNavigateHome) onNavigateHome();
+    else router.push("/home");
+  };
+
+  const navigateToCart = () => {
+    if (onNavigateCart) onNavigateCart();
+    else router.push("/cart");
+  };
+
+  const navigateToAccount = () => {
+    if (onNavigateAccount) onNavigateAccount();
+    else router.push("/account");
+  };
 
   // Filter products by search and category
   const filteredProducts = products.filter((p) => {
@@ -385,7 +397,7 @@ export default function ShopScreen({
                       src={product.image}
                       alt={product.name}
                       fill
-                      unoptimized
+                      sizes="(max-width: 640px) 50vw, 220px"
                       onError={(e) => {
                         (e.target as HTMLImageElement).src = "/images/products/moon-necklace.jpg";
                       }}
@@ -497,16 +509,18 @@ export default function ShopScreen({
       <nav className="fixed bottom-0 left-0 right-0 z-40 bg-[#080808]/95 backdrop-blur-md border-t border-[#181818] flex justify-center pb-safe">
         <div className="w-full max-w-[440px] h-[64px] px-3 flex items-center justify-between relative">
           {/* 1. Home */}
-          <button
-            onClick={navigateToHome}
+          <Link
+            href="/home"
+            onClick={() => navigateToHome()}
             className="flex flex-col items-center justify-center flex-1 text-[#8e8e93] hover:text-white transition-colors gap-1 cursor-pointer"
           >
             <Home className="w-5 h-5" />
             <span className="text-[11px] font-normal">Home</span>
-          </button>
+          </Link>
 
           {/* 2. Shop (ACTIVE) */}
           <button
+            type="button"
             onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
             className="flex flex-col items-center justify-center flex-1 text-[#e5a93c] gap-1 cursor-pointer"
           >
@@ -516,8 +530,9 @@ export default function ShopScreen({
 
           {/* 3. Center Elevated Cart Button */}
           <div className="flex flex-col items-center justify-center flex-1 relative">
-            <button
-              onClick={navigateToCart}
+            <Link
+              href="/cart"
+              onClick={() => navigateToCart()}
               className="w-[52px] h-[52px] rounded-full bg-[#f0a939] hover:bg-[#f5b842] text-[#111111] flex items-center justify-center shadow-[0_4px_20px_rgba(240,169,57,0.4)] -translate-y-5 transition-transform active:scale-95 cursor-pointer relative"
             >
               <ShoppingCart className="w-5 h-5 stroke-[2.2]" />
@@ -526,12 +541,13 @@ export default function ShopScreen({
                   {cartCount}
                 </span>
               )}
-            </button>
+            </Link>
             <span className="text-[11px] text-[#8e8e93] -mt-4">Cart</span>
           </div>
 
           {/* 4. Categories */}
           <button
+            type="button"
             onClick={() => setIsCategoriesOpen(true)}
             className="flex flex-col items-center justify-center flex-1 text-[#8e8e93] hover:text-[#e5a93c] transition-colors gap-1 cursor-pointer"
           >
@@ -540,13 +556,14 @@ export default function ShopScreen({
           </button>
 
           {/* 5. Account */}
-          <button
-            onClick={navigateToAccount}
+          <Link
+            href="/account"
+            onClick={() => navigateToAccount()}
             className="flex flex-col items-center justify-center flex-1 text-[#8e8e93] hover:text-white transition-colors gap-1 cursor-pointer"
           >
             <User className="w-5 h-5" />
             <span className="text-[11px] font-normal">Account</span>
-          </button>
+          </Link>
         </div>
       </nav>
     </div>

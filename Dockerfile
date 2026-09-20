@@ -31,21 +31,15 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# Create nextjs system user
-RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 nextjs
-
-# Create persistent data directory with proper ownership
-RUN mkdir -p /app/data && chown -R nextjs:nodejs /app/data
+# Create persistent data directory
+RUN mkdir -p /app/data
 
 # Copy built assets
 COPY --from=builder /app/public ./public
 
 # Copy standalone build and static files
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-
-USER nextjs
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
 
 EXPOSE 3000
 

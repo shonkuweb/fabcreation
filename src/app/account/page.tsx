@@ -22,9 +22,6 @@ export default function AccountPage() {
   return (
     <AccountScreen
       userMobile={userMobile}
-      onNavigateHome={() => navigateTo("/home")}
-      onNavigateShop={() => navigateTo("/shop")}
-      onNavigateCart={() => navigateTo("/cart")}
       onSelectProduct={(p) => navigateTo(`/product?id=${p.id}`)}
       onSelectCategory={(catName) => navigateTo(catName ? `/shop?cat=${encodeURIComponent(catName)}` : "/shop")}
       onSignOut={() => {

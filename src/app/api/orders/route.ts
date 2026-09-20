@@ -35,15 +35,43 @@ export async function POST(req: Request) {
       );
     }
 
+    // Sanitize items array
+    const sanitizedItems = items.map((item: any, idx: number) => ({
+      id: String(item.id || item.productId || `item-${Date.now()}-${idx}`),
+      name: String(item.name || "Jewelry Item"),
+      price: Number(item.price) || 0,
+      quantity: Math.max(1, Number(item.quantity) || 1),
+      image: String(item.image || "/images/products/moon-necklace.jpg"),
+    }));
+
+    const calculatedSubtotal = sanitizedItems.reduce(
+      (sum: number, item: any) => sum + item.price * item.quantity,
+      0
+    );
+
+    const finalSubtotal = Number(subtotal) > 0 ? Number(subtotal) : calculatedSubtotal;
+    const finalGst =
+      gst !== undefined && !isNaN(Number(gst))
+        ? Number(gst)
+        : Number((finalSubtotal * 0.03).toFixed(1));
+    const finalShipping =
+      shipping !== undefined && !isNaN(Number(shipping))
+        ? Number(shipping)
+        : 125;
+    const finalTotal =
+      Number(total) > 0
+        ? Number(total)
+        : Number((finalSubtotal + finalGst + finalShipping).toFixed(1));
+
     const validMobile = (customerMobile || "").trim() || "6289417338";
 
     const newOrder = createOrder({
       customerMobile: validMobile,
-      items,
-      subtotal: Number(subtotal) || 0,
-      gst: Number(gst) || 0,
-      shipping: Number(shipping) || 125,
-      total: Number(total) || 0,
+      items: sanitizedItems,
+      subtotal: finalSubtotal,
+      gst: finalGst,
+      shipping: finalShipping,
+      total: finalTotal,
       status: "Pending",
     });
 

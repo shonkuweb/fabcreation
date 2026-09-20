@@ -550,7 +550,6 @@ export default function HomeScreen({
           <Link
             href="/shop"
             prefetch={true}
-            onClick={() => navigateToShop()}
             className="flex flex-col items-center justify-center flex-1 text-[#8e8e93] hover:text-white transition-colors gap-1 cursor-pointer"
           >
             <ShoppingBag className="w-5 h-5" />
@@ -562,7 +561,6 @@ export default function HomeScreen({
             <Link
               href="/cart"
               prefetch={true}
-              onClick={() => navigateToCart()}
               className="w-[52px] h-[52px] rounded-full bg-[#f0a939] hover:bg-[#f5b842] text-[#111111] flex items-center justify-center shadow-[0_4px_20px_rgba(240,169,57,0.4)] -translate-y-5 transition-transform active:scale-95 cursor-pointer relative"
             >
               <ShoppingCart className="w-5 h-5 stroke-[2.2]" />
@@ -589,7 +587,6 @@ export default function HomeScreen({
           <Link
             href="/account"
             prefetch={true}
-            onClick={() => navigateToAccount()}
             className="flex flex-col items-center justify-center flex-1 text-[#8e8e93] hover:text-white transition-colors gap-1 cursor-pointer"
           >
             <User className="w-5 h-5" />

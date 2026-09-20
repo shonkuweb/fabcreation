@@ -191,13 +191,14 @@ export default function CartScreen({
         setOrderSuccess(data.order.orderNumber);
         setNotification(`Order placed successfully! Order #${data.order.orderNumber}`);
         setTimeout(() => {
-          navAccount();
+          router.push("/account");
         }, 2000);
       } else {
         setNotification(data.message || "Failed to place order. Please try again.");
       }
-    } catch {
-      setNotification("Checkout request failed. Please check connection.");
+    } catch (err) {
+      console.error("Checkout request failed:", err);
+      setNotification("Checkout request failed. Please check connection and try again.");
     } finally {
       setIsCheckingOut(false);
     }
@@ -225,7 +226,6 @@ export default function CartScreen({
         <div className="flex items-center justify-between py-2 mb-3">
           <Link
             href="/shop"
-            onClick={() => onNavigateShop?.()}
             className="w-9 h-9 rounded-full bg-[#141414] border border-[#262626] flex items-center justify-center text-white hover:text-[#e5a93c] transition-colors cursor-pointer"
             title="Continue Shopping"
           >
@@ -348,13 +348,13 @@ export default function CartScreen({
             <p className="text-[#8e8e93] text-[13px] max-w-[260px] mb-6">
               Add wholesale jewelry items to your cart to meet the ₹3,000 B2B minimum.
             </p>
-            <button
-              onClick={navShop}
+            <Link
+              href="/shop"
               className="w-full h-[46px] rounded-[13px] bg-[#141109] border border-[#e5a93c] hover:bg-[#e5a93c] hover:text-black text-[#e5a93c] font-medium text-[13.5px] flex items-center justify-center gap-2 transition-all cursor-pointer"
             >
               <span>Browse Products</span>
               <ArrowRight className="w-4 h-4" />
-            </button>
+            </Link>
           </div>
         )}
 
@@ -477,7 +477,6 @@ export default function CartScreen({
           <Link
             href="/home"
             prefetch={true}
-            onClick={() => onNavigateHome?.()}
             className="flex flex-col items-center justify-center flex-1 text-[#8e8e93] hover:text-white transition-colors gap-1 cursor-pointer"
           >
             <Home className="w-5 h-5" />
@@ -488,7 +487,6 @@ export default function CartScreen({
           <Link
             href="/shop"
             prefetch={true}
-            onClick={() => onNavigateShop?.()}
             className="flex flex-col items-center justify-center flex-1 text-[#8e8e93] hover:text-white transition-colors gap-1 cursor-pointer"
           >
             <ShoppingBag className="w-5 h-5" />
@@ -526,7 +524,6 @@ export default function CartScreen({
           <Link
             href="/account"
             prefetch={true}
-            onClick={() => onNavigateAccount?.()}
             className="flex flex-col items-center justify-center flex-1 text-[#8e8e93] hover:text-white transition-colors gap-1 cursor-pointer"
           >
             <User className="w-5 h-5" />

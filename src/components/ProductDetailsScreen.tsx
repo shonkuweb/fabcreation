@@ -314,7 +314,6 @@ export default function ProductDetailsScreen({
           <span className="text-xs font-serif tracking-widest text-[#e5a93c] uppercase">Fab Creations</span>
           <Link
             href="/cart"
-            onClick={() => navCart()}
             className="w-9 h-9 rounded-full bg-[#141414] border border-[#262626] flex items-center justify-center text-white hover:text-[#e5a93c] transition-colors cursor-pointer relative"
             title="View Cart"
           >
@@ -603,7 +602,6 @@ export default function ProductDetailsScreen({
           <Link
             href="/home"
             prefetch={true}
-            onClick={() => navHome()}
             className="flex flex-col items-center justify-center flex-1 text-[#8e8e93] hover:text-white transition-colors gap-1 cursor-pointer"
           >
             <Home className="w-5 h-5" />
@@ -614,7 +612,6 @@ export default function ProductDetailsScreen({
           <Link
             href="/shop"
             prefetch={true}
-            onClick={() => navShop()}
             className="flex flex-col items-center justify-center flex-1 text-[#8e8e93] hover:text-white transition-colors gap-1 cursor-pointer"
           >
             <ShoppingBag className="w-5 h-5" />
@@ -626,7 +623,6 @@ export default function ProductDetailsScreen({
             <Link
               href="/cart"
               prefetch={true}
-              onClick={() => navCart()}
               className="w-[52px] h-[52px] rounded-full bg-[#f0a939] hover:bg-[#f5b842] text-[#111111] flex items-center justify-center shadow-[0_4px_20px_rgba(240,169,57,0.4)] -translate-y-5 transition-transform active:scale-95 cursor-pointer relative"
             >
               <ShoppingCart className="w-5 h-5 stroke-[2.2]" />
@@ -653,7 +649,6 @@ export default function ProductDetailsScreen({
           <Link
             href="/account"
             prefetch={true}
-            onClick={() => navAccount()}
             className="flex flex-col items-center justify-center flex-1 text-[#8e8e93] hover:text-white transition-colors gap-1 cursor-pointer"
           >
             <User className="w-5 h-5" />

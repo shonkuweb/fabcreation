@@ -22,9 +22,6 @@ export default function CartPage() {
   return (
     <CartScreen
       userMobile={userMobile}
-      onNavigateHome={() => navigateTo("/home")}
-      onNavigateShop={() => navigateTo("/shop")}
-      onNavigateAccount={() => navigateTo("/account")}
       onSelectCategory={(catName) => navigateTo(catName ? `/shop?cat=${encodeURIComponent(catName)}` : "/shop")}
       onSignOut={() => {
         try {

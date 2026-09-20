@@ -1,0 +1,55 @@
+{
+  "products": [
+    {
+      "name": "test",
+      "sku": "928",
+      "price": 800,
+      "category": "test",
+      "image": "https://pub-ce8688bc6c654bcfb99716f7c9373bcd.r2.dev/fab-creations/products/moon-necklace.jpg",
+      "stock": 10,
+      "metal": "Stainless Steel",
+      "target": "Women",
+      "occasion": "Daily Wear",
+      "rating": 5,
+      "reviewsCount": 0,
+      "subtitle": "Anti tarnish",
+      "featured": true,
+      "id": "prod-1789891321908",
+      "createdAt": "2026-09-20T08:02:01.908Z"
+    }
+  ],
+  "categories": [
+    {
+      "id": "cat-1789891252268",
+      "name": "test",
+      "createdAt": "2026-09-20T08:00:52.268Z"
+    },
+    {
+      "id": "cat-1789891259476",
+      "name": "anklets",
+      "createdAt": "2026-09-20T08:00:59.476Z"
+    }
+  ],
+  "orders": [
+    {
+      "customerMobile": "6289417338",
+      "items": [
+        {
+          "id": "prod-1789891321908",
+          "name": "test",
+          "price": 800,
+          "quantity": 4,
+          "image": "https://pub-ce8688bc6c654bcfb99716f7c9373bcd.r2.dev/fab-creations/products/moon-necklace.jpg"
+        }
+      ],
+      "subtotal": 3200,
+      "gst": 96,
+      "shipping": 125,
+      "total": 3421,
+      "status": "Confirmed",
+      "id": "ord-1789891508993",
+      "orderNumber": "FC-1001",
+      "createdAt": "2026-09-20T08:05:08.993Z"
+    }
+  ]
+}

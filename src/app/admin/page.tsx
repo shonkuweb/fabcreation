@@ -65,6 +65,7 @@ export default function AdminPage() {
     featured: true,
   });
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [isDraggingImage, setIsDraggingImage] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   // New Category input
@@ -152,10 +153,13 @@ export default function AdminPage() {
     }
   };
 
-  // Image Upload to R2
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  // Image Upload to R2 (reusable for file selector and drag-and-drop)
+  const processImageFile = async (file: File) => {
     if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      alert("Please upload an image file (PNG, JPG, WebP, etc.)");
+      return;
+    }
 
     setIsUploadingImage(true);
     const formData = new FormData();
@@ -169,7 +173,7 @@ export default function AdminPage() {
       const data = await res.json();
       if (data.success) {
         setProductForm((prev) => ({ ...prev, image: data.url }));
-        showNotification("Image uploaded to Cloudflare R2!");
+        showNotification("Image uploaded & optimized to Cloudflare R2!");
       } else {
         alert("Image upload failed: " + data.message);
       }
@@ -177,6 +181,45 @@ export default function AdminPage() {
       alert("Error uploading image");
     } finally {
       setIsUploadingImage(false);
+      setIsDraggingImage(false);
+    }
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      processImageFile(file);
+    }
+  };
+
+  const handleDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingImage(true);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = "copy";
+    if (!isDraggingImage) setIsDraggingImage(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+    setIsDraggingImage(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingImage(false);
+
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      processImageFile(files[0]);
     }
   };
 
@@ -919,44 +962,104 @@ export default function AdminPage() {
 
             {/* Modal Form */}
             <form onSubmit={handleSaveProduct} className="space-y-4 pt-4 text-xs">
-              {/* Image Upload Area */}
+              {/* Image Upload Area with Drag & Drop */}
               <div>
-                <label className="block text-[#a0a0a0] mb-2 font-medium">Product Image (Upload to Cloudflare R2)</label>
-                <div className="flex items-center gap-4">
-                  <div className="w-20 h-20 rounded-xl bg-[#141414] border border-[#262626] overflow-hidden relative flex items-center justify-center shrink-0">
+                <label className="block text-[#a0a0a0] mb-2 font-medium">
+                  Product Image (Drag & Drop or Click to Browse)
+                </label>
+                
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleImageUpload}
+                  accept="image/*"
+                  className="hidden"
+                />
+
+                <div
+                  onDragEnter={handleDragEnter}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`relative w-full rounded-2xl p-4 border-2 border-dashed transition-all duration-200 cursor-pointer flex flex-col sm:flex-row items-center gap-4 select-none ${
+                    isDraggingImage
+                      ? "border-[#e5a93c] bg-[#1c160c] shadow-[0_0_20px_rgba(229,169,60,0.35)] scale-[1.01]"
+                      : "border-[#2c2c2c] bg-[#111111] hover:border-[#e5a93c]/50 hover:bg-[#15120c]"
+                  }`}
+                >
+                  {/* Image Preview / Upload Icon Thumbnail */}
+                  <div className="w-20 h-20 rounded-xl bg-[#161616] border border-[#262626] overflow-hidden relative flex items-center justify-center shrink-0 shadow-inner">
                     {productForm.image ? (
                       <Image
                         src={productForm.image}
-                        alt="Preview"
+                        alt="Product Preview"
                         fill
                         unoptimized
                         className="object-cover"
                       />
                     ) : (
-                      <Upload className="w-6 h-6 text-[#555]" />
+                      <Upload className={`w-7 h-7 transition-colors ${isDraggingImage ? "text-[#e5a93c] animate-bounce" : "text-[#555]"}`} />
+                    )}
+                    {isUploadingImage && (
+                      <div className="absolute inset-0 bg-black/75 flex items-center justify-center">
+                        <div className="w-5 h-5 border-2 border-[#e5a93c]/30 border-t-[#e5a93c] rounded-full animate-spin" />
+                      </div>
                     )}
                   </div>
 
-                  <div className="flex-1 space-y-2">
-                    <input
-                      type="file"
-                      ref={fileInputRef}
-                      onChange={handleImageUpload}
-                      accept="image/*"
-                      className="hidden"
-                    />
-                    <button
-                      type="button"
-                      disabled={isUploadingImage}
-                      onClick={() => fileInputRef.current?.click()}
-                      className="px-3.5 py-2 rounded-xl bg-[#171207] border border-[#e5a93c] text-[#e5a93c] hover:bg-[#e5a93c] hover:text-black font-semibold text-xs transition-all cursor-pointer disabled:opacity-50"
-                    >
-                      {isUploadingImage ? "Uploading to R2..." : "Select & Upload Image"}
-                    </button>
-                    <p className="text-[#666] text-[11px]">
-                      Upload directly to your R2 bucket for instant CDN delivery
-                    </p>
+                  {/* Drop zone helper text and status */}
+                  <div className="flex-1 text-center sm:text-left space-y-1">
+                    {isUploadingImage ? (
+                      <div>
+                        <p className="text-[#e5a93c] font-semibold text-xs animate-pulse">
+                          Uploading & optimizing image to Cloudflare R2...
+                        </p>
+                        <p className="text-[#777] text-[11px]">Converting to modern WebP</p>
+                      </div>
+                    ) : isDraggingImage ? (
+                      <div>
+                        <p className="text-[#e5a93c] font-semibold text-xs">
+                          Drop image file here to upload!
+                        </p>
+                        <p className="text-[#aaa] text-[11px]">Release to start upload immediately</p>
+                      </div>
+                    ) : productForm.image ? (
+                      <div>
+                        <div className="flex items-center gap-2 justify-center sm:justify-start">
+                          <span className="text-emerald-400 font-semibold text-xs flex items-center gap-1">
+                            ✓ Image Ready
+                          </span>
+                          <span className="text-[10px] text-[#777]">· Drag new photo to replace</span>
+                        </div>
+                        <p className="text-[#888] text-[11px] truncate max-w-[260px]">
+                          {productForm.image}
+                        </p>
+                      </div>
+                    ) : (
+                      <div>
+                        <p className="text-white font-medium text-xs">
+                          <span className="text-[#e5a93c] font-semibold">Drag & drop</span> image here, or <span className="text-[#e5a93c] underline">browse files</span>
+                        </p>
+                        <p className="text-[#777] text-[11px]">
+                          Supports JPEG, PNG, WebP (auto-compressed and hosted on R2 CDN)
+                        </p>
+                      </div>
+                    )}
                   </div>
+
+                  {/* Action Button */}
+                  <button
+                    type="button"
+                    disabled={isUploadingImage}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      fileInputRef.current?.click();
+                    }}
+                    className="px-3.5 py-2 rounded-xl bg-[#1c160c] border border-[#e5a93c] text-[#e5a93c] hover:bg-[#e5a93c] hover:text-black font-semibold text-xs transition-all cursor-pointer shrink-0 disabled:opacity-50 shadow-sm"
+                  >
+                    {isUploadingImage ? "Uploading..." : productForm.image ? "Change Image" : "Select Image"}
+                  </button>
                 </div>
               </div>
 

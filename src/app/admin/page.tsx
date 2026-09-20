@@ -349,6 +349,25 @@ export default function AdminPage() {
     }
   };
 
+  // Delete Order
+  const handleDeleteOrder = async (orderId: string, orderNumber: string) => {
+    if (!confirm(`Are you sure you want to delete order #${orderNumber}?`)) return;
+
+    try {
+      const res = await fetch(`/api/orders/${orderId}`, { method: "DELETE" });
+      const data = await res.json();
+      if (data.success) {
+        showNotification(`Order #${orderNumber} deleted`);
+        setOrders((prev) => prev.filter((o) => o.id !== orderId));
+        fetchData();
+      } else {
+        alert(data.message || "Failed to delete order");
+      }
+    } catch {
+      alert("Failed to delete order");
+    }
+  };
+
   // Total Revenue Calculation
   const totalRevenue = orders.reduce((sum, o) => sum + o.total, 0);
 
@@ -763,8 +782,8 @@ export default function AdminPage() {
                       </p>
                     </div>
 
-                    {/* Status Badge */}
-                    <div className="flex items-center gap-1.5">
+                    {/* Status Badge & Actions */}
+                    <div className="flex items-center gap-2">
                       <select
                         value={ord.status}
                         onChange={(e) => handleUpdateOrderStatus(ord.id, e.target.value)}
@@ -783,6 +802,15 @@ export default function AdminPage() {
                         <option value="Dispatched">Dispatched</option>
                         <option value="Delivered">Delivered</option>
                       </select>
+
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteOrder(ord.id, ord.orderNumber)}
+                        className="p-1.5 rounded-lg bg-red-950/40 border border-red-800/60 text-red-400 hover:bg-red-900/60 hover:text-red-200 transition-colors cursor-pointer"
+                        title="Delete Order"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
                     </div>
                   </div>
 

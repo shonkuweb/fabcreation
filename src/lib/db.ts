@@ -227,3 +227,14 @@ export function updateOrderStatus(
   saveDb(db);
   return order;
 }
+
+export function deleteOrder(id: string): boolean {
+  const db = getDb();
+  const initialLength = db.orders.length;
+  db.orders = db.orders.filter((o) => o.id !== id);
+  if (db.orders.length !== initialLength) {
+    saveDb(db);
+    return true;
+  }
+  return false;
+}

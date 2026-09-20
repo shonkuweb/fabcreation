@@ -84,31 +84,49 @@ export default function ProductDetailsScreen({
       setLoading(false);
     } else {
       let loadedFromLocal = false;
-      try {
-        const saved = localStorage.getItem("fc_selected_product");
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (parsed && parsed.id) {
-            setProduct(parsed);
-            loadedFromLocal = true;
-          }
-        }
-      } catch {
-        // ignore
-      }
-
-      // Check URL query param ?id=
       let paramId: string | null = null;
       if (typeof window !== "undefined") {
         const urlParams = new URLSearchParams(window.location.search);
         paramId = urlParams.get("id");
       }
 
-      fetch("/api/products", { cache: "no-store" })
+      try {
+        if (paramId) {
+          const cachedProds = localStorage.getItem("fc_cached_products");
+          if (cachedProds) {
+            const parsed = JSON.parse(cachedProds);
+            if (Array.isArray(parsed)) {
+              const matched = parsed.find((p: Product) => p.id === paramId);
+              if (matched) {
+                setProduct(matched);
+                setAllProducts(parsed);
+                setLoading(false);
+                loadedFromLocal = true;
+              }
+            }
+          }
+        }
+        if (!loadedFromLocal) {
+          const saved = localStorage.getItem("fc_selected_product");
+          if (saved) {
+            const parsed = JSON.parse(saved);
+            if (parsed && parsed.id) {
+              setProduct(parsed);
+              setLoading(false);
+              loadedFromLocal = true;
+            }
+          }
+        }
+      } catch {}
+
+      fetch("/api/products")
         .then((r) => r.json())
         .then((d) => {
           if (d.success && Array.isArray(d.products)) {
             setAllProducts(d.products);
+            try {
+              localStorage.setItem("fc_cached_products", JSON.stringify(d.products));
+            } catch {}
             if (paramId) {
               const matched = d.products.find((p: Product) => p.id === paramId);
               if (matched) {
@@ -584,6 +602,7 @@ export default function ProductDetailsScreen({
           {/* Home */}
           <Link
             href="/home"
+            prefetch={true}
             onClick={() => navHome()}
             className="flex flex-col items-center justify-center flex-1 text-[#8e8e93] hover:text-white transition-colors gap-1 cursor-pointer"
           >
@@ -594,6 +613,7 @@ export default function ProductDetailsScreen({
           {/* Shop */}
           <Link
             href="/shop"
+            prefetch={true}
             onClick={() => navShop()}
             className="flex flex-col items-center justify-center flex-1 text-[#8e8e93] hover:text-white transition-colors gap-1 cursor-pointer"
           >
@@ -605,6 +625,7 @@ export default function ProductDetailsScreen({
           <div className="flex flex-col items-center justify-center flex-1 relative">
             <Link
               href="/cart"
+              prefetch={true}
               onClick={() => navCart()}
               className="w-[52px] h-[52px] rounded-full bg-[#f0a939] hover:bg-[#f5b842] text-[#111111] flex items-center justify-center shadow-[0_4px_20px_rgba(240,169,57,0.4)] -translate-y-5 transition-transform active:scale-95 cursor-pointer relative"
             >
@@ -631,6 +652,7 @@ export default function ProductDetailsScreen({
           {/* Account */}
           <Link
             href="/account"
+            prefetch={true}
             onClick={() => navAccount()}
             className="flex flex-col items-center justify-center flex-1 text-[#8e8e93] hover:text-white transition-colors gap-1 cursor-pointer"
           >

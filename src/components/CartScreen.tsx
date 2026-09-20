@@ -161,13 +161,15 @@ export default function CartScreen({
       return;
     }
 
+    const activeMobile = userMobile || (typeof window !== "undefined" ? localStorage.getItem("fc_user_mobile") : null) || "6289417338";
+
     setIsCheckingOut(true);
     try {
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          customerMobile: userMobile,
+          customerMobile: activeMobile,
           items: cart,
           subtotal,
           gst,
@@ -177,7 +179,7 @@ export default function CartScreen({
       });
 
       const data = await res.json();
-      if (data.success) {
+      if (data.success && data.order) {
         setCart([]);
         try {
           localStorage.removeItem("fc_b2b_cart");
@@ -192,7 +194,7 @@ export default function CartScreen({
           navAccount();
         }, 2000);
       } else {
-        setNotification("Failed to place order. Please try again.");
+        setNotification(data.message || "Failed to place order. Please try again.");
       }
     } catch {
       setNotification("Checkout request failed. Please check connection.");
@@ -474,6 +476,7 @@ export default function CartScreen({
           {/* 1. Home */}
           <Link
             href="/home"
+            prefetch={true}
             onClick={() => onNavigateHome?.()}
             className="flex flex-col items-center justify-center flex-1 text-[#8e8e93] hover:text-white transition-colors gap-1 cursor-pointer"
           >
@@ -484,6 +487,7 @@ export default function CartScreen({
           {/* 2. Shop */}
           <Link
             href="/shop"
+            prefetch={true}
             onClick={() => onNavigateShop?.()}
             className="flex flex-col items-center justify-center flex-1 text-[#8e8e93] hover:text-white transition-colors gap-1 cursor-pointer"
           >
@@ -521,6 +525,7 @@ export default function CartScreen({
           {/* 5. Account */}
           <Link
             href="/account"
+            prefetch={true}
             onClick={() => onNavigateAccount?.()}
             className="flex flex-col items-center justify-center flex-1 text-[#8e8e93] hover:text-white transition-colors gap-1 cursor-pointer"
           >

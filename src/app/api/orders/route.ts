@@ -28,15 +28,17 @@ export async function POST(req: Request) {
     const body = await req.json();
     const { customerMobile, items, subtotal, gst, shipping, total } = body;
 
-    if (!customerMobile || !items || !items.length) {
+    if (!items || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json(
-        { success: false, message: "Customer mobile and items are required" },
+        { success: false, message: "Cart items are required to place an order" },
         { status: 400 }
       );
     }
 
+    const validMobile = (customerMobile || "").trim() || "6289417338";
+
     const newOrder = createOrder({
-      customerMobile,
+      customerMobile: validMobile,
       items,
       subtotal: Number(subtotal) || 0,
       gst: Number(gst) || 0,
@@ -46,9 +48,13 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json({ success: true, order: newOrder }, { status: 201 });
-  } catch {
+  } catch (err) {
+    console.error("POST /api/orders error:", err);
     return NextResponse.json(
-      { success: false, message: "Failed to create order" },
+      {
+        success: false,
+        message: err instanceof Error ? err.message : "Failed to create order",
+      },
       { status: 500 }
     );
   }

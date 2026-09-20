@@ -67,11 +67,21 @@ export default function HomeScreen({
 
   // Sync props if provided
   useEffect(() => {
-    if (initialProducts.length > 0) setProducts(initialProducts);
+    if (initialProducts.length > 0) {
+      setProducts(initialProducts);
+      try {
+        localStorage.setItem("fc_cached_products", JSON.stringify(initialProducts));
+      } catch {}
+    }
   }, [initialProducts]);
 
   useEffect(() => {
-    if (initialCategories.length > 0) setCategories(initialCategories);
+    if (initialCategories.length > 0) {
+      setCategories(initialCategories);
+      try {
+        localStorage.setItem("fc_cached_categories", JSON.stringify(initialCategories));
+      } catch {}
+    }
   }, [initialCategories]);
 
   useEffect(() => {
@@ -82,19 +92,46 @@ export default function HomeScreen({
     if (initialWishlist.length > 0) setWishlist(initialWishlist);
   }, [initialWishlist]);
 
-  // Always fetch latest products and categories on mount
+  // Instant SWR cache hydration (0ms render) + background revalidation
   useEffect(() => {
-    fetch("/api/products", { cache: "no-store" })
+    try {
+      if (!initialProducts.length) {
+        const cached = localStorage.getItem("fc_cached_products");
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) setProducts(parsed);
+        }
+      }
+      if (!initialCategories.length) {
+        const cachedCats = localStorage.getItem("fc_cached_categories");
+        if (cachedCats) {
+          const parsedCats = JSON.parse(cachedCats);
+          if (Array.isArray(parsedCats) && parsedCats.length > 0) setCategories(parsedCats);
+        }
+      }
+    } catch {}
+
+    fetch("/api/products")
       .then((r) => r.json())
       .then((d) => {
-        if (d.success && Array.isArray(d.products)) setProducts(d.products);
+        if (d.success && Array.isArray(d.products)) {
+          setProducts(d.products);
+          try {
+            localStorage.setItem("fc_cached_products", JSON.stringify(d.products));
+          } catch {}
+        }
       })
       .catch((err) => console.error("Failed to load products in HomeScreen:", err));
 
-    fetch("/api/categories", { cache: "no-store" })
+    fetch("/api/categories")
       .then((r) => r.json())
       .then((d) => {
-        if (d.success && Array.isArray(d.categories)) setCategories(d.categories);
+        if (d.success && Array.isArray(d.categories)) {
+          setCategories(d.categories);
+          try {
+            localStorage.setItem("fc_cached_categories", JSON.stringify(d.categories));
+          } catch {}
+        }
       })
       .catch((err) => console.error("Failed to load categories in HomeScreen:", err));
 
@@ -386,6 +423,7 @@ export default function HomeScreen({
                       src={product.image}
                       alt={product.name}
                       fill
+                      priority={displayProducts.indexOf(product) < 4}
                       sizes="(max-width: 640px) 50vw, 220px"
                       onError={(e) => {
                         (e.target as HTMLImageElement).src = "/images/products/moon-necklace.jpg";
@@ -511,6 +549,7 @@ export default function HomeScreen({
           {/* Shop */}
           <Link
             href="/shop"
+            prefetch={true}
             onClick={() => navigateToShop()}
             className="flex flex-col items-center justify-center flex-1 text-[#8e8e93] hover:text-white transition-colors gap-1 cursor-pointer"
           >
@@ -522,6 +561,7 @@ export default function HomeScreen({
           <div className="flex flex-col items-center justify-center flex-1 relative">
             <Link
               href="/cart"
+              prefetch={true}
               onClick={() => navigateToCart()}
               className="w-[52px] h-[52px] rounded-full bg-[#f0a939] hover:bg-[#f5b842] text-[#111111] flex items-center justify-center shadow-[0_4px_20px_rgba(240,169,57,0.4)] -translate-y-5 transition-transform active:scale-95 cursor-pointer relative"
             >
@@ -548,6 +588,7 @@ export default function HomeScreen({
           {/* Account */}
           <Link
             href="/account"
+            prefetch={true}
             onClick={() => navigateToAccount()}
             className="flex flex-col items-center justify-center flex-1 text-[#8e8e93] hover:text-white transition-colors gap-1 cursor-pointer"
           >

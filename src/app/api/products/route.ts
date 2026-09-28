@@ -30,6 +30,9 @@ export async function POST(req: Request) {
       name,
       sku,
       price,
+      retailPrice,
+      wholesalePrice,
+      channel,
       category,
       image,
       stock,
@@ -40,9 +43,12 @@ export async function POST(req: Request) {
       featured,
     } = body;
 
-    if (!name || !price) {
+    const finalRetail = Number(retailPrice ?? price ?? wholesalePrice ?? 0);
+    const finalWholesale = Number(wholesalePrice ?? price ?? retailPrice ?? 0);
+
+    if (!name || (!finalRetail && !finalWholesale && !price)) {
       return NextResponse.json(
-        { success: false, message: "Name and Price are required" },
+        { success: false, message: "Product Name and Price are required" },
         { status: 400 }
       );
     }
@@ -54,7 +60,10 @@ export async function POST(req: Request) {
     const newProduct = createProduct({
       name: name.trim(),
       sku: sku || `${Math.floor(100 + Math.random() * 900)}`,
-      price: Number(price),
+      price: finalRetail || finalWholesale,
+      retailPrice: finalRetail,
+      wholesalePrice: finalWholesale,
+      channel: channel === "wholesale" || channel === "retail" ? channel : "both",
       category: assignedCategory,
       image: image || "https://pub-ce8688bc6c654bcfb99716f7c9373bcd.r2.dev/fab-creations/products/moon-necklace.jpg",
       stock: Number(stock) || 1,

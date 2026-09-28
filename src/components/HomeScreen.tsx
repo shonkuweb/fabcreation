@@ -14,9 +14,11 @@ import {
   Grid,
   User,
   Star,
+  Lock,
 } from "lucide-react";
 import Footer from "@/components/Footer";
 import CategoriesModal from "@/components/CategoriesModal";
+import StoreModeToggle from "@/components/StoreModeToggle";
 import type { Product, Category } from "@/lib/db";
 
 interface HomeScreenProps {
@@ -24,6 +26,10 @@ interface HomeScreenProps {
   categories?: Category[];
   cartCount?: number;
   wishlist?: string[];
+  storeMode?: "retail" | "wholesale";
+  onSwitchStoreMode?: (mode: "retail" | "wholesale") => void;
+  isWholesaleLoggedIn?: boolean;
+  onOpenWholesaleLogin?: () => void;
   onToggleWishlist?: (productId: string) => void;
   onNavigateHome?: () => void;
   onSignOut?: () => void;
@@ -44,6 +50,10 @@ export default function HomeScreen({
   categories: initialCategories = [],
   cartCount: initialCartCount = 0,
   wishlist: initialWishlist = [],
+  storeMode = "retail",
+  onSwitchStoreMode,
+  isWholesaleLoggedIn = false,
+  onOpenWholesaleLogin,
   onToggleWishlist,
   onNavigateHome,
   onSignOut,
@@ -167,8 +177,18 @@ export default function HomeScreen({
   };
 
   const handleAddToCart = (product: Product) => {
+    if (storeMode === "wholesale" && !isWholesaleLoggedIn) {
+      if (onOpenWholesaleLogin) onOpenWholesaleLogin();
+      return;
+    }
+
+    const effectivePrice =
+      storeMode === "wholesale"
+        ? (product.wholesalePrice ?? product.price)
+        : (product.retailPrice ?? product.price);
+
     if (onAddToCart) {
-      onAddToCart(product, 1);
+      onAddToCart({ ...product, price: effectivePrice }, 1);
     } else {
       try {
         const saved = localStorage.getItem("fc_b2b_cart");
@@ -176,17 +196,27 @@ export default function HomeScreen({
         const existing = cart.find((i: any) => i.id === product.id);
         let updated;
         if (existing) {
-          updated = cart.map((i: any) => i.id === product.id ? { ...i, quantity: i.quantity + 1 } : i);
+          updated = cart.map((i: any) =>
+            i.id === product.id ? { ...i, quantity: i.quantity + 1, price: effectivePrice } : i
+          );
         } else {
-          updated = [...cart, { id: product.id, name: product.name, price: product.price, quantity: 1, image: product.image }];
+          updated = [
+            ...cart,
+            { id: product.id, name: product.name, price: effectivePrice, quantity: 1, image: product.image },
+          ];
         }
         localStorage.setItem("fc_b2b_cart", JSON.stringify(updated));
+        window.dispatchEvent(new Event("cart_updated"));
         setCartCount(updated.reduce((s: number, i: any) => s + i.quantity, 0));
       } catch {
         // ignore
       }
     }
-    setNotification(`Added ${product.name} to cart! (B2B Min: Rs 3000)`);
+    const noticeText =
+      storeMode === "wholesale"
+        ? `Added ${product.name} to cart! (Wholesale ₹${effectivePrice})`
+        : `Added ${product.name} to cart! (₹${effectivePrice})`;
+    setNotification(noticeText);
     setTimeout(() => setNotification(null), 3000);
   };
 
@@ -222,9 +252,16 @@ export default function HomeScreen({
     else router.push("/account");
   };
 
-  // Filter featured or first 4 products
-  const featured = products.filter((p) => p.featured);
-  const displayProducts = featured.length > 0 ? featured.slice(0, 4) : products.slice(0, 4);
+  // Filter products by active store mode channel
+  const channelProducts = products.filter((p) => {
+    if (storeMode === "wholesale") {
+      return p.channel === "wholesale" || p.channel === "both" || !p.channel;
+    }
+    return p.channel === "retail" || p.channel === "both" || !p.channel;
+  });
+
+  const featured = channelProducts.filter((p) => p.featured);
+  const displayProducts = featured.length > 0 ? featured.slice(0, 4) : channelProducts.slice(0, 4);
 
   return (
     <div className="relative min-h-screen w-full bg-[#050505] text-white flex flex-col items-center justify-start pb-28 select-none">
@@ -240,9 +277,19 @@ export default function HomeScreen({
         {/* Top Announcement Bar */}
         <div className="w-full py-2 bg-[#000000] border-b border-[#141414] text-center">
           <p className="text-[#e5a93c] text-[12.5px] font-medium tracking-wide">
-            B2B Minimum Order: Rs 3000
+            {storeMode === "wholesale"
+              ? "B2B Wholesale • Minimum Order: Rs 3,000"
+              : "Retail Store • Free Shipping Over ₹999 • No Minimum Order"}
           </p>
         </div>
+
+        {/* Dual Mode Switcher (Retail & Wholesale) */}
+        <StoreModeToggle
+          mode={storeMode}
+          onSwitch={(m) => onSwitchStoreMode?.(m)}
+          isWholesaleLoggedIn={isWholesaleLoggedIn}
+          onOpenWholesaleLogin={onOpenWholesaleLogin}
+        />
 
         {/* Header Bar */}
         <header className="px-4 py-3 flex items-center justify-between gap-3 bg-[#050505]">
@@ -482,9 +529,28 @@ export default function HomeScreen({
 
                     {/* Price & Add to Cart */}
                     <div className="flex items-center justify-between pt-1">
-                      <span className="text-[#e5a93c] text-[16px] font-semibold">
-                        ₹{product.price}
-                      </span>
+                      {storeMode === "wholesale" && !isWholesaleLoggedIn ? (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (onOpenWholesaleLogin) onOpenWholesaleLogin();
+                          }}
+                          className="px-2 py-1 rounded-lg bg-[#1a140a] border border-[#e5a93c]/50 text-[#e5a93c] text-[11px] font-medium hover:bg-[#e5a93c] hover:text-black transition-all flex items-center gap-1 cursor-pointer"
+                        >
+                          <Lock className="w-3 h-3" />
+                          <span>Login for Price</span>
+                        </button>
+                      ) : (
+                        <div className="flex flex-col">
+                          <span className="text-[#e5a93c] text-[16px] font-semibold leading-tight">
+                            ₹{storeMode === "wholesale" ? (product.wholesalePrice ?? product.price) : (product.retailPrice ?? product.price)}
+                          </span>
+                          {storeMode === "wholesale" && (
+                            <span className="text-[9.5px] text-[#8e8e93]">Wholesale</span>
+                          )}
+                        </div>
+                      )}
                       <button
                         type="button"
                         onClick={(e) => {

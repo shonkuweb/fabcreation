@@ -31,6 +31,8 @@ export async function PUT(
 ) {
   try {
     const updates = await req.json();
+    if (updates.retailPrice !== undefined) updates.retailPrice = Number(updates.retailPrice);
+    if (updates.wholesalePrice !== undefined) updates.wholesalePrice = Number(updates.wholesalePrice);
     if (updates.price !== undefined) updates.price = Number(updates.price);
     if (updates.stock !== undefined) updates.stock = Number(updates.stock);
 

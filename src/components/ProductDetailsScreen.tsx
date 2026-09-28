@@ -21,6 +21,7 @@ import {
   Home,
   ShoppingBag,
   Grid,
+  Lock,
 } from "lucide-react";
 import Footer from "@/components/Footer";
 import CategoriesModal from "@/components/CategoriesModal";
@@ -32,6 +33,10 @@ interface ProductDetailsScreenProps {
   categories?: Category[];
   cartCount?: number;
   wishlist?: string[];
+  storeMode?: "retail" | "wholesale";
+  onSwitchStoreMode?: (mode: "retail" | "wholesale") => void;
+  isWholesaleLoggedIn?: boolean;
+  onOpenWholesaleLogin?: () => void;
   onToggleWishlist?: (productId: string) => void;
   onAddToCart?: (product: Product, quantity?: number) => void;
   onSelectProduct?: (product: Product) => void;
@@ -50,6 +55,10 @@ export default function ProductDetailsScreen({
   categories: initialCategories = [],
   cartCount: initialCartCount = 0,
   wishlist: initialWishlist = [],
+  storeMode = "retail",
+  onSwitchStoreMode,
+  isWholesaleLoggedIn = false,
+  onOpenWholesaleLogin,
   onToggleWishlist,
   onAddToCart,
   onSelectProduct,
@@ -203,8 +212,18 @@ export default function ProductDetailsScreen({
   // Add to cart handler
   const handleAddToCart = () => {
     if (!product) return;
+    if (storeMode === "wholesale" && !isWholesaleLoggedIn) {
+      if (onOpenWholesaleLogin) onOpenWholesaleLogin();
+      return;
+    }
+
+    const effectivePrice =
+      storeMode === "wholesale"
+        ? (product.wholesalePrice ?? product.price)
+        : (product.retailPrice ?? product.price);
+
     if (onAddToCart) {
-      onAddToCart(product, quantity);
+      onAddToCart({ ...product, price: effectivePrice }, quantity);
     } else {
       try {
         const saved = localStorage.getItem("fc_b2b_cart");
@@ -213,7 +232,7 @@ export default function ProductDetailsScreen({
         let updated;
         if (existing) {
           updated = cart.map((i: any) =>
-            i.id === product.id ? { ...i, quantity: i.quantity + quantity } : i
+            i.id === product.id ? { ...i, quantity: i.quantity + quantity, price: effectivePrice } : i
           );
         } else {
           updated = [
@@ -221,7 +240,7 @@ export default function ProductDetailsScreen({
             {
               id: product.id,
               name: product.name,
-              price: product.price,
+              price: effectivePrice,
               quantity,
               image: product.image,
             },
@@ -234,7 +253,11 @@ export default function ProductDetailsScreen({
         // ignore
       }
     }
-    setNotification(`Added ${quantity} ${product.name} to cart! (B2B Min: Rs 3000)`);
+    const noticeText =
+      storeMode === "wholesale"
+        ? `Added ${quantity} ${product.name} to cart! (Wholesale ₹${effectivePrice})`
+        : `Added ${quantity} ${product.name} to cart! (₹${effectivePrice})`;
+    setNotification(noticeText);
     setTimeout(() => setNotification(null), 3000);
   };
 
@@ -420,13 +443,26 @@ export default function ProductDetailsScreen({
         {/* 3. Price & Stock Details */}
         <div className="w-full rounded-[20px] border border-[#222222] bg-[#0d0d0d] p-4 flex items-center justify-between shadow-sm">
           <div>
-            <span className="text-[#8e8e93] text-xs block mb-0.5">B2B Wholesale Price</span>
-            <div className="flex items-baseline gap-1.5">
-              <span className="text-[#e5a93c] text-[26px] font-bold tracking-tight">
-                ₹{product.price}
-              </span>
-              <span className="text-[#8e8e93] text-xs">/ piece</span>
-            </div>
+            <span className="text-[#8e8e93] text-xs block mb-0.5">
+              {storeMode === "wholesale" ? "B2B Wholesale Price" : "Retail Price"}
+            </span>
+            {storeMode === "wholesale" && !isWholesaleLoggedIn ? (
+              <button
+                type="button"
+                onClick={onOpenWholesaleLogin}
+                className="px-3 py-1.5 rounded-xl bg-[#1c160c] border border-[#e5a93c] text-[#e5a93c] hover:bg-[#e5a93c] hover:text-black transition-all text-xs font-medium flex items-center gap-1.5 cursor-pointer shadow-sm mt-1"
+              >
+                <Lock className="w-3.5 h-3.5" />
+                <span>Login to View Wholesale Price</span>
+              </button>
+            ) : (
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-[#e5a93c] text-[26px] font-bold tracking-tight">
+                  ₹{storeMode === "wholesale" ? (product.wholesalePrice ?? product.price) : (product.retailPrice ?? product.price)}
+                </span>
+                <span className="text-[#8e8e93] text-xs">/ piece</span>
+              </div>
+            )}
           </div>
 
           <div className="text-right">
@@ -482,7 +518,9 @@ export default function ProductDetailsScreen({
           </div>
 
           <p className="text-[#8e8e93] text-[11.5px] text-center">
-            Wholesale minimum order requirement: ₹3,000 across cart.
+            {storeMode === "wholesale"
+              ? "Wholesale minimum order requirement: ₹3,000 across cart."
+              : "Retail Store: No minimum order requirement. Free delivery on orders over ₹999."}
           </p>
         </div>
 

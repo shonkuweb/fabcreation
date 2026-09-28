@@ -55,6 +55,9 @@ export default function AdminPage() {
     name: "",
     sku: "",
     price: "",
+    retailPrice: "",
+    wholesalePrice: "",
+    channel: "both" as "both" | "wholesale" | "retail",
     category: "",
     image: "",
     stock: "10",
@@ -226,10 +229,20 @@ export default function AdminPage() {
   // Save Product (Add or Edit)
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!productForm.name || !productForm.price) {
-      alert("Please fill in Product Name and Price");
+    const finalRetail = Number(productForm.retailPrice || productForm.price || 0);
+    const finalWholesale = Number(productForm.wholesalePrice || productForm.price || 0);
+
+    if (!productForm.name || (!finalRetail && !finalWholesale)) {
+      alert("Please fill in Product Name and Pricing (Retail and/or Wholesale)");
       return;
     }
+
+    const payload = {
+      ...productForm,
+      retailPrice: finalRetail,
+      wholesalePrice: finalWholesale,
+      price: finalRetail || finalWholesale,
+    };
 
     try {
       if (editingProduct) {
@@ -237,7 +250,7 @@ export default function AdminPage() {
         const res = await fetch(`/api/products/${editingProduct.id}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(productForm),
+          body: JSON.stringify(payload),
         });
         const data = await res.json();
         if (data.success) {
@@ -250,7 +263,7 @@ export default function AdminPage() {
         const res = await fetch("/api/products", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(productForm),
+          body: JSON.stringify(payload),
         });
         const data = await res.json();
         if (data.success) {
@@ -283,10 +296,15 @@ export default function AdminPage() {
   // Open Edit Modal
   const handleEditProduct = (p: Product) => {
     setEditingProduct(p);
+    const rPrice = p.retailPrice ?? p.price ?? "";
+    const wPrice = p.wholesalePrice ?? p.price ?? "";
     setProductForm({
       name: p.name,
       sku: p.sku,
-      price: String(p.price),
+      price: String(rPrice || wPrice || ""),
+      retailPrice: String(rPrice),
+      wholesalePrice: String(wPrice),
+      channel: p.channel || "both",
       category: p.category,
       image: p.image,
       stock: String(p.stock),
@@ -307,6 +325,9 @@ export default function AdminPage() {
       name: "",
       sku: `${Math.floor(100 + Math.random() * 900)}`,
       price: "",
+      retailPrice: "",
+      wholesalePrice: "",
+      channel: "both",
       category: categories[0]?.name || "",
       image: "",
       stock: "10",
@@ -641,7 +662,8 @@ export default function AdminPage() {
                       <th className="py-3 px-4">Item</th>
                       <th className="py-3 px-3">SKU</th>
                       <th className="py-3 px-3">Category</th>
-                      <th className="py-3 px-3">B2B Price</th>
+                      <th className="py-3 px-3">Channel</th>
+                      <th className="py-3 px-3">Pricing (Retail / B2B)</th>
                       <th className="py-3 px-3">Stock</th>
                       <th className="py-3 px-3 text-right">Actions</th>
                     </tr>
@@ -676,9 +698,35 @@ export default function AdminPage() {
                           </span>
                         </td>
 
-                        {/* Price */}
-                        <td className="py-3 px-3 text-[#f5c767] font-semibold text-[13px]">
-                          ₹{p.price}
+                        {/* Channel Visibility Badge */}
+                        <td className="py-3 px-3">
+                          {p.channel === "retail" ? (
+                            <span className="px-2 py-0.5 rounded-full border border-emerald-500/40 bg-emerald-950/40 text-emerald-300 text-[10.5px] font-medium whitespace-nowrap">
+                              Retail Only
+                            </span>
+                          ) : p.channel === "wholesale" ? (
+                            <span className="px-2 py-0.5 rounded-full border border-sky-500/40 bg-sky-950/40 text-sky-300 text-[10.5px] font-medium whitespace-nowrap">
+                              Wholesale Only
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded-full border border-[#d69e3d]/40 bg-[#241a0c] text-[#f5c767] text-[10.5px] font-medium whitespace-nowrap">
+                              Both Channels
+                            </span>
+                          )}
+                        </td>
+
+                        {/* Pricing (Retail & Wholesale) */}
+                        <td className="py-3 px-3">
+                          <div className="flex flex-col gap-0.5 whitespace-nowrap">
+                            <div className="flex items-center gap-1.5 text-[11.5px]">
+                              <span className="text-[#777]">Retail:</span>
+                              <span className="text-white font-medium">₹{p.retailPrice ?? p.price}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 text-[11.5px]">
+                              <span className="text-[#777]">B2B:</span>
+                              <span className="text-[#f5c767] font-semibold">₹{p.wholesalePrice ?? p.price}</span>
+                            </div>
+                          </div>
                         </td>
 
                         {/* Stock */}
@@ -1089,54 +1137,104 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              {/* Price & Category */}
+              {/* Channel Availability (Both / Wholesale / Retail) */}
+              <div className="space-y-1.5">
+                <label className="block text-[#a0a0a0] font-medium text-xs">
+                  Store Channel Availability *
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { id: "both", label: "Both Channels", sub: "Retail & Wholesale" },
+                    { id: "wholesale", label: "Wholesale Only", sub: "B2B with login" },
+                    { id: "retail", label: "Retail Only", sub: "Public (no login)" },
+                  ].map((ch) => (
+                    <button
+                      key={ch.id}
+                      type="button"
+                      onClick={() => setProductForm({ ...productForm, channel: ch.id as any })}
+                      className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                        productForm.channel === ch.id
+                          ? "border-[#e5a93c] bg-[#221808] text-white shadow-sm ring-1 ring-[#e5a93c]"
+                          : "border-[#242424] bg-[#121212] text-[#8e8e93] hover:border-[#383838]"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-0.5">
+                        <span className="font-semibold text-[11.5px] text-white">{ch.label}</span>
+                        {productForm.channel === ch.id && (
+                          <span className="w-2 h-2 rounded-full bg-[#e5a93c]" />
+                        )}
+                      </div>
+                      <span className="text-[10px] text-[#777]">{ch.sub}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Dual Price Boxes: Retail Price & Wholesale Price */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[#a0a0a0] mb-1 font-medium">B2B Price (₹) *</label>
+                  <label className="block text-[#a0a0a0] mb-1 font-medium">
+                    Retail Price (₹) *
+                  </label>
                   <input
                     type="number"
-                    required
-                    value={productForm.price}
-                    onChange={(e) => setProductForm({ ...productForm, price: e.target.value })}
-                    placeholder="e.g. 80"
+                    value={productForm.retailPrice}
+                    onChange={(e) => setProductForm({ ...productForm, retailPrice: e.target.value })}
+                    placeholder="e.g. 299"
                     className="w-full h-10 rounded-xl bg-[#141414] border border-[#262626] px-3 text-white outline-none focus:border-[#e5a93c]"
                   />
+                  <p className="text-[10.5px] text-[#666] mt-0.5">Public price (No login)</p>
                 </div>
 
                 <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-[#a0a0a0] font-medium">Category *</label>
-                    <button
-                      type="button"
-                      onClick={() => setIsCustomCategory(!isCustomCategory)}
-                      className="text-[11px] text-[#e5a93c] hover:underline cursor-pointer"
-                    >
-                      {isCustomCategory ? "Select existing" : "+ New category"}
-                    </button>
-                  </div>
-                  {isCustomCategory || categories.length === 0 ? (
-                    <input
-                      type="text"
-                      required
-                      value={productForm.category}
-                      onChange={(e) => setProductForm({ ...productForm, category: e.target.value })}
-                      placeholder="Type category (e.g. Chains, Rings)"
-                      className="w-full h-10 rounded-xl bg-[#141414] border border-[#262626] px-3 text-white outline-none focus:border-[#e5a93c]"
-                    />
-                  ) : (
-                    <select
-                      value={productForm.category}
-                      onChange={(e) => setProductForm({ ...productForm, category: e.target.value })}
-                      className="w-full h-10 rounded-xl bg-[#141414] border border-[#262626] px-3 text-white outline-none focus:border-[#e5a93c] cursor-pointer"
-                    >
-                      {categories.map((c) => (
-                        <option key={c.id} value={c.name}>
-                          {c.name}
-                        </option>
-                      ))}
-                    </select>
-                  )}
+                  <label className="block text-[#a0a0a0] mb-1 font-medium">
+                    Wholesale Price (₹) *
+                  </label>
+                  <input
+                    type="number"
+                    value={productForm.wholesalePrice}
+                    onChange={(e) => setProductForm({ ...productForm, wholesalePrice: e.target.value })}
+                    placeholder="e.g. 80"
+                    className="w-full h-10 rounded-xl bg-[#141414] border border-[#262626] px-3 text-white outline-none focus:border-[#e5a93c]"
+                  />
+                  <p className="text-[10.5px] text-[#666] mt-0.5">B2B price (OTP login)</p>
                 </div>
+              </div>
+
+              {/* Category */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-[#a0a0a0] font-medium">Category *</label>
+                  <button
+                    type="button"
+                    onClick={() => setIsCustomCategory(!isCustomCategory)}
+                    className="text-[11px] text-[#e5a93c] hover:underline cursor-pointer"
+                  >
+                    {isCustomCategory ? "Select existing" : "+ New category"}
+                  </button>
+                </div>
+                {isCustomCategory || categories.length === 0 ? (
+                  <input
+                    type="text"
+                    required
+                    value={productForm.category}
+                    onChange={(e) => setProductForm({ ...productForm, category: e.target.value })}
+                    placeholder="Type category (e.g. Chains, Rings)"
+                    className="w-full h-10 rounded-xl bg-[#141414] border border-[#262626] px-3 text-white outline-none focus:border-[#e5a93c]"
+                  />
+                ) : (
+                  <select
+                    value={productForm.category}
+                    onChange={(e) => setProductForm({ ...productForm, category: e.target.value })}
+                    className="w-full h-10 rounded-xl bg-[#141414] border border-[#262626] px-3 text-white outline-none focus:border-[#e5a93c] cursor-pointer"
+                  >
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.name}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
 
               {/* Stock & Subtitle */}

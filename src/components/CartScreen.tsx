@@ -17,12 +17,17 @@ import {
   CheckCircle,
 } from "lucide-react";
 import CategoriesModal from "@/components/CategoriesModal";
+import StoreModeToggle from "@/components/StoreModeToggle";
 import type { OrderItem, Category } from "@/lib/db";
 
 interface CartScreenProps {
   cart?: OrderItem[];
   userMobile?: string;
   categories?: Category[];
+  storeMode?: "retail" | "wholesale";
+  onSwitchStoreMode?: (mode: "retail" | "wholesale") => void;
+  isWholesaleLoggedIn?: boolean;
+  onOpenWholesaleLogin?: () => void;
   onUpdateQuantity?: (id: string, quantity: number) => void;
   onRemoveItem?: (id: string) => void;
   onClearCart?: () => void;
@@ -37,6 +42,10 @@ export default function CartScreen({
   cart: initialCart = [],
   userMobile = "6289417338",
   categories: initialCategories = [],
+  storeMode = "retail",
+  onSwitchStoreMode,
+  isWholesaleLoggedIn = false,
+  onOpenWholesaleLogin,
   onUpdateQuantity,
   onRemoveItem,
   onClearCart,
@@ -155,13 +164,13 @@ export default function CartScreen({
   };
 
   const handleCheckout = async () => {
-    if (subtotal < b2bMin) {
-      setNotification(`Minimum B2B order is ₹3,000. Please add ₹${remaining} more.`);
+    if (storeMode === "wholesale" && subtotal < b2bMin) {
+      setNotification(`Minimum B2B wholesale order is ₹3,000. Please add ₹${remaining} more.`);
       setTimeout(() => setNotification(null), 3500);
       return;
     }
 
-    const activeMobile = userMobile || (typeof window !== "undefined" ? localStorage.getItem("fc_user_mobile") : null) || "6289417338";
+    const activeMobile = userMobile || (typeof window !== "undefined" ? localStorage.getItem("fc_user_mobile") : null) || "Retail Buyer";
 
     setIsCheckingOut(true);
     try {
@@ -218,7 +227,9 @@ export default function CartScreen({
         {/* Top Announcement Bar */}
         <div className="w-full -mx-4 py-2 bg-[#000000] border-b border-[#141414] text-center mb-3">
           <p className="text-[#e5a93c] text-[12.5px] font-medium tracking-wide">
-            B2B Minimum Order: Rs 3000
+            {storeMode === "wholesale"
+              ? "B2B Wholesale • Minimum Order: Rs 3,000"
+              : "Retail Store • Free Shipping Over ₹999 • No Minimum Order"}
           </p>
         </div>
 
@@ -408,28 +419,43 @@ export default function CartScreen({
         {/* 4. Minimum Order Progress Bar & Action (Only if cart has items) */}
         {cart.length > 0 && (
           <div className="w-full bg-[#0d0d0d] border border-[#222222] rounded-[22px] p-4 sm:p-5 mb-4 shadow-md space-y-3.5">
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-[#8e8e93]">B2B Order Minimum Progress</span>
-                <span className="text-[#e5a93c] font-semibold">₹{subtotal} / ₹3,000</span>
+            {storeMode === "wholesale" ? (
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-[#8e8e93]">B2B Order Minimum Progress</span>
+                  <span className="text-[#e5a93c] font-semibold">₹{subtotal} / ₹3,000</span>
+                </div>
+                <div className="w-full h-2 rounded-full bg-[#1c1c1c] overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-[#d99726] to-[#f5c767] rounded-full transition-all duration-300"
+                    style={{ width: `${progressPercent}%` }}
+                  />
+                </div>
+                {subtotal < b2bMin ? (
+                  <p className="text-[#8e8e93] text-[11.5px]">
+                    Add <span className="text-[#e5a93c] font-semibold">₹{remaining}</span> more to meet wholesale minimum.
+                  </p>
+                ) : (
+                  <p className="text-emerald-400 text-[11.5px] font-medium flex items-center gap-1">
+                    <Check className="w-3.5 h-3.5" />
+                    <span>Wholesale minimum met! Ready to order.</span>
+                  </p>
+                )}
               </div>
-              <div className="w-full h-2 rounded-full bg-[#1c1c1c] overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-[#d99726] to-[#f5c767] rounded-full transition-all duration-300"
-                  style={{ width: `${progressPercent}%` }}
-                />
-              </div>
-              {subtotal < b2bMin ? (
+            ) : (
+              <div className="space-y-1">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-[#8e8e93]">Retail Shopping</span>
+                  <span className="text-emerald-400 font-medium flex items-center gap-1">
+                    <Check className="w-3.5 h-3.5" />
+                    <span>No Minimum Order</span>
+                  </span>
+                </div>
                 <p className="text-[#8e8e93] text-[11.5px]">
-                  Add <span className="text-[#e5a93c] font-semibold">₹{remaining}</span> more to meet wholesale minimum.
+                  Order any quantity with standard shipping. Free delivery above ₹999.
                 </p>
-              ) : (
-                <p className="text-emerald-400 text-[11.5px] font-medium flex items-center gap-1">
-                  <Check className="w-3.5 h-3.5" />
-                  <span>Wholesale minimum met! Ready to order.</span>
-                </p>
-              )}
-            </div>
+              </div>
+            )}
 
             {/* Proceed to Checkout Button */}
             <button
@@ -437,7 +463,7 @@ export default function CartScreen({
               onClick={handleCheckout}
               disabled={isCheckingOut}
               className={`w-full h-[50px] rounded-[14px] font-semibold text-[14.5px] flex items-center justify-center gap-2 shadow-lg transition-all cursor-pointer ${
-                subtotal >= b2bMin
+                storeMode === "retail" || subtotal >= b2bMin
                   ? "bg-[#f0a939] hover:bg-[#f5b842] active:scale-[0.99] text-[#111111]"
                   : "bg-[#1c160c] border border-[#e5a93c]/50 text-[#e5a93c] hover:bg-[#e5a93c] hover:text-black"
               }`}
@@ -445,7 +471,7 @@ export default function CartScreen({
               {isCheckingOut ? (
                 <div className="flex items-center space-x-2">
                   <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
-                  <span>Placing B2B Order...</span>
+                  <span>Placing Order...</span>
                 </div>
               ) : (
                 <>

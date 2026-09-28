@@ -6,6 +6,9 @@ export interface Product {
   name: string;
   sku: string;
   price: number;
+  retailPrice?: number;
+  wholesalePrice?: number;
+  channel?: "both" | "wholesale" | "retail";
   category: string;
   image: string;
   stock: number;
@@ -88,8 +91,20 @@ function getDb(): DatabaseData {
   try {
     const raw = fs.readFileSync(DB_FILE, "utf-8");
     const parsed = JSON.parse(raw);
+    const rawProducts = Array.isArray(parsed.products) ? parsed.products : [];
+    const normalizedProducts: Product[] = rawProducts.map((p: any) => {
+      const rPrice = typeof p.retailPrice === "number" ? p.retailPrice : (typeof p.price === "number" ? p.price : 0);
+      const wPrice = typeof p.wholesalePrice === "number" ? p.wholesalePrice : (typeof p.price === "number" ? p.price : 0);
+      return {
+        ...p,
+        channel: p.channel || "both",
+        retailPrice: rPrice,
+        wholesalePrice: wPrice,
+        price: rPrice || wPrice || 0,
+      };
+    });
     cachedDb = {
-      products: Array.isArray(parsed.products) ? parsed.products : [],
+      products: normalizedProducts,
       categories: Array.isArray(parsed.categories) ? parsed.categories : [],
       orders: Array.isArray(parsed.orders) ? parsed.orders : [],
     };
@@ -138,8 +153,14 @@ export function getProductById(id: string): Product | undefined {
 
 export function createProduct(productData: Omit<Product, "id" | "createdAt">): Product {
   const db = getDb();
+  const retailPrice = Number(productData.retailPrice ?? productData.price ?? 0);
+  const wholesalePrice = Number(productData.wholesalePrice ?? productData.price ?? retailPrice ?? 0);
   const newProduct: Product = {
     ...productData,
+    retailPrice,
+    wholesalePrice,
+    channel: productData.channel || "both",
+    price: retailPrice || wholesalePrice,
     id: `prod-${Date.now()}`,
     createdAt: new Date().toISOString(),
   };
@@ -153,7 +174,19 @@ export function updateProduct(id: string, updates: Partial<Product>): Product | 
   const index = db.products.findIndex((p) => p.id === id);
   if (index === -1) return null;
 
-  db.products[index] = { ...db.products[index], ...updates };
+  const current = db.products[index];
+  const nextRetail = updates.retailPrice !== undefined ? Number(updates.retailPrice) : current.retailPrice;
+  const nextWholesale = updates.wholesalePrice !== undefined ? Number(updates.wholesalePrice) : current.wholesalePrice;
+  const nextPrice = nextRetail ?? nextWholesale ?? updates.price ?? current.price;
+
+  db.products[index] = {
+    ...current,
+    ...updates,
+    retailPrice: nextRetail,
+    wholesalePrice: nextWholesale,
+    price: nextPrice,
+    channel: updates.channel || current.channel || "both",
+  };
   saveDb(db);
   return db.products[index];
 }

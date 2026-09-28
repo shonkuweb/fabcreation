@@ -39,7 +39,9 @@ export interface OrderItem {
 export interface Order {
   id: string;
   orderNumber: string;
+  orderType: "wholesale" | "retail";
   customerMobile: string;
+  customerName?: string;
   items: OrderItem[];
   subtotal: number;
   gst: number;
@@ -49,10 +51,54 @@ export interface Order {
   createdAt: string;
 }
 
+export interface UserAddress {
+  id: string;
+  businessName?: string;
+  contactName: string;
+  phone: string;
+  addressLine: string;
+  city: string;
+  state: string;
+  pincode: string;
+  gstin?: string;
+}
+
+export interface UserAccount {
+  id: string;
+  accountType: "wholesale" | "retail";
+  mobile: string;
+  name: string;
+  email?: string;
+  companyName?: string;
+  gstin?: string;
+  addresses: UserAddress[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DbCart {
+  id: string;
+  accountType: "wholesale" | "retail";
+  userKey: string; // mobile or guest id
+  items: OrderItem[];
+  updatedAt: string;
+}
+
+export interface DbWishlist {
+  id: string;
+  accountType: "wholesale" | "retail";
+  userKey: string;
+  productIds: string[];
+  updatedAt: string;
+}
+
 export interface DatabaseData {
   products: Product[];
   categories: Category[];
   orders: Order[];
+  users: UserAccount[];
+  carts: DbCart[];
+  wishlists: DbWishlist[];
 }
 
 const DB_DIR = process.env.DATABASE_DIR
@@ -60,13 +106,14 @@ const DB_DIR = process.env.DATABASE_DIR
   : path.resolve(process.cwd(), "data");
 const DB_FILE = path.join(DB_DIR, "database.json");
 
-const R2_BASE = "https://pub-ce8688bc6c654bcfb99716f7c9373bcd.r2.dev/fab-creations";
-
-// Initial Seed Data (starts empty with no default hardcoded data)
+// Initial Seed Data
 const defaultData: DatabaseData = {
   products: [],
   categories: [],
   orders: [],
+  users: [],
+  carts: [],
+  wishlists: [],
 };
 
 // In-memory RAM cache for 0ms read operations
@@ -93,8 +140,18 @@ function getDb(): DatabaseData {
     const parsed = JSON.parse(raw);
     const rawProducts = Array.isArray(parsed.products) ? parsed.products : [];
     const normalizedProducts: Product[] = rawProducts.map((p: any) => {
-      const rPrice = typeof p.retailPrice === "number" ? p.retailPrice : (typeof p.price === "number" ? p.price : 0);
-      const wPrice = typeof p.wholesalePrice === "number" ? p.wholesalePrice : (typeof p.price === "number" ? p.price : 0);
+      const rPrice =
+        typeof p.retailPrice === "number"
+          ? p.retailPrice
+          : typeof p.price === "number"
+          ? p.price
+          : 0;
+      const wPrice =
+        typeof p.wholesalePrice === "number"
+          ? p.wholesalePrice
+          : typeof p.price === "number"
+          ? p.price
+          : 0;
       return {
         ...p,
         channel: p.channel || "both",
@@ -103,10 +160,20 @@ function getDb(): DatabaseData {
         price: rPrice || wPrice || 0,
       };
     });
+
+    const rawOrders = Array.isArray(parsed.orders) ? parsed.orders : [];
+    const normalizedOrders: Order[] = rawOrders.map((o: any) => ({
+      ...o,
+      orderType: o.orderType || "retail",
+    }));
+
     cachedDb = {
       products: normalizedProducts,
       categories: Array.isArray(parsed.categories) ? parsed.categories : [],
-      orders: Array.isArray(parsed.orders) ? parsed.orders : [],
+      orders: normalizedOrders,
+      users: Array.isArray(parsed.users) ? parsed.users : [],
+      carts: Array.isArray(parsed.carts) ? parsed.carts : [],
+      wishlists: Array.isArray(parsed.wishlists) ? parsed.wishlists : [],
     };
     return cachedDb;
   } catch {
@@ -114,6 +181,9 @@ function getDb(): DatabaseData {
       products: [],
       categories: [],
       orders: [],
+      users: [],
+      carts: [],
+      wishlists: [],
     };
     return cachedDb;
   }
@@ -129,7 +199,6 @@ function saveDb(data: DatabaseData): void {
     fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), "utf-8");
   } catch (err) {
     console.error(`[DB Error] Failed to write database to ${DB_FILE}:`, err);
-    // Attempt permission fix and retry once
     try {
       if (fs.existsSync(DB_FILE)) {
         fs.chmodSync(DB_FILE, 0o666);
@@ -137,7 +206,6 @@ function saveDb(data: DatabaseData): void {
       fs.writeFileSync(DB_FILE, JSON.stringify(data, null, 2), "utf-8");
     } catch (retryErr) {
       console.warn(`[DB Warning] Retained changes in RAM cache due to disk write issue:`, retryErr);
-      // Do not re-throw error so the user request (checkout/product save) still succeeds smoothly
     }
   }
 }
@@ -239,8 +307,15 @@ export function deleteCategory(id: string): boolean {
 }
 
 // ---------------- ORDERS ----------------
-export function getOrders(): Order[] {
-  return getDb().orders;
+export function getOrders(orderType?: "wholesale" | "retail", customerMobile?: string): Order[] {
+  let list = getDb().orders;
+  if (orderType) {
+    list = list.filter((o) => o.orderType === orderType);
+  }
+  if (customerMobile) {
+    list = list.filter((o) => o.customerMobile === customerMobile);
+  }
+  return list;
 }
 
 export function createOrder(orderData: Omit<Order, "id" | "orderNumber" | "createdAt">): Order {
@@ -248,6 +323,7 @@ export function createOrder(orderData: Omit<Order, "id" | "orderNumber" | "creat
   const orderNumber = `FC-${1000 + db.orders.length + 1}`;
   const newOrder: Order = {
     ...orderData,
+    orderType: orderData.orderType || "retail",
     id: `ord-${Date.now()}`,
     orderNumber,
     createdAt: new Date().toISOString(),
@@ -279,4 +355,168 @@ export function deleteOrder(id: string): boolean {
     return true;
   }
   return false;
+}
+
+// ---------------- USERS & ACCOUNTS (DATABASE-BACKED) ----------------
+export function getUserAccount(
+  accountType: "wholesale" | "retail",
+  mobile: string
+): UserAccount | null {
+  const db = getDb();
+  const cleanMobile = mobile.trim();
+  const user = db.users.find(
+    (u) => u.accountType === accountType && u.mobile === cleanMobile
+  );
+  return user || null;
+}
+
+export function upsertUserAccount(
+  accountType: "wholesale" | "retail",
+  mobile: string,
+  data: Partial<UserAccount>
+): UserAccount {
+  const db = getDb();
+  const cleanMobile = mobile.trim();
+  const index = db.users.findIndex(
+    (u) => u.accountType === accountType && u.mobile === cleanMobile
+  );
+  const now = new Date().toISOString();
+
+  if (index > -1) {
+    const existing = db.users[index];
+    const updated: UserAccount = {
+      ...existing,
+      ...data,
+      accountType,
+      mobile: cleanMobile,
+      updatedAt: now,
+    };
+    db.users[index] = updated;
+    saveDb(db);
+    return updated;
+  } else {
+    const newUser: UserAccount = {
+      id: `usr-${accountType}-${Date.now()}`,
+      accountType,
+      mobile: cleanMobile,
+      name: data.name || (accountType === "wholesale" ? "Wholesale Partner" : "Retail Customer"),
+      email: data.email || "",
+      companyName: data.companyName || "",
+      gstin: data.gstin || "",
+      addresses: data.addresses || [],
+      createdAt: now,
+      updatedAt: now,
+    };
+    db.users.push(newUser);
+    saveDb(db);
+    return newUser;
+  }
+}
+
+export function getUserAccounts(accountType?: "wholesale" | "retail"): UserAccount[] {
+  const list = getDb().users;
+  if (accountType) {
+    return list.filter((u) => u.accountType === accountType);
+  }
+  return list;
+}
+
+// ---------------- CARTS (DATABASE-BACKED) ----------------
+export function getDbCart(
+  accountType: "wholesale" | "retail",
+  userKey: string
+): OrderItem[] {
+  const db = getDb();
+  const key = (userKey || "guest").trim();
+  const found = db.carts.find(
+    (c) => c.accountType === accountType && c.userKey === key
+  );
+  return found ? found.items : [];
+}
+
+export function saveDbCart(
+  accountType: "wholesale" | "retail",
+  userKey: string,
+  items: OrderItem[]
+): DbCart {
+  const db = getDb();
+  const key = (userKey || "guest").trim();
+  const now = new Date().toISOString();
+  const index = db.carts.findIndex(
+    (c) => c.accountType === accountType && c.userKey === key
+  );
+
+  if (index > -1) {
+    db.carts[index].items = items;
+    db.carts[index].updatedAt = now;
+    saveDb(db);
+    return db.carts[index];
+  } else {
+    const newCart: DbCart = {
+      id: `cart-${accountType}-${Date.now()}`,
+      accountType,
+      userKey: key,
+      items,
+      updatedAt: now,
+    };
+    db.carts.push(newCart);
+    saveDb(db);
+    return newCart;
+  }
+}
+
+export function clearDbCart(
+  accountType: "wholesale" | "retail",
+  userKey: string
+): void {
+  const db = getDb();
+  const key = (userKey || "guest").trim();
+  db.carts = db.carts.filter(
+    (c) => !(c.accountType === accountType && c.userKey === key)
+  );
+  saveDb(db);
+}
+
+// ---------------- WISHLISTS (DATABASE-BACKED) ----------------
+export function getDbWishlist(
+  accountType: "wholesale" | "retail",
+  userKey: string
+): string[] {
+  const db = getDb();
+  const key = (userKey || "guest").trim();
+  const found = db.wishlists.find(
+    (w) => w.accountType === accountType && w.userKey === key
+  );
+  return found ? found.productIds : [];
+}
+
+export function saveDbWishlist(
+  accountType: "wholesale" | "retail",
+  userKey: string,
+  productIds: string[]
+): DbWishlist {
+  const db = getDb();
+  const key = (userKey || "guest").trim();
+  const now = new Date().toISOString();
+  const index = db.wishlists.findIndex(
+    (w) => w.accountType === accountType && w.userKey === key
+  );
+
+  if (index > -1) {
+    db.wishlists[index].productIds = productIds;
+    db.wishlists[index].updatedAt = now;
+    saveDb(db);
+    return db.wishlists[index];
+  } else {
+    const newW: DbWishlist = {
+      id: `wish-${accountType}-${Date.now()}`,
+      accountType,
+      userKey: key,
+      productIds,
+      updatedAt: now,
+    };
+    db.wishlists.push(newW);
+    saveDb(db);
+    return newW;
+  }
 }

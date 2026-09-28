@@ -31,10 +31,21 @@ import {
 } from "lucide-react";
 import CategoriesModal from "@/components/CategoriesModal";
 import type { Order, Category, Product } from "@/lib/db";
+import {
+  getWishlistItems,
+  toggleWishlistByMode,
+  getCartCount,
+  addToCartByMode,
+  getAccountProfile,
+  saveAccountProfile,
+  getAccountAddresses,
+  saveAccountAddresses,
+  fetchAccountProfileFromServer,
+} from "@/lib/cart";
 
 export interface UserAddress {
   id: string;
-  businessName: string;
+  businessName?: string;
   contactName: string;
   phone: string;
   addressLine: string;
@@ -50,6 +61,10 @@ interface AccountScreenProps {
   categories?: Category[];
   wishlist?: string[];
   wishlistProducts?: Product[];
+  storeMode?: "retail" | "wholesale";
+  onSwitchStoreMode?: (mode: "retail" | "wholesale") => void;
+  isWholesaleLoggedIn?: boolean;
+  onOpenWholesaleLogin?: () => void;
   onToggleWishlist?: (productId: string) => void;
   onAddToCart?: (product: Product, quantity?: number) => void;
   onSelectProduct?: (product: Product) => void;
@@ -66,6 +81,10 @@ export default function AccountScreen({
   categories: initialCategories = [],
   wishlist: initialWishlist = [],
   wishlistProducts: initialWishlistProducts = [],
+  storeMode = "retail",
+  onSwitchStoreMode,
+  isWholesaleLoggedIn = false,
+  onOpenWholesaleLogin,
   onToggleWishlist,
   onAddToCart,
   onSelectProduct,
@@ -103,12 +122,15 @@ export default function AccountScreen({
     else router.push("/cart");
   };
 
-  // Profile state with localStorage persistence
+  // Profile state with database & storage persistence
+  const [orderChannelTab, setOrderChannelTab] = useState<"wholesale" | "retail">(storeMode);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
+  const [companyName, setCompanyName] = useState("");
+  const [gstin, setGstin] = useState("");
 
-  // Addresses state with localStorage persistence
+  // Addresses state with database & storage persistence
   const [addresses, setAddresses] = useState<UserAddress[]>([]);
   const [isAddAddressOpen, setIsAddAddressOpen] = useState(false);
   const [addressForm, setAddressForm] = useState({
@@ -127,23 +149,32 @@ export default function AccountScreen({
     setTimeout(() => setNotification(null), 3000);
   };
 
-  // Load profile & addresses from localStorage
+  // Sync orderChannelTab when storeMode changes
   useEffect(() => {
-    try {
-      const savedProfile = localStorage.getItem(`fc_profile_${userMobile}`);
-      if (savedProfile) {
-        const parsed = JSON.parse(savedProfile);
-        setFullName(parsed.fullName || "");
-        setEmail(parsed.email || "");
+    setOrderChannelTab(storeMode);
+  }, [storeMode]);
+
+  // Load profile & addresses from database & storage
+  useEffect(() => {
+    const prof = getAccountProfile(storeMode);
+    setFullName(prof.name);
+    setEmail(prof.email);
+    setCompanyName(prof.companyName || "");
+    setGstin(prof.gstin || "");
+    setAddresses(getAccountAddresses(storeMode));
+    setWishlist(getWishlistItems(storeMode));
+    setCartCount(getCartCount(storeMode));
+
+    fetchAccountProfileFromServer(storeMode).then((u) => {
+      if (u) {
+        if (u.name) setFullName(u.name);
+        if (u.email) setEmail(u.email);
+        if (u.companyName) setCompanyName(u.companyName);
+        if (u.gstin) setGstin(u.gstin);
+        if (Array.isArray(u.addresses)) setAddresses(u.addresses);
       }
-      const savedAddresses = localStorage.getItem(`fc_addresses_${userMobile}`);
-      if (savedAddresses) {
-        setAddresses(JSON.parse(savedAddresses));
-      }
-    } catch {
-      // ignore
-    }
-  }, [userMobile]);
+    });
+  }, [storeMode, userMobile]);
 
   // Load categories, cartCount, wishlist, and orders
   useEffect(() => {
@@ -159,24 +190,11 @@ export default function AccountScreen({
         .catch(console.error);
     }
 
-    // Cart Count
-    try {
-      const savedCart = localStorage.getItem("fc_b2b_cart");
-      if (savedCart) {
-        const parsed = JSON.parse(savedCart);
-        setCartCount(parsed.reduce((s: number, i: any) => s + (i.quantity || 1), 0));
-      }
-    } catch {}
+    setCartCount(getCartCount(storeMode));
 
     // Wishlist IDs & Products
-    let ids = initialWishlist;
-    try {
-      const savedW = localStorage.getItem("fc_b2b_wishlist");
-      if (savedW) {
-        ids = JSON.parse(savedW);
-        setWishlist(ids);
-      }
-    } catch {}
+    const ids = getWishlistItems(storeMode);
+    setWishlist(ids);
 
     fetch("/api/products", { cache: "no-store" })
       .then((r) => r.json())
@@ -190,7 +208,7 @@ export default function AccountScreen({
 
     // Orders
     fetchOrders();
-  }, [userMobile, initialCategories, initialWishlist]);
+  }, [storeMode, userMobile, initialCategories]);
 
   // Fetch real orders from API
   const fetchOrders = async () => {
@@ -211,49 +229,25 @@ export default function AccountScreen({
     }
   };
 
+  const retailOrders = orders.filter((o) => (o.orderType || "retail") === "retail");
+  const wholesaleOrders = orders.filter((o) => o.orderType === "wholesale");
+  const displayedOrders = orderChannelTab === "wholesale" ? wholesaleOrders : retailOrders;
+
   const handleToggleWishlist = (productId: string) => {
     onToggleWishlist?.(productId);
-    const updatedIds = wishlist.filter((id) => id !== productId);
-    setWishlist(updatedIds);
-    setWishlistProducts((prev) => prev.filter((p) => p.id !== productId));
-    try {
-      localStorage.setItem("fc_b2b_wishlist", JSON.stringify(updatedIds));
-      window.dispatchEvent(new Event("wishlist_updated"));
-    } catch {}
-    showNotification("Removed from wishlist.");
+    const { items } = toggleWishlistByMode(storeMode, productId);
+    setWishlist(items);
+    setWishlistProducts((prev) => prev.filter((p) => items.includes(p.id)));
+    showNotification("Wishlist updated.");
   };
 
   const handleAddToCart = (product: Product) => {
-    if (onAddToCart) {
-      onAddToCart(product, 1);
-    } else {
-      try {
-        const saved = localStorage.getItem("fc_b2b_cart");
-        const cart = saved ? JSON.parse(saved) : [];
-        const existing = cart.find((i: any) => i.id === product.id);
-        let updated;
-        if (existing) {
-          updated = cart.map((i: any) =>
-            i.id === product.id ? { ...i, quantity: i.quantity + 1 } : i
-          );
-        } else {
-          updated = [
-            ...cart,
-            {
-              id: product.id,
-              name: product.name,
-              price: product.price,
-              quantity: 1,
-              image: product.image,
-            },
-          ];
-        }
-        localStorage.setItem("fc_b2b_cart", JSON.stringify(updated));
-        setCartCount(updated.reduce((s: number, i: any) => s + i.quantity, 0));
-        window.dispatchEvent(new Event("cart_updated"));
-      } catch {}
-    }
-    showNotification(`Added ${product.name} to cart!`);
+    const { items, effectivePrice } = addToCartByMode(product, storeMode, 1);
+    setCartCount(items.reduce((s, i) => s + i.quantity, 0));
+    onAddToCart?.({ ...product, price: effectivePrice }, 1);
+    showNotification(
+      `Added ${product.name} to ${storeMode === "wholesale" ? "Wholesale" : "Retail"} Cart!`
+    );
   };
 
   const handleSelectProduct = (product: Product) => {
@@ -267,25 +261,23 @@ export default function AccountScreen({
     }
   };
 
-  // Save profile
+  // Save profile to database
   const handleSaveProfile = () => {
-    try {
-      localStorage.setItem(
-        `fc_profile_${userMobile}`,
-        JSON.stringify({ fullName, email })
-      );
-      setIsEditingProfile(false);
-      showNotification("Profile updated successfully!");
-    } catch {
-      showNotification("Failed to save profile.");
-    }
+    saveAccountProfile(storeMode, {
+      name: fullName,
+      email,
+      companyName,
+      gstin,
+    });
+    setIsEditingProfile(false);
+    showNotification("Profile updated and saved!");
   };
 
-  // Save Address
+  // Save Address to database
   const handleSaveAddress = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!addressForm.businessName || !addressForm.addressLine || !addressForm.pincode) {
-      alert("Please fill in Business Name, Address and Pincode");
+    if (!addressForm.contactName || !addressForm.addressLine || !addressForm.pincode) {
+      alert("Please fill in Contact Name, Address Line and Pincode");
       return;
     }
 
@@ -296,11 +288,7 @@ export default function AccountScreen({
 
     const updated = [...addresses, newAddr];
     setAddresses(updated);
-    try {
-      localStorage.setItem(`fc_addresses_${userMobile}`, JSON.stringify(updated));
-    } catch {
-      // ignore
-    }
+    saveAccountAddresses(storeMode, updated);
 
     setIsAddAddressOpen(false);
     setAddressForm({
@@ -313,18 +301,14 @@ export default function AccountScreen({
       pincode: "",
       gstin: "",
     });
-    showNotification("Address added successfully!");
+    showNotification("Address added and saved!");
   };
 
-  // Delete Address
+  // Delete Address from database
   const handleDeleteAddress = (id: string) => {
     const updated = addresses.filter((a) => a.id !== id);
     setAddresses(updated);
-    try {
-      localStorage.setItem(`fc_addresses_${userMobile}`, JSON.stringify(updated));
-    } catch {
-      // ignore
-    }
+    saveAccountAddresses(storeMode, updated);
     showNotification("Address removed.");
   };
 
@@ -562,7 +546,7 @@ export default function AccountScreen({
                     My Orders
                   </h4>
                   <p className="text-[#8e8e93] text-[12px] pt-0.5">
-                    {orders.length} {orders.length === 1 ? "order" : "orders"} placed
+                    {retailOrders.length} Retail · {wholesaleOrders.length} Wholesale
                   </p>
                 </div>
               </div>
@@ -575,20 +559,74 @@ export default function AccountScreen({
               </button>
             </div>
 
+            {/* Wholesale vs Retail Order Filter Tabs */}
+            <div className="grid grid-cols-2 gap-2 p-1.5 bg-[#0d0d0d] border border-[#222222] rounded-xl">
+              <button
+                type="button"
+                onClick={() => setOrderChannelTab("retail")}
+                className={`py-2 px-3 text-xs font-medium rounded-lg transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                  orderChannelTab === "retail"
+                    ? "bg-[#e5a93c] text-black font-semibold shadow-sm"
+                    : "text-[#a0a0a0] hover:text-white"
+                }`}
+              >
+                <span>Retail Orders</span>
+                <span
+                  className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                    orderChannelTab === "retail"
+                      ? "bg-black/20 text-black"
+                      : "bg-[#1c1c1c] text-[#8e8e93]"
+                  }`}
+                >
+                  {retailOrders.length}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setOrderChannelTab("wholesale")}
+                className={`py-2 px-3 text-xs font-medium rounded-lg transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                  orderChannelTab === "wholesale"
+                    ? "bg-[#e5a93c] text-black font-semibold shadow-sm"
+                    : "text-[#a0a0a0] hover:text-white"
+                }`}
+              >
+                <span>Wholesale Orders</span>
+                <span
+                  className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                    orderChannelTab === "wholesale"
+                      ? "bg-black/20 text-black"
+                      : "bg-[#1c1c1c] text-[#8e8e93]"
+                  }`}
+                >
+                  {wholesaleOrders.length}
+                </span>
+              </button>
+            </div>
+
             {/* Orders List or Empty State */}
-            {orders.length > 0 ? (
+            {displayedOrders.length > 0 ? (
               <div className="space-y-3">
-                {orders.map((order) => (
+                {displayedOrders.map((order) => (
                   <div
                     key={order.id}
                     className="w-full bg-[#0d0d0d] border border-[#222222] rounded-[20px] p-4 shadow-md space-y-3"
                   >
                     <div className="flex items-center justify-between pb-2.5 border-b border-[#1c1c1c]">
-                      <div>
+                      <div className="flex items-center gap-2 flex-wrap">
                         <span className="text-[#e5a93c] font-semibold text-sm">
                           {order.orderNumber}
                         </span>
-                        <p className="text-[#8e8e93] text-[11px] mt-0.5">
+                        <span
+                          className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider ${
+                            order.orderType === "wholesale"
+                              ? "bg-purple-950/80 border border-purple-500/40 text-purple-300"
+                              : "bg-emerald-950/80 border border-emerald-500/40 text-emerald-300"
+                          }`}
+                        >
+                          {order.orderType === "wholesale" ? "Wholesale" : "Retail"}
+                        </span>
+                        <p className="text-[#8e8e93] text-[11px]">
                           {new Date(order.createdAt).toLocaleDateString("en-IN", {
                             day: "numeric",
                             month: "short",
@@ -599,7 +637,7 @@ export default function AccountScreen({
 
                       {/* Status Badge */}
                       <span
-                        className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+                        className={`px-2.5 py-1 rounded-full text-xs font-medium shrink-0 ${
                           order.status === "Delivered"
                             ? "bg-emerald-950/60 border border-emerald-500/40 text-emerald-400"
                             : order.status === "Dispatched"
@@ -665,11 +703,13 @@ export default function AccountScreen({
                 </div>
 
                 <h3 className="text-white text-[22px] font-serif font-medium leading-tight mb-2">
-                  No orders yet
+                  No {orderChannelTab === "wholesale" ? "wholesale" : "retail"} orders yet
                 </h3>
 
                 <p className="text-[#8e8e93] text-[13.5px] leading-relaxed max-w-[270px] mb-8">
-                  Start exploring our beautiful jewelry collection and place your first order.
+                  {orderChannelTab === "wholesale"
+                    ? "Explore our bulk catalog and place your first wholesale order."
+                    : "Start exploring our beautiful jewelry collection and place your first order."}
                 </p>
 
                 <button
@@ -746,7 +786,7 @@ export default function AccountScreen({
 
                         <div className="flex items-center justify-between pt-1">
                           <span className="text-[#e5a93c] text-[15.5px] font-semibold">
-                            ₹{p.price}
+                            ₹{storeMode === "wholesale" && p.wholesalePrice ? p.wholesalePrice : (p.retailPrice || p.price)}
                           </span>
                           <button
                             type="button"

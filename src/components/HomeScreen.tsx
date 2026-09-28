@@ -20,6 +20,12 @@ import Footer from "@/components/Footer";
 import CategoriesModal from "@/components/CategoriesModal";
 import StoreModeToggle from "@/components/StoreModeToggle";
 import type { Product, Category } from "@/lib/db";
+import {
+  addToCartByMode,
+  toggleWishlistByMode,
+  getWishlistItems,
+  getCartCount,
+} from "@/lib/cart";
 
 interface HomeScreenProps {
   products?: Product[];
@@ -42,7 +48,7 @@ interface HomeScreenProps {
 }
 
 const R2_BASE = "https://pub-ce8688bc6c654bcfb99716f7c9373bcd.r2.dev/fab-creations";
-const LOGO_R2_URL = `${R2_BASE}/logo.png`;
+const LOGO_R2_URL = `${R2_BASE}/brand-logo.png`;
 const HERO_R2_URL = `${R2_BASE}/hero-banner.jpg`;
 
 export default function HomeScreen({
@@ -145,35 +151,20 @@ export default function HomeScreen({
       })
       .catch((err) => console.error("Failed to load categories in HomeScreen:", err));
 
-    try {
-      const savedCart = localStorage.getItem("fc_b2b_cart");
-      if (savedCart) {
-        const parsed = JSON.parse(savedCart);
-        setCartCount(parsed.reduce((sum: number, item: any) => sum + (item.quantity || 1), 0));
-      }
-      const savedWishlist = localStorage.getItem("fc_b2b_wishlist");
-      if (savedWishlist) {
-        setWishlist(JSON.parse(savedWishlist));
-      }
-    } catch {
-      // ignore
-    }
-  }, []);
+    setCartCount(getCartCount(storeMode));
+    setWishlist(getWishlistItems(storeMode));
+  }, [storeMode]);
 
   const toggleWishlist = (id: string) => {
-    if (onToggleWishlist) {
-      onToggleWishlist(id);
-    }
-    setWishlist((prev) => {
-      const exists = prev.includes(id);
-      const updated = exists ? prev.filter((i) => i !== id) : [...prev, id];
-      try {
-        localStorage.setItem("fc_b2b_wishlist", JSON.stringify(updated));
-      } catch {
-        // ignore
-      }
-      return updated;
-    });
+    onToggleWishlist?.(id);
+    const { items, isAdded } = toggleWishlistByMode(storeMode, id);
+    setWishlist(items);
+    setNotification(
+      isAdded
+        ? `Added to ${storeMode === "wholesale" ? "Wholesale" : "Retail"} Wishlist`
+        : `Removed from ${storeMode === "wholesale" ? "Wholesale" : "Retail"} Wishlist`
+    );
+    setTimeout(() => setNotification(null), 2500);
   };
 
   const handleAddToCart = (product: Product) => {
@@ -182,40 +173,14 @@ export default function HomeScreen({
       return;
     }
 
-    const effectivePrice =
-      storeMode === "wholesale"
-        ? (product.wholesalePrice ?? product.price)
-        : (product.retailPrice ?? product.price);
+    const { items, effectivePrice } = addToCartByMode(product, storeMode, 1);
+    setCartCount(items.reduce((s, i) => s + i.quantity, 0));
+    onAddToCart?.({ ...product, price: effectivePrice }, 1);
 
-    if (onAddToCart) {
-      onAddToCart({ ...product, price: effectivePrice }, 1);
-    } else {
-      try {
-        const saved = localStorage.getItem("fc_b2b_cart");
-        const cart = saved ? JSON.parse(saved) : [];
-        const existing = cart.find((i: any) => i.id === product.id);
-        let updated;
-        if (existing) {
-          updated = cart.map((i: any) =>
-            i.id === product.id ? { ...i, quantity: i.quantity + 1, price: effectivePrice } : i
-          );
-        } else {
-          updated = [
-            ...cart,
-            { id: product.id, name: product.name, price: effectivePrice, quantity: 1, image: product.image },
-          ];
-        }
-        localStorage.setItem("fc_b2b_cart", JSON.stringify(updated));
-        window.dispatchEvent(new Event("cart_updated"));
-        setCartCount(updated.reduce((s: number, i: any) => s + i.quantity, 0));
-      } catch {
-        // ignore
-      }
-    }
     const noticeText =
       storeMode === "wholesale"
-        ? `Added ${product.name} to cart! (Wholesale ₹${effectivePrice})`
-        : `Added ${product.name} to cart! (₹${effectivePrice})`;
+        ? `Added ${product.name} to Wholesale Cart! (₹${effectivePrice})`
+        : `Added ${product.name} to Retail Cart! (₹${effectivePrice})`;
     setNotification(noticeText);
     setTimeout(() => setNotification(null), 3000);
   };
@@ -567,61 +532,6 @@ export default function HomeScreen({
               </p>
             </div>
           )}
-        </section>
-
-        {/* About Us Brand Story Section */}
-        <section id="about-us" className="w-full bg-[#0c0c0c] border border-[#2d2212] rounded-[24px] p-6 sm:p-8 my-6 relative overflow-hidden shadow-2xl">
-          {/* Subtle background gold glow */}
-          <div className="absolute top-0 right-0 w-48 h-48 bg-[#e5a93c]/5 rounded-full blur-3xl pointer-events-none" />
-
-          <div className="relative z-10 flex flex-col space-y-4">
-            <div className="flex items-center gap-2">
-              <span className="w-6 h-[1.5px] bg-[#e5a93c]" />
-              <span className="text-[#e5a93c] text-[11px] font-semibold tracking-[0.2em] uppercase">
-                About Fab Creation
-              </span>
-            </div>
-
-            <h3 className="text-white text-[20px] sm:text-[22px] font-serif font-medium leading-snug tracking-tight">
-              Jewellery that completes the look.<br />
-              <span className="text-[#f5c767]">A collection that creates the impression.</span>
-            </h3>
-
-            <div className="space-y-3 text-[13.5px] text-[#c4c4c4] leading-relaxed font-normal">
-              <p>
-                At <strong className="text-white font-medium">Fab Creation</strong>, we believe jewellery is more than an accessory—it’s the detail that makes an outfit unforgettable.
-              </p>
-              <p>
-                Based in <span className="text-[#e5a93c] font-medium">Lucknow</span>, we bring together a carefully selected range of chains, anklets, earrings, bangles, fancy kadas, necklaces, bridal jewellery and AD jewellery, serving both wholesale and retail customers.
-              </p>
-              <p>
-                Whether you’re looking for everyday elegance, statement pieces for a special occasion, or exquisite bridal jewellery, our collection is curated to offer style, variety and value under one roof.
-              </p>
-            </div>
-
-            {/* Built for Modern Jewellery Businesses Card */}
-            <div className="mt-2 p-4 sm:p-5 rounded-[18px] bg-[#141008] border border-[#4a3816] shadow-md space-y-2">
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full bg-[#e5a93c]" />
-                <h4 className="text-white text-[14px] sm:text-[15px] font-serif font-semibold">
-                  Built for Modern Jewellery Businesses
-                </h4>
-              </div>
-              <p className="text-[12.5px] sm:text-[13px] text-[#a8a8a8] leading-relaxed">
-                Fab Creation goes beyond jewellery. We also provide E-commerce services, helping jewellery businesses take their collections online and reach customers beyond their physical store.
-              </p>
-            </div>
-
-            {/* Closing Manifesto */}
-            <div className="pt-3 border-t border-[#2a2217] space-y-1">
-              <p className="text-[#8e8e93] text-[12px] tracking-wide font-medium">
-                Wholesale or retail. Traditional or contemporary. Jewellery or digital.
-              </p>
-              <p className="text-[#f5c767] text-[14.5px] font-serif font-semibold tracking-tight">
-                Fab Creation is where craftsmanship meets modern commerce.
-              </p>
-            </div>
-          </div>
         </section>
 
         {/* Luxury Footer */}

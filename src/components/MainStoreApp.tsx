@@ -9,6 +9,7 @@ import AccountScreen from "@/components/AccountScreen";
 import ProductDetailsScreen from "@/components/ProductDetailsScreen";
 import WholesaleLoginModal from "@/components/WholesaleLoginModal";
 import type { Product, Category, OrderItem } from "@/lib/db";
+import { getCartCount, fetchCartFromServer } from "@/lib/cart";
 
 interface MainStoreAppProps {
   initialProducts?: Product[];
@@ -60,12 +61,14 @@ export default function MainStoreApp({
   const [userMobile, setUserMobile] = useState("6289417338");
   const [cartCount, setCartCount] = useState(0);
 
-  // Load user details, store mode, and initial cart count from localStorage
+  // Load user details, store mode, and initial cart count from database & storage
   useEffect(() => {
+    let currentMode: "retail" | "wholesale" = storeMode;
     try {
       const savedMode = localStorage.getItem("fc_store_mode");
       if (savedMode === "wholesale" || savedMode === "retail") {
         setStoreMode(savedMode);
+        currentMode = savedMode;
       }
 
       const isAuth =
@@ -73,33 +76,26 @@ export default function MainStoreApp({
         localStorage.getItem("fc_user_logged_in") === "true";
       setIsWholesaleLoggedIn(isAuth);
 
-      const mobile = localStorage.getItem("fc_user_mobile");
+      const mobile =
+        currentMode === "wholesale"
+          ? localStorage.getItem("fc_wholesale_mobile") || localStorage.getItem("fc_user_mobile")
+          : localStorage.getItem("fc_retail_mobile");
       if (mobile) setUserMobile(mobile);
 
-      const savedCart = localStorage.getItem("fc_b2b_cart");
-      if (savedCart) {
-        const parsed = JSON.parse(savedCart);
-        if (Array.isArray(parsed)) {
-          setCartCount(parsed.reduce((sum: number, i: any) => sum + (Number(i.quantity) || 1), 0));
-        }
-      }
+      setCartCount(getCartCount(currentMode));
     } catch {
       // ignore
     }
 
-    const handleCartUpdate = () => {
-      try {
-        const saved = localStorage.getItem("fc_b2b_cart");
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed)) {
-            setCartCount(parsed.reduce((sum: number, i: any) => sum + (Number(i.quantity) || 1), 0));
-          }
-        } else {
-          setCartCount(0);
-        }
-      } catch {
-        // ignore
+    // Sync from server database for both modes
+    fetchCartFromServer("wholesale").catch(console.error);
+    fetchCartFromServer("retail").catch(console.error);
+
+    const handleCartUpdate = (e?: Event) => {
+      const detail = (e as CustomEvent)?.detail;
+      const targetMode = detail?.mode || storeMode;
+      if (targetMode === storeMode || !detail?.mode) {
+        setCartCount(getCartCount(storeMode));
       }
     };
 
@@ -125,10 +121,11 @@ export default function MainStoreApp({
       window.removeEventListener("storage", handleCartUpdate);
       window.removeEventListener("storage", handleAuthChange);
     };
-  }, []);
+  }, [storeMode]);
 
   const handleSwitchStoreMode = (mode: "retail" | "wholesale") => {
     setStoreMode(mode);
+    setCartCount(getCartCount(mode));
     try {
       localStorage.setItem("fc_store_mode", mode);
     } catch {}
@@ -287,6 +284,10 @@ export default function MainStoreApp({
           userMobile={userMobile}
           categories={initialCategories}
           cartCount={cartCount}
+          storeMode={storeMode}
+          onSwitchStoreMode={handleSwitchStoreMode}
+          isWholesaleLoggedIn={isWholesaleLoggedIn}
+          onOpenWholesaleLogin={() => setIsWholesaleLoginOpen(true)}
           onNavigateHome={goToHome}
           onNavigateShop={goToShop}
           onNavigateCart={goToCart}

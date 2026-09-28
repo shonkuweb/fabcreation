@@ -19,6 +19,14 @@ import {
 import CategoriesModal from "@/components/CategoriesModal";
 import StoreModeToggle from "@/components/StoreModeToggle";
 import type { OrderItem, Category } from "@/lib/db";
+import {
+  getCartItems,
+  getCartCount,
+  updateCartQtyByMode,
+  removeFromCartByMode,
+  clearCartByMode,
+  fetchCartFromServer,
+} from "@/lib/cart";
 
 interface CartScreenProps {
   cart?: OrderItem[];
@@ -56,7 +64,8 @@ export default function CartScreen({
   onSignOut,
 }: CartScreenProps) {
   const router = useRouter();
-  const [cart, setCart] = useState<OrderItem[]>(initialCart);
+  const [activeCartMode, setActiveCartMode] = useState<"retail" | "wholesale">(storeMode);
+  const [cart, setCart] = useState<OrderItem[]>(() => getCartItems(storeMode));
   const [categories, setCategories] = useState<Category[]>(initialCategories);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [notification, setNotification] = useState<string | null>(null);
@@ -64,24 +73,36 @@ export default function CartScreen({
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState<string | null>(null);
 
-  // Sync with prop or load from localStorage
+  // Sync activeCartMode when storeMode prop changes
   useEffect(() => {
-    if (initialCart && initialCart.length > 0) {
-      setCart(initialCart);
-      setSelectedItems(initialCart.map((i) => i.id));
-    } else {
-      try {
-        const saved = localStorage.getItem("fc_b2b_cart");
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          setCart(parsed);
-          setSelectedItems(parsed.map((i: OrderItem) => i.id));
-        }
-      } catch {
-        // ignore
+    setActiveCartMode(storeMode);
+  }, [storeMode]);
+
+  // Load cart items for active mode from database & local cache
+  useEffect(() => {
+    const items = getCartItems(activeCartMode);
+    setCart(items);
+    setSelectedItems(items.map((i) => i.id));
+
+    fetchCartFromServer(activeCartMode)
+      .then((serverItems) => {
+        setCart(serverItems);
+        setSelectedItems(serverItems.map((i) => i.id));
+      })
+      .catch(console.error);
+
+    const handleCartUpdate = (e?: Event) => {
+      const detail = (e as CustomEvent)?.detail;
+      if (!detail?.mode || detail.mode === activeCartMode) {
+        const updated = getCartItems(activeCartMode);
+        setCart(updated);
+        setSelectedItems(updated.map((i) => i.id));
       }
-    }
-  }, [initialCart]);
+    };
+
+    window.addEventListener("cart_updated", handleCartUpdate);
+    return () => window.removeEventListener("cart_updated", handleCartUpdate);
+  }, [activeCartMode]);
 
   // Fetch categories if not provided
   useEffect(() => {
@@ -114,6 +135,8 @@ export default function CartScreen({
   };
 
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+  const retailCount = getCartCount("retail");
+  const wholesaleCount = getCartCount("wholesale");
 
   // Subtotal of all items
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -131,46 +154,34 @@ export default function CartScreen({
   };
 
   const handleUpdateQty = (id: string, qty: number) => {
+    const updated = updateCartQtyByMode(activeCartMode, id, qty);
+    setCart(updated);
     onUpdateQuantity?.(id, qty);
-    setCart((prev) => {
-      let updated: OrderItem[];
-      if (qty <= 0) {
-        updated = prev.filter((i) => i.id !== id);
-      } else {
-        updated = prev.map((i) => (i.id === id ? { ...i, quantity: qty } : i));
-      }
-      try {
-        localStorage.setItem("fc_b2b_cart", JSON.stringify(updated));
-        window.dispatchEvent(new Event("cart_updated"));
-      } catch {
-        // ignore
-      }
-      return updated;
-    });
   };
 
   const handleRemove = (id: string) => {
+    const updated = removeFromCartByMode(activeCartMode, id);
+    setCart(updated);
     onRemoveItem?.(id);
-    setCart((prev) => {
-      const updated = prev.filter((i) => i.id !== id);
-      try {
-        localStorage.setItem("fc_b2b_cart", JSON.stringify(updated));
-        window.dispatchEvent(new Event("cart_updated"));
-      } catch {
-        // ignore
-      }
-      return updated;
-    });
+  };
+
+  const handleClearActiveCart = () => {
+    clearCartByMode(activeCartMode);
+    setCart([]);
+    onClearCart?.();
   };
 
   const handleCheckout = async () => {
-    if (storeMode === "wholesale" && subtotal < b2bMin) {
+    if (activeCartMode === "wholesale" && subtotal < b2bMin) {
       setNotification(`Minimum B2B wholesale order is ₹3,000. Please add ₹${remaining} more.`);
       setTimeout(() => setNotification(null), 3500);
       return;
     }
 
-    const activeMobile = userMobile || (typeof window !== "undefined" ? localStorage.getItem("fc_user_mobile") : null) || "Retail Buyer";
+    const activeMobile =
+      activeCartMode === "wholesale"
+        ? (userMobile || (typeof window !== "undefined" ? localStorage.getItem("fc_wholesale_mobile") || localStorage.getItem("fc_user_mobile") : null) || "6289417338")
+        : (userMobile || (typeof window !== "undefined" ? localStorage.getItem("fc_retail_mobile") : null) || "Retail Buyer");
 
     setIsCheckingOut(true);
     try {
@@ -178,6 +189,8 @@ export default function CartScreen({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          orderType: activeCartMode,
+          storeMode: activeCartMode,
           customerMobile: activeMobile,
           items: cart,
           subtotal,
@@ -189,13 +202,8 @@ export default function CartScreen({
 
       const data = await res.json();
       if (data.success && data.order) {
+        clearCartByMode(activeCartMode);
         setCart([]);
-        try {
-          localStorage.removeItem("fc_b2b_cart");
-          window.dispatchEvent(new Event("cart_updated"));
-        } catch {
-          // ignore
-        }
         onClearCart?.();
         setOrderSuccess(data.order.orderNumber);
         setNotification(`Order placed successfully! Order #${data.order.orderNumber}`);
@@ -234,7 +242,7 @@ export default function CartScreen({
         </div>
 
         {/* Top Header Bar */}
-        <div className="flex items-center justify-between py-2 mb-3">
+        <div className="flex items-center justify-between py-2 mb-2">
           <button
             type="button"
             onClick={navShop}
@@ -243,15 +251,95 @@ export default function CartScreen({
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
-          <h1 className="text-base font-serif font-medium text-white">Your Cart</h1>
+          <div className="text-center">
+            <h1 className="text-base font-serif font-medium text-white">Your Cart</h1>
+            <p className="text-[10.5px] text-[#e5a93c] uppercase tracking-wider">
+              {activeCartMode === "wholesale" ? "B2B Wholesale Portal" : "Retail Store"}
+            </p>
+          </div>
           <button
-            onClick={onClearCart}
+            onClick={handleClearActiveCart}
             disabled={cart.length === 0}
             className="text-xs text-[#8e8e93] hover:text-rose-400 transition-colors disabled:opacity-0 cursor-pointer px-1"
           >
             Clear
           </button>
         </div>
+
+        {/* Separate Cart Switcher Tabs */}
+        <div className="w-full flex items-center justify-center p-1 bg-[#0e0e0e] border border-[#222222] rounded-2xl mb-3 gap-1">
+          <button
+            type="button"
+            onClick={() => setActiveCartMode("retail")}
+            className={`flex-1 py-2 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+              activeCartMode === "retail"
+                ? "bg-[#e5a93c] text-black shadow-md font-bold"
+                : "text-[#8e8e93] hover:text-white"
+            }`}
+          >
+            <span>Retail Cart</span>
+            {retailCount > 0 && (
+              <span
+                className={`px-1.5 py-0.2 rounded-full text-[10px] ${
+                  activeCartMode === "retail"
+                    ? "bg-black/20 text-black font-bold"
+                    : "bg-[#222] text-[#e5a93c]"
+                }`}
+              >
+                {retailCount}
+              </span>
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveCartMode("wholesale")}
+            className={`flex-1 py-2 px-3 rounded-xl text-xs font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+              activeCartMode === "wholesale"
+                ? "bg-[#e5a93c] text-black shadow-md font-bold"
+                : "text-[#8e8e93] hover:text-white"
+            }`}
+          >
+            <span>Wholesale Cart</span>
+            {wholesaleCount > 0 && (
+              <span
+                className={`px-1.5 py-0.2 rounded-full text-[10px] ${
+                  activeCartMode === "wholesale"
+                    ? "bg-black/20 text-black font-bold"
+                    : "bg-[#222] text-[#e5a93c]"
+                }`}
+              >
+                {wholesaleCount}
+              </span>
+            )}
+          </button>
+        </div>
+
+        {/* Cross-cart informative notice */}
+        {activeCartMode === "retail" && wholesaleCount > 0 && (
+          <div className="mb-3 px-3.5 py-2 rounded-xl bg-[#14120a] border border-[#3d2e13] flex items-center justify-between text-xs text-[#d1d5db]">
+            <span>You also have {wholesaleCount} item(s) in Wholesale Cart.</span>
+            <button
+              type="button"
+              onClick={() => setActiveCartMode("wholesale")}
+              className="text-[#e5a93c] font-medium hover:underline cursor-pointer ml-2"
+            >
+              Switch →
+            </button>
+          </div>
+        )}
+        {activeCartMode === "wholesale" && retailCount > 0 && (
+          <div className="mb-3 px-3.5 py-2 rounded-xl bg-[#14120a] border border-[#3d2e13] flex items-center justify-between text-xs text-[#d1d5db]">
+            <span>You also have {retailCount} item(s) in Retail Cart.</span>
+            <button
+              type="button"
+              onClick={() => setActiveCartMode("retail")}
+              className="text-[#e5a93c] font-medium hover:underline cursor-pointer ml-2"
+            >
+              Switch →
+            </button>
+          </div>
+        )}
 
         {/* Order Success Banner */}
         {orderSuccess && (
@@ -355,10 +443,12 @@ export default function CartScreen({
               <ShoppingBag className="w-9 h-9 stroke-[1.8]" />
             </div>
             <h3 className="text-white text-[20px] font-serif font-medium mb-1.5">
-              Your Cart is Empty
+              Your {activeCartMode === "wholesale" ? "Wholesale" : "Retail"} Cart is Empty
             </h3>
             <p className="text-[#8e8e93] text-[13px] max-w-[260px] mb-6">
-              Add wholesale jewelry items to your cart to meet the ₹3,000 B2B minimum.
+              {activeCartMode === "wholesale"
+                ? "Add wholesale jewelry items to your cart to meet the ₹3,000 B2B minimum."
+                : "Discover our retail collection and add items to your cart with no minimum order."}
             </p>
             <button
               type="button"
@@ -375,7 +465,7 @@ export default function CartScreen({
         {cart.length > 0 && (
           <div className="w-full bg-[#0d0d0d] border border-[#222222] rounded-[22px] p-4 sm:p-5 mb-4 shadow-md space-y-3">
             <h4 className="text-white text-[15.5px] font-serif font-medium pb-1 border-b border-[#1c1c1c]">
-              Order Summary
+              Order Summary ({activeCartMode === "wholesale" ? "Wholesale" : "Retail"})
             </h4>
 
             <div className="space-y-2 text-[13.5px]">
@@ -399,7 +489,7 @@ export default function CartScreen({
           </div>
         )}
 
-        {/* 3. B2B Shipping Information Box (Only if cart has items) */}
+        {/* 3. Shipping Information Box (Only if cart has items) */}
         {cart.length > 0 && (
           <div className="w-full rounded-[18px] border border-[#4a3816] bg-[#140f07] p-3.5 mb-4 flex items-start gap-3 shadow-sm">
             <div className="w-8 h-8 rounded-full bg-[#1e170a] border border-[#e5a93c]/40 flex items-center justify-center text-[#e5a93c] shrink-0 mt-0.5">
@@ -407,10 +497,12 @@ export default function CartScreen({
             </div>
             <div className="flex-1">
               <h5 className="text-[#e5a93c] text-[13px] font-semibold mb-0.5">
-                B2B Shipping Information
+                {activeCartMode === "wholesale" ? "B2B Wholesale Shipping" : "Retail Fast Shipping"}
               </h5>
               <p className="text-[#a8a8a8] text-[11.5px] leading-relaxed">
-                Standard B2B shipping is ₹125 for all orders. Free shipping on orders above ₹10,000. Orders are dispatched within 24-48 business hours with GST invoice.
+                {activeCartMode === "wholesale"
+                  ? "Standard B2B shipping is ₹125 for all orders. Free shipping on orders above ₹10,000. Orders are dispatched within 24-48 business hours with GST invoice."
+                  : "Standard retail shipping is ₹125. Fast and safe insured delivery across India."}
               </p>
             </div>
           </div>
@@ -419,7 +511,7 @@ export default function CartScreen({
         {/* 4. Minimum Order Progress Bar & Action (Only if cart has items) */}
         {cart.length > 0 && (
           <div className="w-full bg-[#0d0d0d] border border-[#222222] rounded-[22px] p-4 sm:p-5 mb-4 shadow-md space-y-3.5">
-            {storeMode === "wholesale" ? (
+            {activeCartMode === "wholesale" ? (
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-[#8e8e93]">B2B Order Minimum Progress</span>
@@ -452,7 +544,7 @@ export default function CartScreen({
                   </span>
                 </div>
                 <p className="text-[#8e8e93] text-[11.5px]">
-                  Order any quantity with standard shipping. Free delivery above ₹999.
+                  Order any quantity with standard shipping. No minimum order limit.
                 </p>
               </div>
             )}
@@ -463,7 +555,7 @@ export default function CartScreen({
               onClick={handleCheckout}
               disabled={isCheckingOut}
               className={`w-full h-[50px] rounded-[14px] font-semibold text-[14.5px] flex items-center justify-center gap-2 shadow-lg transition-all cursor-pointer ${
-                storeMode === "retail" || subtotal >= b2bMin
+                activeCartMode === "retail" || subtotal >= b2bMin
                   ? "bg-[#f0a939] hover:bg-[#f5b842] active:scale-[0.99] text-[#111111]"
                   : "bg-[#1c160c] border border-[#e5a93c]/50 text-[#e5a93c] hover:bg-[#e5a93c] hover:text-black"
               }`}

@@ -21,6 +21,12 @@ import Footer from "@/components/Footer";
 import CategoriesModal from "@/components/CategoriesModal";
 import StoreModeToggle from "@/components/StoreModeToggle";
 import type { Product, Category } from "@/lib/db";
+import {
+  addToCartByMode,
+  toggleWishlistByMode,
+  getWishlistItems,
+  getCartCount,
+} from "@/lib/cart";
 
 interface ShopScreenProps {
   products?: Product[];
@@ -43,7 +49,7 @@ interface ShopScreenProps {
 }
 
 const R2_BASE = "https://pub-ce8688bc6c654bcfb99716f7c9373bcd.r2.dev/fab-creations";
-const LOGO_R2_URL = `${R2_BASE}/logo.png`;
+const LOGO_R2_URL = `${R2_BASE}/brand-logo.png`;
 const HERO_R2_URL = `${R2_BASE}/hero-banner.jpg`;
 
 export default function ShopScreen({
@@ -147,35 +153,20 @@ export default function ShopScreen({
       })
       .catch((err) => console.error("Failed to load categories in ShopScreen:", err));
 
-    try {
-      const savedCart = localStorage.getItem("fc_b2b_cart");
-      if (savedCart) {
-        const parsed = JSON.parse(savedCart);
-        setCartCount(parsed.reduce((sum: number, item: any) => sum + (item.quantity || 1), 0));
-      }
-      const savedWishlist = localStorage.getItem("fc_b2b_wishlist");
-      if (savedWishlist) {
-        setWishlist(JSON.parse(savedWishlist));
-      }
-    } catch {
-      // ignore
-    }
-  }, []);
+    setCartCount(getCartCount(storeMode));
+    setWishlist(getWishlistItems(storeMode));
+  }, [storeMode]);
 
   const toggleWishlist = (id: string) => {
-    if (onToggleWishlist) {
-      onToggleWishlist(id);
-    }
-    setWishlist((prev) => {
-      const exists = prev.includes(id);
-      const updated = exists ? prev.filter((i) => i !== id) : [...prev, id];
-      try {
-        localStorage.setItem("fc_b2b_wishlist", JSON.stringify(updated));
-      } catch {
-        // ignore
-      }
-      return updated;
-    });
+    onToggleWishlist?.(id);
+    const { items, isAdded } = toggleWishlistByMode(storeMode, id);
+    setWishlist(items);
+    setNotification(
+      isAdded
+        ? `Added to ${storeMode === "wholesale" ? "Wholesale" : "Retail"} Wishlist`
+        : `Removed from ${storeMode === "wholesale" ? "Wholesale" : "Retail"} Wishlist`
+    );
+    setTimeout(() => setNotification(null), 2500);
   };
 
   const handleAddToCart = (product: Product) => {
@@ -184,40 +175,14 @@ export default function ShopScreen({
       return;
     }
 
-    const effectivePrice =
-      storeMode === "wholesale"
-        ? (product.wholesalePrice ?? product.price)
-        : (product.retailPrice ?? product.price);
+    const { items, effectivePrice } = addToCartByMode(product, storeMode, 1);
+    setCartCount(items.reduce((s, i) => s + i.quantity, 0));
+    onAddToCart?.({ ...product, price: effectivePrice }, 1);
 
-    if (onAddToCart) {
-      onAddToCart({ ...product, price: effectivePrice }, 1);
-    } else {
-      try {
-        const saved = localStorage.getItem("fc_b2b_cart");
-        const cart = saved ? JSON.parse(saved) : [];
-        const existing = cart.find((i: any) => i.id === product.id);
-        let updated;
-        if (existing) {
-          updated = cart.map((i: any) =>
-            i.id === product.id ? { ...i, quantity: i.quantity + 1, price: effectivePrice } : i
-          );
-        } else {
-          updated = [
-            ...cart,
-            { id: product.id, name: product.name, price: effectivePrice, quantity: 1, image: product.image },
-          ];
-        }
-        localStorage.setItem("fc_b2b_cart", JSON.stringify(updated));
-        window.dispatchEvent(new Event("cart_updated"));
-        setCartCount(updated.reduce((s: number, i: any) => s + i.quantity, 0));
-      } catch {
-        // ignore
-      }
-    }
     const noticeText =
       storeMode === "wholesale"
-        ? `Added ${product.name} to cart! (Wholesale ₹${effectivePrice})`
-        : `Added ${product.name} to cart! (₹${effectivePrice})`;
+        ? `Added ${product.name} to Wholesale Cart! (₹${effectivePrice})`
+        : `Added ${product.name} to Retail Cart! (₹${effectivePrice})`;
     setNotification(noticeText);
     setTimeout(() => setNotification(null), 3000);
   };

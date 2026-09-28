@@ -4,9 +4,16 @@ import { getOrders, createOrder } from "@/lib/db";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    const orders = getOrders();
+    const { searchParams } = new URL(req.url);
+    const type = searchParams.get("type");
+    let orders = getOrders();
+    if (type === "wholesale") {
+      orders = orders.filter((o) => o.orderType === "wholesale");
+    } else if (type === "retail") {
+      orders = orders.filter((o) => o.orderType !== "wholesale");
+    }
     return NextResponse.json(
       { success: true, orders },
       {
@@ -63,7 +70,11 @@ export async function POST(req: Request) {
         ? Number(total)
         : Number((finalSubtotal + finalGst + finalShipping).toFixed(1));
 
-    const validMobile = (customerMobile || "").trim() || "6289417338";
+    const validMobile = (customerMobile || "").trim() || (body.orderType === "wholesale" ? "6289417338" : "Retail Customer");
+    const orderType =
+      body.orderType === "wholesale" || body.storeMode === "wholesale"
+        ? "wholesale"
+        : "retail";
 
     const newOrder = createOrder({
       customerMobile: validMobile,
@@ -73,6 +84,7 @@ export async function POST(req: Request) {
       shipping: finalShipping,
       total: finalTotal,
       status: "Pending",
+      orderType,
     });
 
     return NextResponse.json({ success: true, order: newOrder }, { status: 201 });

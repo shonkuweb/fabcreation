@@ -26,6 +26,12 @@ import {
 import Footer from "@/components/Footer";
 import CategoriesModal from "@/components/CategoriesModal";
 import { Product, Category } from "@/lib/db";
+import {
+  addToCartByMode,
+  toggleWishlistByMode,
+  getWishlistItems,
+  getCartCount,
+} from "@/lib/cart";
 
 interface ProductDetailsScreenProps {
   product?: Product | null;
@@ -171,40 +177,20 @@ export default function ProductDetailsScreen({
     }
 
     // Sync cart & wishlist from localStorage
-    try {
-      const savedCart = localStorage.getItem("fc_b2b_cart");
-      if (savedCart) {
-        const parsed = JSON.parse(savedCart);
-        setCartCount(parsed.reduce((s: number, i: any) => s + (i.quantity || 1), 0));
-      }
-      const savedWishlist = localStorage.getItem("fc_b2b_wishlist");
-      if (savedWishlist) {
-        setWishlist(JSON.parse(savedWishlist));
-      }
-    } catch {
-      // ignore
-    }
-  }, [initialProduct, initialCategories]);
+    setCartCount(getCartCount(storeMode));
+    setWishlist(getWishlistItems(storeMode));
+  }, [initialProduct, initialCategories, storeMode]);
 
   // Wishlist handler
   const handleToggleWishlist = () => {
     if (!product) return;
     onToggleWishlist?.(product.id);
-    const isWishlist = wishlist.includes(product.id);
-    const updated = isWishlist
-      ? wishlist.filter((id) => id !== product.id)
-      : [...wishlist, product.id];
-    setWishlist(updated);
-    try {
-      localStorage.setItem("fc_b2b_wishlist", JSON.stringify(updated));
-      window.dispatchEvent(new Event("wishlist_updated"));
-    } catch {
-      // ignore
-    }
+    const { items, isAdded } = toggleWishlistByMode(storeMode, product.id);
+    setWishlist(items);
     setNotification(
-      isWishlist
-        ? `Removed ${product.name} from wishlist.`
-        : `Added ${product.name} to wishlist!`
+      isAdded
+        ? `Added ${product.name} to ${storeMode === "wholesale" ? "Wholesale" : "Retail"} Wishlist`
+        : `Removed ${product.name} from wishlist.`
     );
     setTimeout(() => setNotification(null), 2500);
   };
@@ -217,46 +203,14 @@ export default function ProductDetailsScreen({
       return;
     }
 
-    const effectivePrice =
-      storeMode === "wholesale"
-        ? (product.wholesalePrice ?? product.price)
-        : (product.retailPrice ?? product.price);
+    const { items, effectivePrice } = addToCartByMode(product, storeMode, quantity);
+    setCartCount(items.reduce((s, i) => s + i.quantity, 0));
+    onAddToCart?.({ ...product, price: effectivePrice }, quantity);
 
-    if (onAddToCart) {
-      onAddToCart({ ...product, price: effectivePrice }, quantity);
-    } else {
-      try {
-        const saved = localStorage.getItem("fc_b2b_cart");
-        const cart = saved ? JSON.parse(saved) : [];
-        const existing = cart.find((i: any) => i.id === product.id);
-        let updated;
-        if (existing) {
-          updated = cart.map((i: any) =>
-            i.id === product.id ? { ...i, quantity: i.quantity + quantity, price: effectivePrice } : i
-          );
-        } else {
-          updated = [
-            ...cart,
-            {
-              id: product.id,
-              name: product.name,
-              price: effectivePrice,
-              quantity,
-              image: product.image,
-            },
-          ];
-        }
-        localStorage.setItem("fc_b2b_cart", JSON.stringify(updated));
-        setCartCount(updated.reduce((s: number, i: any) => s + i.quantity, 0));
-        window.dispatchEvent(new Event("cart_updated"));
-      } catch {
-        // ignore
-      }
-    }
     const noticeText =
       storeMode === "wholesale"
-        ? `Added ${quantity} ${product.name} to cart! (Wholesale ₹${effectivePrice})`
-        : `Added ${quantity} ${product.name} to cart! (₹${effectivePrice})`;
+        ? `Added ${quantity} ${product.name} to Wholesale Cart! (₹${effectivePrice})`
+        : `Added ${quantity} ${product.name} to Retail Cart! (₹${effectivePrice})`;
     setNotification(noticeText);
     setTimeout(() => setNotification(null), 3000);
   };

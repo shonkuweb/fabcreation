@@ -25,7 +25,7 @@ import {
 import { Product, Category, Order } from "@/lib/db";
 
 const R2_BASE = "https://pub-ce8688bc6c654bcfb99716f7c9373bcd.r2.dev/fab-creations";
-const LOGO_R2_URL = `${R2_BASE}/logo.png`;
+const LOGO_R2_URL = `${R2_BASE}/brand-logo.png`;
 
 export default function AdminPage() {
   // Auth state
@@ -42,6 +42,7 @@ export default function AdminPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [adminOrdersTab, setAdminOrdersTab] = useState<"wholesale" | "retail">("wholesale");
   const [loading, setLoading] = useState(false);
   const [notification, setNotification] = useState<string | null>(null);
 
@@ -848,103 +849,188 @@ export default function AdminPage() {
         {/* ============================================================= */}
         {/* TAB 3: ORDERS MANAGEMENT                                      */}
         {/* ============================================================= */}
-        {activeTab === "orders" && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-white text-[16px] font-serif font-medium">
-                Customer Orders ({orders.length})
-              </h3>
-            </div>
+        {activeTab === "orders" && (() => {
+          const wholesaleOrders = orders.filter((o) => o.orderType === "wholesale");
+          const retailOrders = orders.filter((o) => o.orderType !== "wholesale");
+          const displayedOrders = adminOrdersTab === "wholesale" ? wholesaleOrders : retailOrders;
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {orders.map((ord) => (
-                <div
-                  key={ord.id}
-                  className="bg-[#0d0d0d] border border-[#222222] rounded-[20px] p-5 shadow-md flex flex-col justify-between space-y-4"
-                >
-                  {/* Header: Order # + Date */}
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <span className="text-[#e5a93c] font-mono font-semibold text-sm">
-                        {ord.orderNumber}
-                      </span>
-                      <p className="text-[#8e8e93] text-xs pt-0.5">
-                        {new Date(ord.createdAt).toLocaleString()}
-                      </p>
-                    </div>
-
-                    {/* Status Badge & Actions */}
-                    <div className="flex items-center gap-2">
-                      <select
-                        value={ord.status}
-                        onChange={(e) => handleUpdateOrderStatus(ord.id, e.target.value)}
-                        className={`text-xs font-semibold rounded-lg px-2.5 py-1 border outline-none cursor-pointer ${
-                          ord.status === "Delivered"
-                            ? "bg-emerald-950/60 text-emerald-400 border-emerald-800"
-                            : ord.status === "Dispatched"
-                            ? "bg-blue-950/60 text-blue-400 border-blue-800"
-                            : ord.status === "Confirmed"
-                            ? "bg-amber-950/60 text-[#f5c767] border-[#e5a93c]"
-                            : "bg-neutral-900 text-neutral-400 border-neutral-700"
-                        }`}
-                      >
-                        <option value="Pending">Pending</option>
-                        <option value="Confirmed">Confirmed</option>
-                        <option value="Dispatched">Dispatched</option>
-                        <option value="Delivered">Delivered</option>
-                      </select>
-
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteOrder(ord.id, ord.orderNumber)}
-                        className="p-1.5 rounded-lg bg-red-950/40 border border-red-800/60 text-red-400 hover:bg-red-900/60 hover:text-red-200 transition-colors cursor-pointer"
-                        title="Delete Order"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Customer Phone */}
-                  <div className="p-2.5 rounded-xl bg-[#141414] border border-[#222222] flex items-center justify-between text-xs">
-                    <span className="text-[#8e8e93]">Customer Phone:</span>
-                    <span className="text-white font-medium">+91 {ord.customerMobile}</span>
-                  </div>
-
-                  {/* Items List */}
-                  <div className="space-y-2">
-                    {ord.items.map((item, i) => (
-                      <div key={i} className="flex items-center justify-between text-xs py-1 border-b border-[#1c1c1c] last:border-0">
-                        <div className="flex items-center gap-2">
-                          <div className="w-8 h-8 rounded relative bg-[#1c1c1c] overflow-hidden shrink-0">
-                            <Image
-                              src={item.image || `${R2_BASE}/products/moon-necklace.jpg`}
-                              alt={item.name}
-                              fill
-                              unoptimized
-                              className="object-cover"
-                            />
-                          </div>
-                          <div>
-                            <p className="text-white font-medium">{item.name}</p>
-                            <p className="text-[#8e8e93] text-[10.5px]">Qty: {item.quantity}</p>
-                          </div>
-                        </div>
-                        <span className="text-[#f5c767] font-medium">₹{item.price * item.quantity}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Pricing Breakdown */}
-                  <div className="pt-2 border-t border-[#1f1f1f] flex items-center justify-between text-xs">
-                    <span className="text-[#8e8e93]">Subtotal: ₹{ord.subtotal} | Shipping: ₹{ord.shipping}</span>
-                    <span className="text-white text-sm font-semibold">Total: ₹{ord.total}</span>
-                  </div>
+          return (
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h3 className="text-white text-[16px] font-serif font-medium">
+                    Customer Orders ({orders.length})
+                  </h3>
+                  <p className="text-[#8e8e93] text-xs">
+                    Manage and fulfill your wholesale and retail customer orders
+                  </p>
                 </div>
-              ))}
+
+                {/* Wholesale vs Retail Tabs */}
+                <div className="flex items-center gap-1.5 p-1 bg-[#141414] border border-[#262626] rounded-xl w-fit">
+                  <button
+                    type="button"
+                    onClick={() => setAdminOrdersTab("wholesale")}
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-2 ${
+                      adminOrdersTab === "wholesale"
+                        ? "bg-[#e5a93c] text-black shadow-md font-bold"
+                        : "text-[#8e8e93] hover:text-white"
+                    }`}
+                  >
+                    <span>Wholesale Orders</span>
+                    <span
+                      className={`px-1.5 py-0.2 rounded-full text-[10px] ${
+                        adminOrdersTab === "wholesale"
+                          ? "bg-black/25 text-black font-bold"
+                          : "bg-[#222] text-[#e5a93c]"
+                      }`}
+                    >
+                      {wholesaleOrders.length}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setAdminOrdersTab("retail")}
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer flex items-center gap-2 ${
+                      adminOrdersTab === "retail"
+                        ? "bg-[#e5a93c] text-black shadow-md font-bold"
+                        : "text-[#8e8e93] hover:text-white"
+                    }`}
+                  >
+                    <span>Retail Orders</span>
+                    <span
+                      className={`px-1.5 py-0.2 rounded-full text-[10px] ${
+                        adminOrdersTab === "retail"
+                          ? "bg-black/25 text-black font-bold"
+                          : "bg-[#222] text-[#e5a93c]"
+                      }`}
+                    >
+                      {retailOrders.length}
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              {displayedOrders.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {displayedOrders.map((ord) => (
+                    <div
+                      key={ord.id}
+                      className="bg-[#0d0d0d] border border-[#222222] rounded-[20px] p-5 shadow-md flex flex-col justify-between space-y-4"
+                    >
+                      {/* Header: Order # + Date + Channel Badge */}
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[#e5a93c] font-mono font-semibold text-sm">
+                              {ord.orderNumber}
+                            </span>
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wider ${
+                                ord.orderType === "wholesale"
+                                  ? "bg-amber-950/60 text-[#f5c767] border border-[#e5a93c]/50"
+                                  : "bg-blue-950/60 text-blue-300 border border-blue-800/50"
+                              }`}
+                            >
+                              {ord.orderType === "wholesale" ? "Wholesale" : "Retail"}
+                            </span>
+                          </div>
+                          <p className="text-[#8e8e93] text-xs pt-1">
+                            {new Date(ord.createdAt).toLocaleString()}
+                          </p>
+                        </div>
+
+                        {/* Status Badge & Actions */}
+                        <div className="flex items-center gap-2">
+                          <select
+                            value={ord.status}
+                            onChange={(e) => handleUpdateOrderStatus(ord.id, e.target.value)}
+                            className={`text-xs font-semibold rounded-lg px-2.5 py-1 border outline-none cursor-pointer ${
+                              ord.status === "Delivered"
+                                ? "bg-emerald-950/60 text-emerald-400 border-emerald-800"
+                                : ord.status === "Dispatched"
+                                ? "bg-blue-950/60 text-blue-400 border-blue-800"
+                                : ord.status === "Confirmed"
+                                ? "bg-amber-950/60 text-[#f5c767] border-[#e5a93c]"
+                                : "bg-neutral-900 text-neutral-400 border-neutral-700"
+                            }`}
+                          >
+                            <option value="Pending">Pending</option>
+                            <option value="Confirmed">Confirmed</option>
+                            <option value="Dispatched">Dispatched</option>
+                            <option value="Delivered">Delivered</option>
+                          </select>
+
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteOrder(ord.id, ord.orderNumber)}
+                            className="p-1.5 rounded-lg bg-red-950/40 border border-red-800/60 text-red-400 hover:bg-red-900/60 hover:text-red-200 transition-colors cursor-pointer"
+                            title="Delete Order"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Customer Phone */}
+                      <div className="p-2.5 rounded-xl bg-[#141414] border border-[#222222] flex items-center justify-between text-xs">
+                        <span className="text-[#8e8e93]">Customer Phone:</span>
+                        <span className="text-white font-medium">+91 {ord.customerMobile}</span>
+                      </div>
+
+                      {/* Items List */}
+                      <div className="space-y-2">
+                        {ord.items.map((item, i) => (
+                          <div
+                            key={i}
+                            className="flex items-center justify-between text-xs py-1 border-b border-[#1c1c1c] last:border-0"
+                          >
+                            <div className="flex items-center gap-2">
+                              <div className="w-8 h-8 rounded relative bg-[#1c1c1c] overflow-hidden shrink-0">
+                                <Image
+                                  src={item.image || `${R2_BASE}/products/moon-necklace.jpg`}
+                                  alt={item.name}
+                                  fill
+                                  unoptimized
+                                  className="object-cover"
+                                />
+                              </div>
+                              <div>
+                                <p className="text-white font-medium">{item.name}</p>
+                                <p className="text-[#8e8e93] text-[10.5px]">Qty: {item.quantity}</p>
+                              </div>
+                            </div>
+                            <span className="text-[#f5c767] font-medium">
+                              ₹{item.price * item.quantity}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Pricing Breakdown */}
+                      <div className="pt-2 border-t border-[#1f1f1f] flex items-center justify-between text-xs">
+                        <span className="text-[#8e8e93]">
+                          Subtotal: ₹{ord.subtotal} | Shipping: ₹{ord.shipping}
+                        </span>
+                        <span className="text-white text-sm font-semibold">Total: ₹{ord.total}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="w-full bg-[#0d0d0d] border border-[#222222] rounded-[20px] p-12 text-center">
+                  <p className="text-white font-medium text-sm">
+                    No {adminOrdersTab === "wholesale" ? "wholesale" : "retail"} orders found
+                  </p>
+                  <p className="text-[#8e8e93] text-xs mt-1">
+                    Orders placed on the {adminOrdersTab === "wholesale" ? "wholesale" : "retail"} store will appear here.
+                  </p>
+                </div>
+              )}
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* ============================================================= */}
         {/* TAB 4: OVERVIEW                                               */}

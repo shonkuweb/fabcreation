@@ -10,7 +10,7 @@ interface AboutUsModalProps {
 }
 
 const R2_BASE = "https://pub-ce8688bc6c654bcfb99716f7c9373bcd.r2.dev/fab-creations";
-const LOGO_R2_URL = `${R2_BASE}/logo.png`;
+const LOGO_R2_URL = `${R2_BASE}/brand-logo.png`;
 
 export default function AboutUsModal({ isOpen, onClose }: AboutUsModalProps) {
   if (!isOpen) return null;

@@ -19,7 +19,7 @@ interface FooterProps {
   onNavigateAccount?: () => void;
 }
 
-const LOGO_R2_URL = "https://pub-ce8688bc6c654bcfb99716f7c9373bcd.r2.dev/fab-creations/logo.png";
+const LOGO_R2_URL = "https://pub-ce8688bc6c654bcfb99716f7c9373bcd.r2.dev/fab-creations/brand-logo.png";
 
 export default function Footer({ onNavigateShop, onNavigateHome, onNavigateAccount }: FooterProps) {
   const router = useRouter();

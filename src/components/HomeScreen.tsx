@@ -381,14 +381,6 @@ export default function HomeScreen({
                 </button>
               </div>
             </div>
-
-            {/* Carousel Indicators */}
-            <div className="absolute bottom-2.5 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-10">
-              <span className="w-6 h-1.5 bg-[#e5a93c] rounded-full shadow-sm" />
-              <span className="w-1.5 h-1.5 bg-[#4a4a4a] rounded-full" />
-              <span className="w-1.5 h-1.5 bg-[#4a4a4a] rounded-full" />
-              <span className="w-1.5 h-1.5 bg-[#4a4a4a] rounded-full" />
-            </div>
           </div>
         </section>
 

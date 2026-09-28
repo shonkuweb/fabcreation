@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Image from "next/image";
 import {
   ChevronRight,
@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 
 import { useRouter } from "next/navigation";
+import AboutUsModal from "@/components/AboutUsModal";
 
 interface FooterProps {
   onNavigateShop?: () => void;
@@ -22,6 +23,7 @@ const LOGO_R2_URL = "https://pub-ce8688bc6c654bcfb99716f7c9373bcd.r2.dev/fab-cre
 
 export default function Footer({ onNavigateShop, onNavigateHome, onNavigateAccount }: FooterProps) {
   const router = useRouter();
+  const [isAboutOpen, setIsAboutOpen] = useState(false);
   const navShop = onNavigateShop || (() => router.push("/shop"));
   const navHome = onNavigateHome || (() => router.push("/home"));
   const navAccount = onNavigateAccount || (() => router.push("/account"));
@@ -78,8 +80,7 @@ export default function Footer({ onNavigateShop, onNavigateHome, onNavigateAccou
 
         {/* Brand Description */}
         <p className="text-[#c5c5c5] text-[13.5px] leading-relaxed font-normal mb-5 max-w-[340px]">
-          India’s most trusted online jewelry destination. Discover exquisite
-          designs crafted with precision and elegance.
+          Jewellery that completes the look. A collection that creates the impression. Based in Lucknow, serving wholesale and retail with timeless craftsmanship and modern commerce.
         </p>
 
         {/* Social Media Links */}
@@ -189,7 +190,8 @@ export default function Footer({ onNavigateShop, onNavigateHome, onNavigateAccou
               <li key={idx}>
                 <button
                   type="button"
-                  className="flex items-center gap-2 text-[#d1d5db] hover:text-[#e5a93c] transition-colors cursor-pointer"
+                  onClick={item === "About Us" ? () => setIsAboutOpen(true) : undefined}
+                  className="flex items-center gap-2 text-[#d1d5db] hover:text-[#e5a93c] transition-colors cursor-pointer text-left"
                 >
                   <ChevronRight className="w-3.5 h-3.5 text-[#e5a93c]" />
                   <span>{item}</span>
@@ -240,6 +242,9 @@ export default function Footer({ onNavigateShop, onNavigateHome, onNavigateAccou
           </div>
         </div>
       </div>
+
+      {/* About Us Modal */}
+      <AboutUsModal isOpen={isAboutOpen} onClose={() => setIsAboutOpen(false)} />
     </footer>
   );
 }

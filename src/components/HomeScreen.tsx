@@ -569,6 +569,61 @@ export default function HomeScreen({
           )}
         </section>
 
+        {/* About Us Brand Story Section */}
+        <section id="about-us" className="w-full bg-[#0c0c0c] border border-[#2d2212] rounded-[24px] p-6 sm:p-8 my-6 relative overflow-hidden shadow-2xl">
+          {/* Subtle background gold glow */}
+          <div className="absolute top-0 right-0 w-48 h-48 bg-[#e5a93c]/5 rounded-full blur-3xl pointer-events-none" />
+
+          <div className="relative z-10 flex flex-col space-y-4">
+            <div className="flex items-center gap-2">
+              <span className="w-6 h-[1.5px] bg-[#e5a93c]" />
+              <span className="text-[#e5a93c] text-[11px] font-semibold tracking-[0.2em] uppercase">
+                About Fab Creation
+              </span>
+            </div>
+
+            <h3 className="text-white text-[20px] sm:text-[22px] font-serif font-medium leading-snug tracking-tight">
+              Jewellery that completes the look.<br />
+              <span className="text-[#f5c767]">A collection that creates the impression.</span>
+            </h3>
+
+            <div className="space-y-3 text-[13.5px] text-[#c4c4c4] leading-relaxed font-normal">
+              <p>
+                At <strong className="text-white font-medium">Fab Creation</strong>, we believe jewellery is more than an accessory—it’s the detail that makes an outfit unforgettable.
+              </p>
+              <p>
+                Based in <span className="text-[#e5a93c] font-medium">Lucknow</span>, we bring together a carefully selected range of chains, anklets, earrings, bangles, fancy kadas, necklaces, bridal jewellery and AD jewellery, serving both wholesale and retail customers.
+              </p>
+              <p>
+                Whether you’re looking for everyday elegance, statement pieces for a special occasion, or exquisite bridal jewellery, our collection is curated to offer style, variety and value under one roof.
+              </p>
+            </div>
+
+            {/* Built for Modern Jewellery Businesses Card */}
+            <div className="mt-2 p-4 sm:p-5 rounded-[18px] bg-[#141008] border border-[#4a3816] shadow-md space-y-2">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#e5a93c]" />
+                <h4 className="text-white text-[14px] sm:text-[15px] font-serif font-semibold">
+                  Built for Modern Jewellery Businesses
+                </h4>
+              </div>
+              <p className="text-[12.5px] sm:text-[13px] text-[#a8a8a8] leading-relaxed">
+                Fab Creation goes beyond jewellery. We also provide E-commerce services, helping jewellery businesses take their collections online and reach customers beyond their physical store.
+              </p>
+            </div>
+
+            {/* Closing Manifesto */}
+            <div className="pt-3 border-t border-[#2a2217] space-y-1">
+              <p className="text-[#8e8e93] text-[12px] tracking-wide font-medium">
+                Wholesale or retail. Traditional or contemporary. Jewellery or digital.
+              </p>
+              <p className="text-[#f5c767] text-[14.5px] font-serif font-semibold tracking-tight">
+                Fab Creation is where craftsmanship meets modern commerce.
+              </p>
+            </div>
+          </div>
+        </section>
+
         {/* Luxury Footer */}
         <Footer
           onNavigateHome={() => window.scrollTo({ top: 0, behavior: "smooth" })}

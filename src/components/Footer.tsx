@@ -58,187 +58,217 @@ export default function Footer({ onNavigateShop, onNavigateHome, onNavigateAccou
         <polygon points="75,20 78,25 83,26 79,30 80,35 75,32 70,35 71,30 67,26 72,25" fill="currentColor" />
       </svg>
 
-      <div className="relative w-full max-w-[440px] mx-auto px-5 z-10 flex flex-col">
-        {/* Brand Logo */}
-        <div className="mb-4">
-          <div className="w-[68px] h-[68px] relative rounded-full overflow-hidden">
-            <Image
-              src={LOGO_R2_URL}
-              alt="Fab Creations"
-              width={75}
-              height={75}
-              priority
-              unoptimized
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.src = "/images/logo.png";
-              }}
-              className="object-contain w-full h-full"
-            />
+      <div className="relative w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 z-10 flex flex-col">
+        {/* 4-Column Grid on Tablet & Desktop */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-10">
+          {/* Column 1: Brand Info */}
+          <div className="space-y-4">
+            <div className="w-[64px] h-[64px] relative rounded-full overflow-hidden border border-[#332512]">
+              <Image
+                src={LOGO_R2_URL}
+                alt="Fab Creations"
+                width={75}
+                height={75}
+                priority
+                unoptimized
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.src = "/images/logo.png";
+                }}
+                className="object-contain w-full h-full"
+              />
+            </div>
+
+            <p className="text-[#c5c5c5] text-xs sm:text-sm leading-relaxed font-normal max-w-xs">
+              Jewellery that completes the look. A collection that creates the impression. Based in Lucknow, serving wholesale and retail with timeless craftsmanship and modern commerce.
+            </p>
+
+            {/* Social Media Links */}
+            <div className="flex items-center gap-3">
+              <a
+                href="https://facebook.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-9 h-9 rounded-full border border-[#e5a93c] flex items-center justify-center text-[#e5a93c] hover:bg-[#e5a93c] hover:text-black transition-all"
+                title="Facebook"
+              >
+                <Facebook className="w-4 h-4 fill-current" />
+              </a>
+              <a
+                href="https://instagram.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-9 h-9 rounded-full border border-[#e5a93c] flex items-center justify-center text-[#e5a93c] hover:bg-[#e5a93c] hover:text-black transition-all"
+                title="Instagram"
+              >
+                <Instagram className="w-4 h-4" />
+              </a>
+              <a
+                href="https://youtube.com"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-9 h-9 rounded-full border border-[#e5a93c] flex items-center justify-center text-[#e5a93c] hover:bg-[#e5a93c] hover:text-black transition-all"
+                title="YouTube"
+              >
+                <Youtube className="w-4 h-4" />
+              </a>
+            </div>
+
+            <div className="flex items-center gap-2 pt-1">
+              <div className="w-6 h-[1px] bg-[#5a4215]" />
+              <span className="text-[#c89736] text-[10px] tracking-[0.25em] font-semibold uppercase">
+                SPARKLES BEYOND ORDINARY
+              </span>
+            </div>
           </div>
-        </div>
 
-        {/* Brand Description */}
-        <p className="text-[#c5c5c5] text-[13.5px] leading-relaxed font-normal mb-5 max-w-[340px]">
-          Jewellery that completes the look. A collection that creates the impression. Based in Lucknow, serving wholesale and retail with timeless craftsmanship and modern commerce.
-        </p>
+          {/* Column 2: Shop & Portals */}
+          <div>
+            <h4 className="text-white text-base sm:text-lg font-serif font-medium tracking-tight mb-2">
+              Explore & Shop
+            </h4>
+            <div className="w-12 h-[1.5px] bg-[#e5a93c] mb-4" />
 
-        {/* Social Media Links */}
-        <div className="flex items-center gap-3.5 mb-5">
-          {/* Facebook */}
-          <a
-            href="https://facebook.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-10 h-10 rounded-full border border-[#e5a93c] flex items-center justify-center text-[#e5a93c] hover:bg-[#e5a93c] hover:text-black transition-all"
-          >
-            <Facebook className="w-4 h-4 fill-current" />
-          </a>
-
-          {/* Instagram */}
-          <a
-            href="https://instagram.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-10 h-10 rounded-full border border-[#e5a93c] flex items-center justify-center text-[#e5a93c] hover:bg-[#e5a93c] hover:text-black transition-all"
-          >
-            <Instagram className="w-4 h-4" />
-          </a>
-
-          {/* YouTube */}
-          <a
-            href="https://youtube.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-10 h-10 rounded-full border border-[#e5a93c] flex items-center justify-center text-[#e5a93c] hover:bg-[#e5a93c] hover:text-black transition-all"
-          >
-            <Youtube className="w-4 h-4" />
-          </a>
-        </div>
-
-        {/* Tagline Motto */}
-        <div className="flex items-center gap-2 mb-8">
-          <div className="w-8 h-[1px] bg-[#5a4215]" />
-          <span className="text-[#c89736] text-[10px] tracking-[0.25em] font-semibold uppercase">
-            SPARKLES BEYOND ORDINARY
-          </span>
-        </div>
-
-        {/* Section 1: Shop */}
-        <div className="mb-7">
-          <h4 className="text-white text-[19px] font-serif font-medium tracking-tight mb-2">
-            Shop
-          </h4>
-          <div className="w-full h-[1px] bg-[#3a2c16] mb-3.5" />
-
-          <ul className="space-y-3 text-[14px]">
-            <li>
-              <button
-                onClick={navShop}
-                className="flex items-center gap-2 text-[#d1d5db] hover:text-[#e5a93c] transition-colors cursor-pointer"
-              >
-                <ChevronRight className="w-3.5 h-3.5 text-[#e5a93c]" />
-                <span>Shop</span>
-              </button>
-            </li>
-            <li>
-              <button
-                onClick={navAccount}
-                className="flex items-center gap-2 text-[#d1d5db] hover:text-[#e5a93c] transition-colors cursor-pointer"
-              >
-                <ChevronRight className="w-3.5 h-3.5 text-[#e5a93c]" />
-                <span>Wishlist</span>
-              </button>
-            </li>
-            <li>
-              <button
-                onClick={navHome}
-                className="flex items-center gap-2 text-[#d1d5db] hover:text-[#e5a93c] transition-colors cursor-pointer"
-              >
-                <ChevronRight className="w-3.5 h-3.5 text-[#e5a93c]" />
-                <span>B2B Portal</span>
-              </button>
-            </li>
-          </ul>
-        </div>
-
-        {/* Section 2: Account & Support */}
-        <div className="mb-8">
-          <h4 className="text-white text-[19px] font-serif font-medium tracking-tight mb-2">
-            Account & Support
-          </h4>
-          <div className="w-full h-[1px] bg-[#3a2c16] mb-3.5" />
-
-          <ul className="space-y-3 text-[14px]">
-            <li>
-              <button
-                type="button"
-                onClick={navAccount}
-                className="flex items-center gap-2 text-[#d1d5db] hover:text-[#e5a93c] transition-colors cursor-pointer"
-              >
-                <ChevronRight className="w-3.5 h-3.5 text-[#e5a93c]" />
-                <span>My Account</span>
-              </button>
-            </li>
-            {[
-              "Contact Us",
-              "About Us",
-              "Privacy Policy",
-              "Terms & Conditions",
-              "Refund Policy",
-            ].map((item, idx) => (
-              <li key={idx}>
+            <ul className="space-y-2.5 text-xs sm:text-sm">
+              <li>
                 <button
                   type="button"
-                  onClick={item === "About Us" ? () => setIsAboutOpen(true) : undefined}
-                  className="flex items-center gap-2 text-[#d1d5db] hover:text-[#e5a93c] transition-colors cursor-pointer text-left"
+                  onClick={navShop}
+                  className="flex items-center gap-2 text-[#d1d5db] hover:text-[#e5a93c] transition-colors cursor-pointer"
                 >
                   <ChevronRight className="w-3.5 h-3.5 text-[#e5a93c]" />
-                  <span>{item}</span>
+                  <span>Retail Collection</span>
                 </button>
               </li>
-            ))}
-          </ul>
+              <li>
+                <button
+                  type="button"
+                  onClick={navHome}
+                  className="flex items-center gap-2 text-[#d1d5db] hover:text-[#e5a93c] transition-colors cursor-pointer"
+                >
+                  <ChevronRight className="w-3.5 h-3.5 text-[#e5a93c]" />
+                  <span>B2B Wholesale Portal</span>
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  onClick={navAccount}
+                  className="flex items-center gap-2 text-[#d1d5db] hover:text-[#e5a93c] transition-colors cursor-pointer"
+                >
+                  <ChevronRight className="w-3.5 h-3.5 text-[#e5a93c]" />
+                  <span>Wishlist</span>
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  onClick={navShop}
+                  className="flex items-center gap-2 text-[#d1d5db] hover:text-[#e5a93c] transition-colors cursor-pointer"
+                >
+                  <ChevronRight className="w-3.5 h-3.5 text-[#e5a93c]" />
+                  <span>Complete Catalogue</span>
+                </button>
+              </li>
+            </ul>
+          </div>
+
+          {/* Column 3: Customer Care & Policies */}
+          <div>
+            <h4 className="text-white text-base sm:text-lg font-serif font-medium tracking-tight mb-2">
+              Customer Support
+            </h4>
+            <div className="w-12 h-[1.5px] bg-[#e5a93c] mb-4" />
+
+            <ul className="space-y-2.5 text-xs sm:text-sm">
+              <li>
+                <button
+                  type="button"
+                  onClick={() => setIsAboutOpen(true)}
+                  className="flex items-center gap-2 text-[#d1d5db] hover:text-[#e5a93c] transition-colors cursor-pointer"
+                >
+                  <ChevronRight className="w-3.5 h-3.5 text-[#e5a93c]" />
+                  <span>About Us</span>
+                </button>
+              </li>
+              <li>
+                <button
+                  type="button"
+                  onClick={navAccount}
+                  className="flex items-center gap-2 text-[#d1d5db] hover:text-[#e5a93c] transition-colors cursor-pointer"
+                >
+                  <ChevronRight className="w-3.5 h-3.5 text-[#e5a93c]" />
+                  <span>My Account & Orders</span>
+                </button>
+              </li>
+              <li>
+                <a
+                  href="https://wa.me/916289417338"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-[#d1d5db] hover:text-[#e5a93c] transition-colors cursor-pointer"
+                >
+                  <ChevronRight className="w-3.5 h-3.5 text-[#e5a93c]" />
+                  <span>WhatsApp Helpdesk</span>
+                </a>
+              </li>
+              <li>
+                <span className="flex items-center gap-2 text-[#8e8e93]">
+                  <ChevronRight className="w-3.5 h-3.5 text-[#8e8e93]" />
+                  <span>Dispatch: 24-48 Hours</span>
+                </span>
+              </li>
+            </ul>
+          </div>
+
+          {/* Column 4: Contact & Operations */}
+          <div>
+            <h4 className="text-white text-base sm:text-lg font-serif font-medium tracking-tight mb-2">
+              Corporate Office
+            </h4>
+            <div className="w-12 h-[1.5px] bg-[#e5a93c] mb-4" />
+
+            <div className="space-y-2 text-xs sm:text-sm text-[#d1d5db]">
+              <p className="leading-relaxed">
+                <span className="text-[#e5a93c] font-medium block">Headquarters:</span>
+                Lucknow, Uttar Pradesh, India
+              </p>
+              <p>
+                <span className="text-[#e5a93c] font-medium block">Helpline / WhatsApp:</span>
+                +91 6289417338
+              </p>
+              <p>
+                <span className="text-[#e5a93c] font-medium block">Email:</span>
+                fabcreation6289@gmail.com
+              </p>
+            </div>
+          </div>
         </div>
 
-        {/* Scroll To Top Button */}
-        <div className="flex justify-end mb-6">
-          <button
-            onClick={scrollToTop}
-            title="Scroll to top"
-            className="w-12 h-12 rounded-full border border-[#e5a93c] bg-[#0c0c0c] hover:bg-[#e5a93c] hover:text-black text-[#e5a93c] flex items-center justify-center shadow-lg transition-all active:scale-95 cursor-pointer"
-          >
-            <ChevronUp className="w-5 h-5 stroke-[2.5]" />
-          </button>
-        </div>
-
-        {/* Bottom Divider Line */}
-        <div className="w-full h-[1px] bg-[#3a2c16] mb-5" />
-
-        {/* Bottom Copyright & Slogan Row */}
-        <div className="flex items-center justify-between gap-3 text-xs">
-          {/* Left: Copyright */}
-          <div className="space-y-0.5">
-            <p className="text-[#8e8e93] text-[12px]">
-              © 2026 Fab Creations
+        {/* Scroll To Top Button & Bottom Row */}
+        <div className="w-full pt-4 border-t border-[#261f14] flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="text-center sm:text-left space-y-0.5">
+            <p className="text-[#8e8e93] text-xs">
+              © 2026 Fab Creations (fab-creations.com). All rights reserved.
             </p>
-            <p className="text-[#8e8e93] text-[12px]">
-              Presented by <span className="text-[#d1d5db]">ShonkuWEB</span>
+            <p className="text-[#8e8e93] text-[11px]">
+              Engineered with excellence for luxury retail & B2B commerce.
             </p>
           </div>
 
-          {/* Vertical Divider */}
-          <div className="w-[1px] h-9 bg-[#3a2c16]" />
-
-          {/* Right: Tagline */}
-          <div className="text-right space-y-0.5">
-            <p className="text-[#e5a93c] text-[9.5px] tracking-[0.2em] font-semibold uppercase">
-              JEWELRY FOR
-            </p>
-            <p className="text-[#e5a93c] text-[9.5px] tracking-[0.2em] font-semibold uppercase">
-              A BRIGHTER YOU
-            </p>
-            <div className="w-5 h-[1px] bg-[#e5a93c] ml-auto mt-1" />
+          <div className="flex items-center gap-4">
+            <div className="text-right hidden sm:block">
+              <p className="text-[#e5a93c] text-[10px] tracking-[0.2em] font-semibold uppercase">
+                JEWELLERY FOR A BRIGHTER YOU
+              </p>
+            </div>
+            <button
+              onClick={scrollToTop}
+              title="Scroll to top"
+              className="w-10 h-10 rounded-full border border-[#e5a93c] bg-[#0c0c0c] hover:bg-[#e5a93c] hover:text-black text-[#e5a93c] flex items-center justify-center shadow-lg transition-all active:scale-95 cursor-pointer shrink-0"
+            >
+              <ChevronUp className="w-5 h-5 stroke-[2.2]" />
+            </button>
           </div>
         </div>
       </div>

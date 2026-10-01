@@ -92,6 +92,19 @@ export interface DbWishlist {
   updatedAt: string;
 }
 
+export interface WholesaleApplication {
+  id: string;
+  name: string;
+  businessName: string;
+  email: string;
+  instagramId?: string;
+  mobile: string;
+  status: "pending" | "approved" | "rejected";
+  rejectionReason?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface DatabaseData {
   products: Product[];
   categories: Category[];
@@ -99,6 +112,7 @@ export interface DatabaseData {
   users: UserAccount[];
   carts: DbCart[];
   wishlists: DbWishlist[];
+  wholesaleApplications: WholesaleApplication[];
 }
 
 const DB_DIR = process.env.DATABASE_DIR
@@ -114,6 +128,7 @@ const defaultData: DatabaseData = {
   users: [],
   carts: [],
   wishlists: [],
+  wholesaleApplications: [],
 };
 
 // In-memory RAM cache for 0ms read operations
@@ -174,6 +189,9 @@ function getDb(): DatabaseData {
       users: Array.isArray(parsed.users) ? parsed.users : [],
       carts: Array.isArray(parsed.carts) ? parsed.carts : [],
       wishlists: Array.isArray(parsed.wishlists) ? parsed.wishlists : [],
+      wholesaleApplications: Array.isArray(parsed.wholesaleApplications)
+        ? parsed.wholesaleApplications
+        : [],
     };
     return cachedDb;
   } catch {
@@ -184,6 +202,7 @@ function getDb(): DatabaseData {
       users: [],
       carts: [],
       wishlists: [],
+      wholesaleApplications: [],
     };
     return cachedDb;
   }
@@ -519,4 +538,114 @@ export function saveDbWishlist(
     saveDb(db);
     return newW;
   }
+}
+
+// ---------------- WHOLESALE APPLICATIONS (B2B APPROVAL SYSTEM) ----------------
+export function getWholesaleApplications(
+  status?: "pending" | "approved" | "rejected",
+  mobile?: string
+): WholesaleApplication[] {
+  const db = getDb();
+  let list = db.wholesaleApplications || [];
+  if (status) {
+    list = list.filter((a) => a.status === status);
+  }
+  if (mobile) {
+    const clean = mobile.replace(/\D/g, "");
+    list = list.filter((a) => a.mobile.replace(/\D/g, "") === clean);
+  }
+  return list.sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
+}
+
+export function getWholesaleApplicationByMobile(
+  mobile: string
+): WholesaleApplication | null {
+  const list = getWholesaleApplications(undefined, mobile);
+  return list.length > 0 ? list[0] : null;
+}
+
+export function createWholesaleApplication(data: {
+  name: string;
+  businessName: string;
+  email: string;
+  instagramId?: string;
+  mobile: string;
+}): WholesaleApplication {
+  const db = getDb();
+  db.wholesaleApplications = db.wholesaleApplications || [];
+  const cleanMobile = data.mobile.replace(/\D/g, "");
+  const now = new Date().toISOString();
+
+  // If already exists with this mobile, update existing application
+  const existingIndex = db.wholesaleApplications.findIndex(
+    (a) => a.mobile.replace(/\D/g, "") === cleanMobile
+  );
+
+  if (existingIndex > -1) {
+    const existing = db.wholesaleApplications[existingIndex];
+    // If it was rejected or pending, refresh it
+    const newStatus = existing.status === "approved" ? "approved" : "pending";
+    const updated: WholesaleApplication = {
+      ...existing,
+      name: data.name.trim() || existing.name,
+      businessName: data.businessName.trim() || existing.businessName,
+      email: data.email.trim() || existing.email,
+      instagramId: data.instagramId?.trim() || existing.instagramId,
+      status: newStatus,
+      updatedAt: now,
+    };
+    db.wholesaleApplications[existingIndex] = updated;
+    saveDb(db);
+    return updated;
+  }
+
+  const newApp: WholesaleApplication = {
+    id: `ws-app-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+    name: data.name.trim(),
+    businessName: data.businessName.trim(),
+    email: data.email.trim(),
+    instagramId: data.instagramId?.trim() || "",
+    mobile: cleanMobile,
+    status: "pending",
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  db.wholesaleApplications.push(newApp);
+  saveDb(db);
+  return newApp;
+}
+
+export function updateWholesaleApplicationStatus(
+  id: string,
+  status: "pending" | "approved" | "rejected",
+  reason?: string
+): WholesaleApplication | null {
+  const db = getDb();
+  db.wholesaleApplications = db.wholesaleApplications || [];
+  const index = db.wholesaleApplications.findIndex((a) => a.id === id);
+  if (index === -1) return null;
+
+  const now = new Date().toISOString();
+  db.wholesaleApplications[index].status = status;
+  if (reason !== undefined) {
+    db.wholesaleApplications[index].rejectionReason = reason;
+  }
+  db.wholesaleApplications[index].updatedAt = now;
+  saveDb(db);
+  return db.wholesaleApplications[index];
+}
+
+export function deleteWholesaleApplication(id: string): boolean {
+  const db = getDb();
+  db.wholesaleApplications = db.wholesaleApplications || [];
+  const beforeLen = db.wholesaleApplications.length;
+  db.wholesaleApplications = db.wholesaleApplications.filter((a) => a.id !== id);
+  if (db.wholesaleApplications.length !== beforeLen) {
+    saveDb(db);
+    return true;
+  }
+  return false;
 }

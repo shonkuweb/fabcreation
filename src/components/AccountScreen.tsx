@@ -321,20 +321,29 @@ export default function AccountScreen({
         </div>
       )}
 
-      {/* Mobile Frame Container */}
-      <div className="w-full max-w-[440px] flex flex-col px-4 pt-3">
+      {/* Responsive Container */}
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3">
         {/* Top Header Bar */}
-        <div className="flex items-center justify-between py-1 mb-3">
+        <div className="flex items-center justify-between py-2 mb-4 border-b border-[#181818]">
           <button
             type="button"
             onClick={navHome}
-            className="w-9 h-9 rounded-full bg-[#141414] border border-[#262626] flex items-center justify-center text-white hover:text-[#e5a93c] transition-colors cursor-pointer"
+            className="h-9 px-3 rounded-full bg-[#141414] border border-[#262626] flex items-center justify-center gap-2 text-white hover:text-[#e5a93c] transition-colors cursor-pointer text-xs font-medium"
             title="Back to Home"
           >
             <ArrowLeft className="w-4 h-4" />
+            <span className="hidden sm:inline">Home</span>
           </button>
-          <span className="text-xs font-serif tracking-widest text-[#e5a93c] uppercase">Account & Orders</span>
-          <div className="w-9" />
+          <span className="text-xs sm:text-sm font-serif tracking-widest text-[#e5a93c] uppercase font-semibold">
+            Account & Order History
+          </span>
+          <button
+            type="button"
+            onClick={navShop}
+            className="text-xs text-[#8e8e93] hover:text-[#e5a93c] transition-colors cursor-pointer"
+          >
+            Shop Now →
+          </button>
         </div>
 
         {/* 1. Top User Card */}
@@ -1061,8 +1070,8 @@ export default function AccountScreen({
         }}
       />
 
-      {/* Bottom Navigation Bar (Fixed) */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-[#080808]/95 backdrop-blur-md border-t border-[#181818] flex justify-center pb-safe">
+      {/* Bottom Navigation Bar (Mobile Only: hidden on md:) */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#080808]/95 backdrop-blur-md border-t border-[#181818] flex justify-center pb-safe">
         <div className="w-full max-w-[440px] h-[64px] px-3 flex items-center justify-between relative">
           {/* 1. Home */}
           <button

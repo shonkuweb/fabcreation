@@ -273,10 +273,10 @@ export default function ProductDetailsScreen({
         </div>
       )}
 
-      {/* Main Container */}
-      <div className="w-full max-w-[440px] flex flex-col px-4 pt-3 space-y-4">
+      {/* Responsive Main Container */}
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-3 space-y-8">
         {/* Top Navigation Bar */}
-        <div className="flex items-center justify-between py-1">
+        <div className="flex items-center justify-between py-2 border-b border-[#181818]">
           <button
             type="button"
             onClick={() => {
@@ -288,12 +288,15 @@ export default function ProductDetailsScreen({
                 navShop();
               }
             }}
-            className="w-9 h-9 rounded-full bg-[#141414] border border-[#262626] flex items-center justify-center text-white hover:text-[#e5a93c] transition-colors cursor-pointer"
+            className="h-9 px-3 rounded-full bg-[#141414] border border-[#262626] flex items-center justify-center gap-2 text-white hover:text-[#e5a93c] transition-colors cursor-pointer text-xs font-medium"
             title="Go Back"
           >
             <ArrowLeft className="w-4 h-4" />
+            <span className="hidden sm:inline">Back</span>
           </button>
-          <span className="text-xs font-serif tracking-widest text-[#e5a93c] uppercase">Fab Creations</span>
+          <span className="text-xs sm:text-sm font-serif tracking-widest text-[#e5a93c] uppercase font-semibold">
+            Fab Creations Luxury Jewellery
+          </span>
           <button
             type="button"
             onClick={navCart}
@@ -309,231 +312,236 @@ export default function ProductDetailsScreen({
           </button>
         </div>
 
-        {/* 1. Big Image Showcase */}
-        <div className="relative w-full aspect-[1.12] rounded-[24px] overflow-hidden border border-[#3a2c16] bg-[#0e0e0e] shadow-lg">
-          <Image
-            src={product.image}
-            alt={product.name}
-            fill
-            priority
-            sizes="(max-width: 640px) 100vw, 440px"
-            onError={(e) => {
-              (e.target as HTMLImageElement).src = "/images/products/moon-necklace.jpg";
-            }}
-            className="object-cover"
-          />
+        {/* 2-Column Responsive Layout for Desktop & Mobile */}
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-8 lg:gap-12 items-start">
+          {/* Left Column: Image Showcase + Trust Badges (md:col-span-6 lg:col-span-5 md:sticky md:top-6 space-y-4) */}
+          <div className="md:col-span-6 lg:col-span-5 space-y-4 md:sticky md:top-6">
+            <div className="relative w-full aspect-[1.08] rounded-[24px] overflow-hidden border border-[#3a2c16] bg-[#0e0e0e] shadow-2xl">
+              <Image
+                src={product.image}
+                alt={product.name}
+                fill
+                priority
+                sizes="(max-width: 768px) 100vw, 500px"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = "/images/products/moon-necklace.jpg";
+                }}
+                className="object-cover hover:scale-105 transition-transform duration-500"
+              />
 
-          {/* Heart Wishlist Button */}
-          <button
-            onClick={handleToggleWishlist}
-            className="absolute top-3.5 right-3.5 w-8 h-8 rounded-full bg-black/60 backdrop-blur-sm border border-neutral-800 flex items-center justify-center text-[#e5a93c] hover:scale-110 active:scale-95 transition-all cursor-pointer"
-          >
-            <Heart
-              className={`w-4 h-4 ${
-                isWishlist ? "fill-[#e5a93c] text-[#e5a93c]" : "text-[#e5a93c]"
-              }`}
-            />
-          </button>
-        </div>
-
-        {/* 2. Breadcrumbs, Title, SKU, Rating */}
-        <div className="space-y-1.5">
-          {/* Breadcrumbs */}
-          <div className="flex items-center gap-1.5 text-[11px] text-[#8e8e93]">
-            <button
-              type="button"
-              onClick={navHome}
-              className="hover:text-white transition-colors cursor-pointer"
-            >
-              Home
-            </button>
-            <span>/</span>
-            <button
-              type="button"
-              onClick={navShop}
-              className="hover:text-white transition-colors cursor-pointer"
-            >
-              Shop
-            </button>
-            <span>/</span>
-            <span className="text-[#e5a93c] truncate max-w-[140px]">{product.name}</span>
-          </div>
-
-          {/* Title & SKU */}
-          <div className="flex items-start justify-between gap-3 pt-1">
-            <h1 className="text-white text-[24px] font-serif font-medium leading-tight tracking-tight">
-              {product.name}
-            </h1>
-            <span className="px-2.5 py-0.5 rounded-full bg-[#18140c] border border-[#4a3816] text-[#e5a93c] text-[11px] font-semibold shrink-0">
-              SKU: {product.sku}
-            </span>
-          </div>
-
-          {/* Subtitle */}
-          <p className="text-[#8e8e93] text-[13px]">
-            {product.subtitle || "Anti tarnish premium quality"}
-          </p>
-
-          {/* Rating Stars & Reviews */}
-          <div className="flex items-center gap-2 pt-1">
-            <div className="flex items-center text-[#e5a93c]">
-              {[...Array(5)].map((_, i) => (
-                <Star
-                  key={i}
-                  className={`w-3.5 h-3.5 ${
-                    i < Math.floor(product.rating || 5)
-                      ? "fill-[#e5a93c] text-[#e5a93c]"
-                      : "text-[#555555]"
+              {/* Heart Wishlist Button */}
+              <button
+                onClick={handleToggleWishlist}
+                className="absolute top-3.5 right-3.5 w-9 h-9 rounded-full bg-black/60 backdrop-blur-sm border border-neutral-800 flex items-center justify-center text-[#e5a93c] hover:scale-110 active:scale-95 transition-all cursor-pointer shadow-md"
+              >
+                <Heart
+                  className={`w-4 h-4 ${
+                    isWishlist ? "fill-[#e5a93c] text-[#e5a93c]" : "text-[#e5a93c]"
                   }`}
                 />
-              ))}
-            </div>
-            <span className="text-[#8e8e93] text-xs font-normal">
-              ({product.reviewsCount || 0} reviews)
-            </span>
-          </div>
-        </div>
-
-        {/* 3. Price & Stock Details */}
-        <div className="w-full rounded-[20px] border border-[#222222] bg-[#0d0d0d] p-4 flex items-center justify-between shadow-sm">
-          <div>
-            <span className="text-[#8e8e93] text-xs block mb-0.5">
-              {storeMode === "wholesale" ? "B2B Wholesale Price" : "Retail Price"}
-            </span>
-            {storeMode === "wholesale" && !isWholesaleLoggedIn ? (
-              <button
-                type="button"
-                onClick={onOpenWholesaleLogin}
-                className="px-3 py-1.5 rounded-xl bg-[#1c160c] border border-[#e5a93c] text-[#e5a93c] hover:bg-[#e5a93c] hover:text-black transition-all text-xs font-medium flex items-center gap-1.5 cursor-pointer shadow-sm mt-1"
-              >
-                <Lock className="w-3.5 h-3.5" />
-                <span>Login to View Wholesale Price</span>
               </button>
-            ) : (
-              <div className="flex items-baseline gap-1.5">
-                <span className="text-[#e5a93c] text-[26px] font-bold tracking-tight">
-                  ₹{storeMode === "wholesale" ? (product.wholesalePrice ?? product.price) : (product.retailPrice ?? product.price)}
-                </span>
-                <span className="text-[#8e8e93] text-xs">/ piece</span>
+            </div>
+
+            {/* Trust Badges */}
+            <div className="grid grid-cols-3 gap-2.5 text-center">
+              <div className="p-3 rounded-[16px] bg-[#0d0d0d] border border-[#202020] flex flex-col items-center">
+                <ShieldCheck className="w-5 h-5 text-[#e5a93c] mb-1" />
+                <span className="text-white text-[11px] font-medium">100% Authentic</span>
+                <span className="text-[#8e8e93] text-[9.5px]">Factory direct</span>
               </div>
-            )}
+              <div className="p-3 rounded-[16px] bg-[#0d0d0d] border border-[#202020] flex flex-col items-center">
+                <Sparkles className="w-5 h-5 text-[#e5a93c] mb-1" />
+                <span className="text-white text-[11px] font-medium">Anti Tarnish</span>
+                <span className="text-[#8e8e93] text-[9.5px]">Long lasting</span>
+              </div>
+              <div className="p-3 rounded-[16px] bg-[#0d0d0d] border border-[#202020] flex flex-col items-center">
+                <CreditCard className="w-5 h-5 text-[#e5a93c] mb-1" />
+                <span className="text-white text-[11px] font-medium">Insured Shipping</span>
+                <span className="text-[#8e8e93] text-[9.5px]">Safe delivery</span>
+              </div>
+            </div>
           </div>
 
-          <div className="text-right">
-            <span className="text-[#8e8e93] text-xs block mb-0.5">Availability</span>
-            <span
-              className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
-                product.stock > 0
-                  ? "bg-emerald-950/60 border border-emerald-500/40 text-emerald-400"
-                  : "bg-rose-950/60 border border-rose-500/40 text-rose-400"
-              }`}
-            >
-              {product.stock > 0 ? `${product.stock} In Stock` : "Out of Stock"}
-            </span>
-          </div>
-        </div>
+          {/* Right Column: Product Specs, Pricing & Purchase Actions (md:col-span-6 lg:col-span-7 space-y-5) */}
+          <div className="md:col-span-6 lg:col-span-7 space-y-5">
+            {/* Breadcrumbs, Title, SKU, Rating */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-xs text-[#8e8e93]">
+                <button
+                  type="button"
+                  onClick={navHome}
+                  className="hover:text-white transition-colors cursor-pointer"
+                >
+                  Home
+                </button>
+                <span>/</span>
+                <button
+                  type="button"
+                  onClick={navShop}
+                  className="hover:text-white transition-colors cursor-pointer"
+                >
+                  Shop
+                </button>
+                <span>/</span>
+                <span className="text-[#e5a93c] truncate max-w-[200px]">{product.name}</span>
+              </div>
 
-        {/* 4. Quantity Stepper & Add to Cart */}
-        <div className="space-y-3">
-          <div className="flex items-center gap-3">
-            {/* Quantity Stepper */}
-            <div className="flex items-center h-[50px] rounded-[14px] bg-[#0e0e0e] border border-[#262626] px-3 gap-3 shrink-0">
-              <button
-                type="button"
-                onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                disabled={quantity <= 1}
-                className="w-7 h-7 rounded-lg bg-[#1a1a1a] flex items-center justify-center text-white hover:text-[#e5a93c] transition-colors disabled:opacity-40 cursor-pointer"
-              >
-                -
-              </button>
-              <span className="text-white text-[15px] font-semibold min-w-[20px] text-center">
-                {quantity}
-              </span>
-              <button
-                type="button"
-                onClick={() => setQuantity((q) => Math.min(product.stock || 99, q + 1))}
-                disabled={quantity >= (product.stock || 99)}
-                className="w-7 h-7 rounded-lg bg-[#1a1a1a] flex items-center justify-center text-white hover:text-[#e5a93c] transition-colors disabled:opacity-40 cursor-pointer"
-              >
-                +
-              </button>
+              <div className="flex items-start justify-between gap-3 pt-1">
+                <h1 className="text-white text-2xl sm:text-3xl lg:text-4xl font-serif font-medium leading-tight tracking-tight">
+                  {product.name}
+                </h1>
+                <span className="px-3 py-1 rounded-full bg-[#18140c] border border-[#4a3816] text-[#e5a93c] text-xs font-semibold shrink-0">
+                  SKU: {product.sku}
+                </span>
+              </div>
+
+              <p className="text-[#a0a0a0] text-sm">
+                {product.subtitle || "Premium anti-tarnish waterproof stainless steel jewellery"}
+              </p>
+
+              {/* Rating */}
+              <div className="flex items-center gap-2 pt-1">
+                <div className="flex items-center text-[#e5a93c]">
+                  {[...Array(5)].map((_, i) => (
+                    <Star
+                      key={i}
+                      className={`w-4 h-4 ${
+                        i < Math.floor(product.rating || 5)
+                          ? "fill-[#e5a93c] text-[#e5a93c]"
+                          : "text-[#555555]"
+                      }`}
+                    />
+                  ))}
+                </div>
+                <span className="text-[#8e8e93] text-xs font-normal">
+                  ({product.reviewsCount || 0} customer reviews)
+                </span>
+              </div>
             </div>
 
-            {/* Add to Cart Button */}
-            <button
-              type="button"
-              onClick={handleAddToCart}
-              disabled={product.stock <= 0}
-              className="flex-1 h-[50px] rounded-[14px] bg-[#f0a939] hover:bg-[#f5b842] active:scale-[0.99] text-[#111111] font-semibold text-[15px] flex items-center justify-center gap-2 shadow-lg transition-all cursor-pointer disabled:opacity-50"
-            >
-              <ShoppingCart className="w-4 h-4 stroke-[2.2]" />
-              <span>ADD TO CART</span>
-            </button>
-          </div>
+            {/* Price & Stock Card */}
+            <div className="w-full rounded-[22px] border border-[#222222] bg-[#0d0d0d] p-5 flex items-center justify-between shadow-md">
+              <div>
+                <span className="text-[#8e8e93] text-xs block mb-1">
+                  {storeMode === "wholesale" ? "B2B Wholesale Price" : "Retail Price"}
+                </span>
+                {storeMode === "wholesale" && !isWholesaleLoggedIn ? (
+                  <button
+                    type="button"
+                    onClick={onOpenWholesaleLogin}
+                    className="px-3 py-1.5 rounded-xl bg-[#1c160c] border border-[#e5a93c] text-[#e5a93c] hover:bg-[#e5a93c] hover:text-black transition-all text-xs font-medium flex items-center gap-1.5 cursor-pointer shadow-sm mt-1"
+                  >
+                    <Lock className="w-3.5 h-3.5" />
+                    <span>Login to View Wholesale Price</span>
+                  </button>
+                ) : (
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-[#e5a93c] text-3xl font-bold tracking-tight">
+                      ₹{storeMode === "wholesale" ? (product.wholesalePrice ?? product.price) : (product.retailPrice ?? product.price)}
+                    </span>
+                    <span className="text-[#8e8e93] text-xs">/ piece (incl. GST)</span>
+                  </div>
+                )}
+              </div>
 
-          <p className="text-[#8e8e93] text-[11.5px] text-center">
-            {storeMode === "wholesale"
-              ? "Wholesale minimum order requirement: ₹3,000 across cart."
-              : "Retail Store: No minimum order requirement. Free delivery on orders over ₹999."}
-          </p>
+              <div className="text-right">
+                <span className="text-[#8e8e93] text-xs block mb-1">Stock Status</span>
+                <span
+                  className={`text-xs font-semibold px-3 py-1 rounded-full ${
+                    product.stock > 0
+                      ? "bg-emerald-950/60 border border-emerald-500/40 text-emerald-400"
+                      : "bg-rose-950/60 border border-rose-500/40 text-rose-400"
+                  }`}
+                >
+                  {product.stock > 0 ? `${product.stock} In Stock` : "Out of Stock"}
+                </span>
+              </div>
+            </div>
+
+            {/* Quantity Stepper & Add to Cart */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                {/* Stepper */}
+                <div className="flex items-center h-[52px] rounded-[16px] bg-[#0e0e0e] border border-[#262626] px-3.5 gap-3 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                    disabled={quantity <= 1}
+                    className="w-8 h-8 rounded-lg bg-[#1a1a1a] flex items-center justify-center text-white hover:text-[#e5a93c] transition-colors disabled:opacity-40 cursor-pointer"
+                  >
+                    -
+                  </button>
+                  <span className="text-white text-base font-semibold min-w-[24px] text-center">
+                    {quantity}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setQuantity((q) => Math.min(product.stock || 99, q + 1))}
+                    disabled={quantity >= (product.stock || 99)}
+                    className="w-8 h-8 rounded-lg bg-[#1a1a1a] flex items-center justify-center text-white hover:text-[#e5a93c] transition-colors disabled:opacity-40 cursor-pointer"
+                  >
+                    +
+                  </button>
+                </div>
+
+                {/* Add to Cart Button */}
+                <button
+                  type="button"
+                  onClick={handleAddToCart}
+                  disabled={product.stock <= 0}
+                  className="flex-1 h-[52px] rounded-[16px] bg-gradient-to-r from-[#e5a93c] to-[#f5c767] hover:opacity-95 active:scale-[0.99] text-[#111111] font-semibold text-base flex items-center justify-center gap-2 shadow-xl transition-all cursor-pointer disabled:opacity-50"
+                >
+                  <ShoppingCart className="w-5 h-5 stroke-[2.2]" />
+                  <span>ADD TO CART</span>
+                </button>
+              </div>
+
+              <p className="text-[#8e8e93] text-xs text-center sm:text-left">
+                {storeMode === "wholesale"
+                  ? "B2B Wholesale Channel: Minimum order value is ₹3,000 across cart."
+                  : "Retail Store: No minimum order requirement. Free delivery on orders over ₹999."}
+              </p>
+            </div>
+
+            {/* Product Specifications Table */}
+            <div className="w-full bg-[#0d0d0d] border border-[#222222] rounded-[22px] overflow-hidden shadow-sm divide-y divide-[#1a1a1a]">
+              <div className="px-5 py-3.5 flex items-center justify-between text-sm">
+                <span className="text-[#8e8e93]">Material</span>
+                <span className="text-white font-medium">{product.metal || "Stainless Steel (Anti-Tarnish)"}</span>
+              </div>
+              <div className="px-5 py-3.5 flex items-center justify-between text-sm">
+                <span className="text-[#8e8e93]">Target Audience</span>
+                <span className="text-white font-medium">{product.target || "Women / Unisex"}</span>
+              </div>
+              <div className="px-5 py-3.5 flex items-center justify-between text-sm">
+                <span className="text-[#8e8e93]">Ideal Occasion</span>
+                <span className="text-white font-medium">{product.occasion || "Daily Wear / Party"}</span>
+              </div>
+              <div className="px-5 py-3.5 flex items-center justify-between text-sm">
+                <span className="text-[#8e8e93]">Jewellery Category</span>
+                <span className="text-[#e5a93c] font-medium">{product.category}</span>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* 5. Product Attributes Table */}
-        <div className="w-full bg-[#0d0d0d] border border-[#222222] rounded-[20px] overflow-hidden shadow-sm divide-y divide-[#1a1a1a]">
-          <div className="px-4 py-3 flex items-center justify-between text-[13px]">
-            <span className="text-[#8e8e93]">Metal</span>
-            <span className="text-white font-medium">{product.metal || "Stainless Steel"}</span>
-          </div>
-          <div className="px-4 py-3 flex items-center justify-between text-[13px]">
-            <span className="text-[#8e8e93]">Target</span>
-            <span className="text-white font-medium">{product.target || "Women"}</span>
-          </div>
-          <div className="px-4 py-3 flex items-center justify-between text-[13px]">
-            <span className="text-[#8e8e93]">Occasion</span>
-            <span className="text-white font-medium">{product.occasion || "Daily Wear"}</span>
-          </div>
-          <div className="px-4 py-3 flex items-center justify-between text-[13px]">
-            <span className="text-[#8e8e93]">Category</span>
-            <span className="text-[#e5a93c] font-medium">{product.category}</span>
-          </div>
-        </div>
-
-        {/* 6. Trust Badges */}
-        <div className="grid grid-cols-3 gap-2 text-center">
-          <div className="p-3 rounded-[16px] bg-[#0d0d0d] border border-[#202020] flex flex-col items-center">
-            <ShieldCheck className="w-5 h-5 text-[#e5a93c] mb-1" />
-            <span className="text-white text-[11px] font-medium">100% Authentic</span>
-            <span className="text-[#8e8e93] text-[9.5px]">Factory direct</span>
-          </div>
-          <div className="p-3 rounded-[16px] bg-[#0d0d0d] border border-[#202020] flex flex-col items-center">
-            <Sparkles className="w-5 h-5 text-[#e5a93c] mb-1" />
-            <span className="text-white text-[11px] font-medium">Anti Tarnish</span>
-            <span className="text-[#8e8e93] text-[9.5px]">Long lasting</span>
-          </div>
-          <div className="p-3 rounded-[16px] bg-[#0d0d0d] border border-[#202020] flex flex-col items-center">
-            <CreditCard className="w-5 h-5 text-[#e5a93c] mb-1" />
-            <span className="text-white text-[11px] font-medium">Secure B2B</span>
-            <span className="text-[#8e8e93] text-[9.5px]">Verified orders</span>
-          </div>
-        </div>
-
-        {/* 7. "You May Also Like" (Dynamic from other products) */}
+        {/* You May Also Like Section (Responsive Grid) */}
         {otherProducts.length > 0 && (
-          <section className="pt-2">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-white text-[18px] font-serif font-medium tracking-tight">
+          <section className="pt-6 border-t border-[#181818]">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-white text-xl sm:text-2xl font-serif font-medium tracking-tight">
                 You May Also Like
               </h3>
               <button
                 type="button"
                 onClick={navShop}
-                className="text-[#e5a93c] text-xs font-medium hover:text-[#f5c767] transition-colors cursor-pointer"
+                className="text-[#e5a93c] text-sm font-medium hover:text-[#f5c767] transition-colors cursor-pointer"
               >
-                View More
+                View Catalogue →
               </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-3.5 sm:gap-4 md:gap-6">
               {otherProducts.map((p) => (
                 <div
                   key={p.id}
@@ -553,14 +561,14 @@ export default function ProductDetailsScreen({
                     />
                   </div>
                   <div>
-                    <h4 className="text-white text-[13.5px] font-medium truncate mb-0.5">
+                    <h4 className="text-white text-sm font-medium truncate mb-0.5">
                       {p.name}
                     </h4>
-                    <p className="text-[#8e8e93] text-[11px] truncate mb-2">
+                    <p className="text-[#8e8e93] text-xs truncate mb-2">
                       {p.subtitle || p.category}
                     </p>
                     <div className="flex items-center justify-between">
-                      <span className="text-[#e5a93c] text-[15px] font-semibold">
+                      <span className="text-[#e5a93c] text-base font-semibold">
                         ₹{p.price}
                       </span>
                       <span className="text-xs text-[#8e8e93] group-hover:text-white transition-colors">
@@ -593,8 +601,8 @@ export default function ProductDetailsScreen({
         }}
       />
 
-      {/* Bottom Navigation Bar */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-[#080808]/95 backdrop-blur-md border-t border-[#181818] flex justify-center pb-safe">
+      {/* Bottom Navigation Bar (Mobile Only: hidden on md:) */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#080808]/95 backdrop-blur-md border-t border-[#181818] flex justify-center pb-safe">
         <div className="w-full max-w-[440px] h-[64px] px-3 flex items-center justify-between relative">
           {/* Home */}
           <button

@@ -21,8 +21,18 @@ import {
   Eye,
   EyeOff,
   Search,
+  Users,
+  User,
+  CheckCircle2,
+  XCircle,
+  MessageCircle,
+  Instagram,
+  Mail,
+  Building2,
+  Phone,
+  AlertCircle,
 } from "lucide-react";
-import { Product, Category, Order } from "@/lib/db";
+import { Product, Category, Order, WholesaleApplication } from "@/lib/db";
 
 const R2_BASE = "https://pub-ce8688bc6c654bcfb99716f7c9373bcd.r2.dev/fab-creations";
 const LOGO_R2_URL = `${R2_BASE}/brand-logo.png`;
@@ -35,14 +45,19 @@ export default function AdminPage() {
   const [authError, setAuthError] = useState<string | null>(null);
   const [isLoggingIn, setIsLoggingIn] = useState(false);
 
-  // Active Admin Tab: "overview" | "products" | "categories" | "orders"
-  const [activeTab, setActiveTab] = useState<"overview" | "products" | "categories" | "orders">("products");
+  // Active Admin Tab: "overview" | "products" | "categories" | "orders" | "requests"
+  const [activeTab, setActiveTab] = useState<
+    "overview" | "products" | "categories" | "orders" | "requests"
+  >("products");
 
   // Data states
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [adminOrdersTab, setAdminOrdersTab] = useState<"wholesale" | "retail">("wholesale");
+  const [accountRequests, setAccountRequests] = useState<WholesaleApplication[]>([]);
+  const [requestFilter, setRequestFilter] = useState<"all" | "pending" | "approved" | "rejected">("all");
+  const [requestSearch, setRequestSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [notification, setNotification] = useState<string | null>(null);
 
@@ -126,16 +141,18 @@ export default function AdminPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [prodRes, catRes, ordRes] = await Promise.all([
+      const [prodRes, catRes, ordRes, reqRes] = await Promise.all([
         fetch("/api/products", { cache: "no-store" }),
         fetch("/api/categories", { cache: "no-store" }),
         fetch("/api/orders", { cache: "no-store" }),
+        fetch("/api/wholesale-requests", { cache: "no-store" }),
       ]);
 
-      const [prodData, catData, ordData] = await Promise.all([
+      const [prodData, catData, ordData, reqData] = await Promise.all([
         prodRes.json(),
         catRes.json(),
         ordRes.json(),
+        reqRes.json(),
       ]);
 
       if (prodData.success && Array.isArray(prodData.products)) {
@@ -150,10 +167,73 @@ export default function AdminPage() {
       if (ordData.success && Array.isArray(ordData.orders)) {
         setOrders(ordData.orders);
       }
+      if (reqData.success && Array.isArray(reqData.requests)) {
+        setAccountRequests(reqData.requests);
+      }
     } catch (err) {
       console.error("Error fetching data:", err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Wholesale Requests Actions
+  const handleApproveRequest = async (id: string) => {
+    try {
+      const res = await fetch(`/api/wholesale-requests/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "approved" }),
+      });
+      const d = await res.json();
+      if (d.success) {
+        setAccountRequests((prev) =>
+          prev.map((r) => (r.id === id ? { ...r, status: "approved" } : r))
+        );
+        showNotification("Wholesale account approved! User can now log in.");
+      } else {
+        showNotification(d.error || "Failed to approve account.");
+      }
+    } catch {
+      showNotification("Failed to approve account.");
+    }
+  };
+
+  const handleRejectRequest = async (id: string) => {
+    const reason = window.prompt("Reason for rejection (optional):", "Business verification required") || "";
+    try {
+      const res = await fetch(`/api/wholesale-requests/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "rejected", reason }),
+      });
+      const d = await res.json();
+      if (d.success) {
+        setAccountRequests((prev) =>
+          prev.map((r) => (r.id === id ? { ...r, status: "rejected", rejectionReason: reason } : r))
+        );
+        showNotification("Wholesale account request rejected.");
+      } else {
+        showNotification(d.error || "Failed to reject account.");
+      }
+    } catch {
+      showNotification("Failed to reject account.");
+    }
+  };
+
+  const handleDeleteRequest = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this account request?")) return;
+    try {
+      const res = await fetch(`/api/wholesale-requests/${id}`, {
+        method: "DELETE",
+      });
+      const d = await res.json();
+      if (d.success) {
+        setAccountRequests((prev) => prev.filter((r) => r.id !== id));
+        showNotification("Account request deleted.");
+      }
+    } catch {
+      showNotification("Failed to delete request.");
     }
   };
 
@@ -600,12 +680,13 @@ export default function AdminPage() {
             { id: "products", label: "Products", icon: <Package className="w-4 h-4" /> },
             { id: "categories", label: "Categories", icon: <Layers className="w-4 h-4" /> },
             { id: "orders", label: "Orders", icon: <ShoppingBag className="w-4 h-4" /> },
+            { id: "requests", label: "Account Requests", icon: <Users className="w-4 h-4" /> },
             { id: "overview", label: "Overview", icon: <TrendingUp className="w-4 h-4" /> },
           ].map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[13px] font-medium transition-all cursor-pointer ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[13px] font-medium transition-all cursor-pointer whitespace-nowrap ${
                 activeTab === tab.id
                   ? "bg-[#171207] border border-[#e5a93c] text-[#e5a93c] shadow-sm"
                   : "bg-[#0f0f0f] border border-[#222222] text-[#8e8e93] hover:text-white"
@@ -621,6 +702,19 @@ export default function AdminPage() {
               {tab.id === "orders" && (
                 <span className="text-[11px] px-1.5 py-0.2 rounded-full bg-[#222] text-[#aaa]">
                   {orders.length}
+                </span>
+              )}
+              {tab.id === "requests" && (
+                <span
+                  className={`text-[11px] px-1.5 py-0.2 rounded-full font-bold ${
+                    accountRequests.filter((r) => r.status === "pending").length > 0
+                      ? "bg-amber-500/25 border border-amber-500/50 text-amber-300 animate-pulse"
+                      : "bg-[#222] text-[#aaa]"
+                  }`}
+                >
+                  {accountRequests.filter((r) => r.status === "pending").length > 0
+                    ? `${accountRequests.filter((r) => r.status === "pending").length} new`
+                    : accountRequests.length}
                 </span>
               )}
             </button>
@@ -1068,9 +1162,228 @@ export default function AdminPage() {
               <p className="text-xs text-[#a0a0a0] leading-relaxed">
                 • <strong>Products</strong>: Add new jewellery items or edit prices and stock. Uploaded photos are pushed directly to your Cloudflare R2 bucket (`chf-media`).<br />
                 • <strong>Categories</strong>: Create new sections (e.g. Rings, Bracelets) that immediately appear in the store's category pop-up.<br />
-                • <strong>Orders</strong>: View incoming buyer orders with phone numbers and mark them as Confirmed, Dispatched, or Delivered.
+                • <strong>Orders</strong>: View incoming buyer orders with phone numbers and mark them as Confirmed, Dispatched, or Delivered.<br />
+                • <strong>Account Requests</strong>: Review wholesale buyer applications with shop name, contact email, and Instagram profile. Approve to grant instant wholesale pricing access.
               </p>
             </div>
+          </div>
+        )}
+
+        {/* ============================================================= */}
+        {/* TAB 5: WHOLESALE ACCOUNT REQUESTS (B2B APPROVAL SYSTEM)       */}
+        {/* ============================================================= */}
+        {activeTab === "requests" && (
+          <div className="space-y-4 animate-fade-in">
+            {/* Header & Filter Controls */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-[#0d0d0d] border border-[#222] p-4 rounded-[20px]">
+              <div className="flex items-center gap-2 overflow-x-auto">
+                {(["all", "pending", "approved", "rejected"] as const).map((filter) => {
+                  const count =
+                    filter === "all"
+                      ? accountRequests.length
+                      : accountRequests.filter((r) => r.status === filter).length;
+                  return (
+                    <button
+                      key={filter}
+                      type="button"
+                      onClick={() => setRequestFilter(filter)}
+                      className={`px-3.5 py-1.5 rounded-xl text-xs font-medium capitalize transition-all cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
+                        requestFilter === filter
+                          ? "bg-[#e5a93c] text-black font-semibold shadow-md"
+                          : "bg-[#141414] border border-[#262626] text-[#8e8e93] hover:text-white"
+                      }`}
+                    >
+                      <span>{filter === "all" ? "All Requests" : filter}</span>
+                      <span
+                        className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+                          requestFilter === filter
+                            ? "bg-black/20 text-black"
+                            : filter === "pending" && count > 0
+                            ? "bg-amber-500/20 text-amber-300"
+                            : "bg-[#222] text-[#777]"
+                        }`}
+                      >
+                        {count}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Search in Requests */}
+              <div className="relative w-full sm:w-64">
+                <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[#777]" />
+                <input
+                  type="text"
+                  placeholder="Search name, shop, or phone..."
+                  value={requestSearch}
+                  onChange={(e) => setRequestSearch(e.target.value)}
+                  className="w-full h-9 rounded-xl bg-[#141414] border border-[#262626] pl-8 pr-3 text-xs text-white placeholder-[#666] outline-none focus:border-[#e5a93c]"
+                />
+              </div>
+            </div>
+
+            {/* Filtered Account Requests Cards / Table */}
+            {(() => {
+              const filtered = accountRequests.filter((req) => {
+                if (requestFilter !== "all" && req.status !== requestFilter) return false;
+                if (!requestSearch) return true;
+                const q = requestSearch.toLowerCase();
+                return (
+                  req.name.toLowerCase().includes(q) ||
+                  req.businessName.toLowerCase().includes(q) ||
+                  req.mobile.includes(q) ||
+                  req.email.toLowerCase().includes(q) ||
+                  (req.instagramId && req.instagramId.toLowerCase().includes(q))
+                );
+              });
+
+              if (filtered.length === 0) {
+                return (
+                  <div className="p-12 text-center bg-[#0d0d0d] border border-[#222] rounded-[24px] space-y-2">
+                    <Users className="w-10 h-10 mx-auto text-[#555]" />
+                    <h4 className="text-white text-base font-serif font-medium">No Account Requests</h4>
+                    <p className="text-xs text-[#777]">
+                      {requestFilter === "all"
+                        ? "No wholesale applications have been received yet."
+                        : `No ${requestFilter} wholesale applications found.`}
+                    </p>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {filtered.map((req) => (
+                    <div
+                      key={req.id}
+                      className="p-5 rounded-[22px] bg-[#0d0d0d] border border-[#222] hover:border-[#333] transition-all space-y-4 shadow-md"
+                    >
+                      {/* Top Header: Business Name & Status */}
+                      <div className="flex items-start justify-between gap-2 pb-3 border-b border-[#1c1c1c]">
+                        <div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h4 className="text-white font-semibold text-[15px]">
+                              {req.businessName}
+                            </h4>
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-[10.5px] font-bold capitalize ${
+                                req.status === "approved"
+                                  ? "bg-emerald-950/80 border border-emerald-500/50 text-emerald-300"
+                                  : req.status === "rejected"
+                                  ? "bg-red-950/80 border border-red-500/50 text-red-300"
+                                  : "bg-amber-950/80 border border-amber-500/50 text-amber-300 animate-pulse"
+                              }`}
+                            >
+                              {req.status}
+                            </span>
+                          </div>
+                          <p className="text-[#8e8e93] text-xs mt-0.5 flex items-center gap-1.5">
+                            <User className="w-3.5 h-3.5 text-[#e5a93c]" />
+                            <span>{req.name}</span>
+                            <span className="text-[#555]">•</span>
+                            <span>
+                              {new Date(req.createdAt).toLocaleDateString("en-IN", {
+                                day: "numeric",
+                                month: "short",
+                                year: "numeric",
+                              })}
+                            </span>
+                          </p>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteRequest(req.id)}
+                          title="Delete Request"
+                          className="p-1.5 rounded-lg text-[#666] hover:text-red-400 hover:bg-red-950/30 transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+
+                      {/* Contact Details Grid */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                        <div className="p-2.5 rounded-xl bg-[#141414] border border-[#1f1f1f] flex items-center justify-between">
+                          <div className="flex items-center gap-2 text-[#a0a0a0]">
+                            <Phone className="w-3.5 h-3.5 text-[#e5a93c]" />
+                            <span>+91 {req.mobile}</span>
+                          </div>
+                          <a
+                            href={`https://wa.me/91${req.mobile}?text=Hello%20${encodeURIComponent(
+                              req.name
+                            )}%2C%20this%20is%20Fab%20Creations%20regarding%20your%20wholesale%20account.`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-emerald-400 hover:underline flex items-center gap-0.5 font-medium"
+                          >
+                            <MessageCircle className="w-3 h-3" />
+                            <span>Chat</span>
+                          </a>
+                        </div>
+
+                        <div className="p-2.5 rounded-xl bg-[#141414] border border-[#1f1f1f] flex items-center gap-2 text-[#a0a0a0] truncate">
+                          <Mail className="w-3.5 h-3.5 text-[#e5a93c] shrink-0" />
+                          <a
+                            href={`mailto:${req.email}`}
+                            className="hover:text-white truncate"
+                            title={req.email}
+                          >
+                            {req.email}
+                          </a>
+                        </div>
+
+                        {req.instagramId && (
+                          <div className="p-2.5 rounded-xl bg-[#141414] border border-[#1f1f1f] flex items-center gap-2 text-[#a0a0a0] sm:col-span-2">
+                            <Instagram className="w-3.5 h-3.5 text-[#e5a93c] shrink-0" />
+                            <a
+                              href={`https://instagram.com/${req.instagramId.replace("@", "")}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[#e5a93c] hover:underline font-medium"
+                            >
+                              {req.instagramId.startsWith("@") ? req.instagramId : `@${req.instagramId}`}
+                            </a>
+                            <span className="text-[#666] text-[11px]">(Instagram Shop)</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {req.rejectionReason && (
+                        <div className="p-2 rounded-lg bg-red-950/30 border border-red-900/40 text-[11px] text-red-300">
+                          Rejection Reason: {req.rejectionReason}
+                        </div>
+                      )}
+
+                      {/* Action Buttons */}
+                      <div className="pt-2 flex items-center gap-2 border-t border-[#1c1c1c]">
+                        {req.status !== "approved" && (
+                          <button
+                            type="button"
+                            onClick={() => handleApproveRequest(req.id)}
+                            className="flex-1 py-2 px-3 rounded-xl bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/50 text-emerald-300 text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-sm"
+                          >
+                            <CheckCircle2 className="w-4 h-4" />
+                            <span>Approve Wholesale Account</span>
+                          </button>
+                        )}
+
+                        {req.status !== "rejected" && (
+                          <button
+                            type="button"
+                            onClick={() => handleRejectRequest(req.id)}
+                            className="py-2 px-3 rounded-xl bg-[#181818] hover:bg-red-950/50 border border-[#2a2a2a] hover:border-red-600/50 text-[#8e8e93] hover:text-red-300 text-xs font-medium flex items-center justify-center gap-1.5 transition-all cursor-pointer"
+                          >
+                            <XCircle className="w-4 h-4" />
+                            <span>Reject</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
           </div>
         )}
       </div>

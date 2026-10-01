@@ -15,6 +15,8 @@ import {
   User,
   Star,
   Lock,
+  Menu,
+  X,
 } from "lucide-react";
 import Footer from "@/components/Footer";
 import CategoriesModal from "@/components/CategoriesModal";
@@ -45,6 +47,7 @@ interface HomeScreenProps {
   onSelectProduct?: (product: Product) => void;
   onAddToCart?: (product: Product, quantity?: number) => void;
   onSelectCategory?: (category: string | null) => void;
+  onOpenMenu?: () => void;
 }
 
 const R2_BASE = "https://pub-ce8688bc6c654bcfb99716f7c9373bcd.r2.dev/fab-creations";
@@ -69,6 +72,7 @@ export default function HomeScreen({
   onSelectProduct,
   onAddToCart,
   onSelectCategory,
+  onOpenMenu,
 }: HomeScreenProps) {
   const router = useRouter();
   const [products, setProducts] = useState<Product[]>(initialProducts);
@@ -226,7 +230,7 @@ export default function HomeScreen({
   });
 
   const featured = channelProducts.filter((p) => p.featured);
-  const displayProducts = featured.length > 0 ? featured.slice(0, 4) : channelProducts.slice(0, 4);
+  const displayProducts = featured.length > 0 ? featured.slice(0, 10) : channelProducts.slice(0, 10);
 
   return (
     <div className="relative min-h-screen w-full bg-[#050505] text-white flex flex-col items-center justify-start pb-28 select-none">
@@ -237,72 +241,185 @@ export default function HomeScreen({
         </div>
       )}
 
-      {/* Mobile container */}
-      <div className="w-full max-w-[440px] flex flex-col">
+      {/* Responsive Container */}
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col">
         {/* Top Announcement Bar */}
-        <div className="w-full py-2 bg-[#000000] border-b border-[#141414] text-center">
-          <p className="text-[#e5a93c] text-[12.5px] font-medium tracking-wide">
+        <div className="w-full py-2 bg-[#000000] border-b border-[#141414] text-center my-1 rounded-xl">
+          <p className="text-[#e5a93c] text-[12px] sm:text-[13px] font-medium tracking-wide">
             {storeMode === "wholesale"
-              ? "B2B Wholesale • Minimum Order: Rs 3,000"
+              ? "B2B Wholesale • Minimum Order: Rs 3,000 • Verified Businesses Only"
               : "Retail Store • Free Shipping Over ₹999 • No Minimum Order"}
           </p>
         </div>
 
-        {/* Dual Mode Switcher (Retail & Wholesale) */}
-        <StoreModeToggle
-          mode={storeMode}
-          onSwitch={(m) => onSwitchStoreMode?.(m)}
-          isWholesaleLoggedIn={isWholesaleLoggedIn}
-          onOpenWholesaleLogin={onOpenWholesaleLogin}
-        />
-
-        {/* Header Bar */}
-        <header className="px-4 py-3 flex items-center justify-between gap-3 bg-[#050505]">
-          {/* Logo */}
-          <div
-            onClick={navigateToHome}
-            title="Fab Creations"
-            className="w-[48px] h-[48px] relative rounded-full overflow-hidden shrink-0 cursor-pointer transition-transform hover:scale-105"
-          >
-            <Image
-              src={logoSrc}
-              alt="Fab Creations Logo"
-              width={56}
-              height={56}
-              priority
-              unoptimized
-              onError={() => setLogoSrc("/images/logo.png")}
-              className="object-contain w-full h-full"
-            />
-          </div>
-
-          {/* Search Bar */}
-          <div className="flex-1 flex items-center h-[44px] rounded-full bg-[#0e0e0e] border border-[#2a2a2a] px-3.5 gap-2.5 focus-within:border-[#e5a93c] transition-all">
-            <Search className="w-4 h-4 text-[#8e8e93] shrink-0" />
-            <input
-              type="text"
-              placeholder="Search jewelry..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") navigateToShop();
-              }}
-              className="flex-1 bg-transparent text-[13.5px] text-white placeholder-[#8e8e93] outline-none font-normal"
-            />
-            <div className="h-4 w-[1px] bg-[#2a2a2a]" />
+        {/* Wholesale Active Banner (Only shown when user enters Wholesale Portal) */}
+        {storeMode === "wholesale" && (
+          <div className="w-full mt-2 mb-3 px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#1c1508] via-[#2a1d07] to-[#1c1508] border border-[#e5a93c]/50 flex items-center justify-between text-xs shadow-md">
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-[#f5c767] font-semibold text-xs sm:text-sm">Wholesale Portal Active</span>
+              <span className="text-[#a0a0a0] text-xs hidden sm:inline">(Min. ₹3,000 order required)</span>
+            </div>
             <button
               type="button"
-              onClick={onNavigateShop}
-              className="text-[#e5a93c] hover:text-[#f5c767] transition-colors p-0.5"
+              onClick={() => onSwitchStoreMode?.("retail")}
+              className="text-xs text-[#e5a93c] hover:text-[#f5c767] hover:underline flex items-center gap-1 font-semibold cursor-pointer"
             >
-              <ArrowRight className="w-4 h-4" />
+              <span>Switch to Retail Store</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+
+        {/* Header Bar */}
+        <header className="py-3 flex items-center justify-between gap-3 bg-[#050505] border-b border-[#161616] mb-3">
+          {/* Left: Hamburger & Brand */}
+          <div className="flex items-center gap-3">
+            {/* Hamburger Menu Button */}
+            <button
+              type="button"
+              onClick={onOpenMenu}
+              aria-label="Open navigation menu"
+              className="w-10 h-10 rounded-full bg-[#0e0e0e] border border-[#262626] flex items-center justify-center text-[#e5a93c] hover:text-[#f5c767] hover:border-[#e5a93c]/60 active:scale-95 transition-all shrink-0 cursor-pointer shadow-sm"
+              title="Menu"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+
+            {/* Logo + Brand Name */}
+            <div
+              onClick={navigateToHome}
+              title="Fab Creations"
+              className="flex items-center gap-2.5 cursor-pointer group"
+            >
+              <div className="w-10 h-10 sm:w-11 sm:h-11 relative rounded-full overflow-hidden shrink-0 transition-transform group-hover:scale-105 border border-[#332512]">
+                <Image
+                  src={logoSrc}
+                  alt="Fab Creations Logo"
+                  width={56}
+                  height={56}
+                  priority
+                  unoptimized
+                  onError={() => setLogoSrc("/images/logo.png")}
+                  className="object-contain w-full h-full"
+                />
+              </div>
+              <div className="hidden sm:block">
+                <span className="text-base sm:text-lg font-serif font-semibold text-white tracking-wide block leading-tight group-hover:text-[#e5a93c] transition-colors">
+                  FAB CREATIONS
+                </span>
+                <span className="text-[10px] text-[#e5a93c] tracking-[0.2em] uppercase font-medium">
+                  {storeMode === "wholesale" ? "Wholesale B2B" : "Luxury Jewellery"}
+                </span>
+              </div>
+            </div>
+
+            {/* Desktop Navigation Links */}
+            <nav className="hidden lg:flex items-center gap-6 ml-6 text-sm">
+              <button
+                type="button"
+                onClick={() => {
+                  if (storeMode === "wholesale") onSwitchStoreMode?.("retail");
+                  navigateToHome();
+                }}
+                className={`transition-colors cursor-pointer font-medium ${
+                  storeMode === "retail" ? "text-[#e5a93c]" : "text-[#a0a0a0] hover:text-white"
+                }`}
+              >
+                Retail Store
+              </button>
+              <button
+                type="button"
+                onClick={navigateToShop}
+                className="text-[#a0a0a0] hover:text-white transition-colors cursor-pointer font-medium"
+              >
+                Catalogue
+              </button>
+              <button
+                type="button"
+                onClick={() => onSwitchStoreMode?.("wholesale")}
+                className={`px-3 py-1 rounded-full text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
+                  storeMode === "wholesale"
+                    ? "bg-[#e5a93c] text-black shadow-md"
+                    : "bg-[#161208] border border-[#e5a93c]/50 text-[#e5a93c] hover:bg-[#e5a93c] hover:text-black"
+                }`}
+              >
+                <span>Wholesale Portal</span>
+                <span className="text-[9px] uppercase px-1 py-0.2 rounded bg-black/20 font-bold">B2B</span>
+              </button>
+              <button
+                type="button"
+                onClick={onOpenMenu}
+                className="text-[#a0a0a0] hover:text-white transition-colors cursor-pointer font-medium"
+              >
+                About Us
+              </button>
+            </nav>
+          </div>
+
+          {/* Right: Search & Actions */}
+          <div className="flex items-center gap-2.5 flex-1 justify-end max-w-xl">
+            {/* Search Bar */}
+            <div className="flex-1 flex items-center h-10 rounded-full bg-[#0e0e0e] border border-[#2a2a2a] px-3 gap-2 focus-within:border-[#e5a93c] transition-all">
+              <Search className="w-4 h-4 text-[#8e8e93] shrink-0" />
+              <input
+                type="text"
+                placeholder={storeMode === "wholesale" ? "Search wholesale..." : "Search jewellery..."}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") navigateToShop();
+                }}
+                className="flex-1 bg-transparent text-xs sm:text-sm text-white placeholder-[#8e8e93] outline-none font-normal"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="text-[#8e8e93] hover:text-white p-0.5"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={navigateToShop}
+                className="text-[#e5a93c] hover:text-[#f5c767] transition-colors p-0.5"
+              >
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Desktop Account Button */}
+            <button
+              type="button"
+              onClick={navigateToAccount}
+              className="hidden sm:flex items-center gap-1.5 h-10 px-3.5 rounded-full bg-[#0e0e0e] border border-[#262626] text-xs font-medium text-[#c5c5c5] hover:text-white hover:border-[#444] transition-all cursor-pointer"
+            >
+              <User className="w-4 h-4 text-[#e5a93c]" />
+              <span>Account</span>
+            </button>
+
+            {/* Quick Cart Button */}
+            <button
+              type="button"
+              onClick={navigateToCart}
+              aria-label="View Cart"
+              className="w-10 h-10 rounded-full bg-[#0e0e0e] border border-[#262626] flex items-center justify-center text-[#e5a93c] hover:text-[#f5c767] hover:border-[#e5a93c]/60 active:scale-95 transition-all shrink-0 cursor-pointer relative shadow-sm"
+            >
+              <ShoppingBag className="w-4 h-4" />
+              {cartCount > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-gradient-to-r from-[#d4992e] to-[#f5c767] text-black text-[10px] font-bold rounded-full flex items-center justify-center shadow-md">
+                  {cartCount}
+                </span>
+              )}
             </button>
           </div>
         </header>
 
         {/* Hero Banner Section */}
-        <section className="px-4 pt-1 pb-4">
-          <div className="relative w-full h-[225px] sm:h-[235px] rounded-[22px] overflow-hidden border border-[#222222] shadow-[0_8px_30px_rgba(0,0,0,0.85)]">
+        <section className="pt-1 pb-4">
+          <div className="relative w-full h-[230px] sm:h-[320px] md:h-[400px] lg:h-[460px] rounded-[24px] overflow-hidden border border-[#222222] shadow-[0_8px_30px_rgba(0,0,0,0.85)]">
             <Image
               src={heroSrc}
               alt="Designed for Every You - Fab Creations"
@@ -414,7 +531,7 @@ export default function HomeScreen({
 
           {/* Dynamic Products Grid or Clean Empty State */}
           {displayProducts.length > 0 ? (
-            <div className="grid grid-cols-2 gap-3 sm:gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-3.5 sm:gap-4 md:gap-6">
               {displayProducts.map((product) => (
                 <div
                   key={product.id}
@@ -556,8 +673,8 @@ export default function HomeScreen({
         }}
       />
 
-      {/* Fixed Bottom Navigation Bar */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-[#080808]/95 backdrop-blur-md border-t border-[#181818] flex justify-center pb-safe">
+      {/* Fixed Bottom Navigation Bar (Mobile Only: hidden on md:) */}
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-[#080808]/95 backdrop-blur-md border-t border-[#181818] flex justify-center pb-safe">
         <div className="w-full max-w-[440px] h-[64px] px-3 flex items-center justify-between relative">
           {/* Home (ACTIVE) */}
           <button

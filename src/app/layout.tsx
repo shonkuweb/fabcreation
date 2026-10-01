@@ -11,10 +11,28 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "Fab Creations | B2B Jewellery Portal",
-  description: "Exclusive B2B Jewellery Ecommerce Platform by Fab Creations",
+  metadataBase: new URL("https://fab-creations.com"),
+  title: "Fab Creations | Luxury Anti-Tarnish Jewellery & B2B Portal",
+  description: "Exquisite anti-tarnish waterproof jewellery collection for retail and wholesale B2B partners across India. Based in Lucknow.",
   icons: {
     icon: "/images/logo.png",
+    apple: "/images/logo.png",
+  },
+  openGraph: {
+    title: "Fab Creations | Luxury Jewellery",
+    description: "Exclusive anti-tarnish jewellery for retail & wholesale.",
+    url: "https://fab-creations.com",
+    siteName: "Fab Creations",
+    images: [
+      {
+        url: "https://pub-ce8688bc6c654bcfb99716f7c9373bcd.r2.dev/fab-creations/brand-logo.png",
+        width: 800,
+        height: 800,
+        alt: "Fab Creations Logo",
+      },
+    ],
+    locale: "en_IN",
+    type: "website",
   },
 };
 

@@ -8,6 +8,9 @@ import CartScreen from "@/components/CartScreen";
 import AccountScreen from "@/components/AccountScreen";
 import ProductDetailsScreen from "@/components/ProductDetailsScreen";
 import WholesaleLoginModal from "@/components/WholesaleLoginModal";
+import NavigationDrawer from "@/components/NavigationDrawer";
+import AboutUsModal from "@/components/AboutUsModal";
+import CategoriesModal from "@/components/CategoriesModal";
 import type { Product, Category, OrderItem } from "@/lib/db";
 import { getCartCount, fetchCartFromServer } from "@/lib/cart";
 
@@ -34,6 +37,9 @@ export default function MainStoreApp({
   const [storeMode, setStoreMode] = useState<"retail" | "wholesale">("retail");
   const [isWholesaleLoggedIn, setIsWholesaleLoggedIn] = useState(false);
   const [isWholesaleLoginOpen, setIsWholesaleLoginOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isAboutUsOpen, setIsAboutUsOpen] = useState(false);
+  const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
 
   // Resolve initial tab from prop or URL
   const [tab, setTab] = useState<"home" | "shop" | "cart" | "account" | "product">(() => {
@@ -235,6 +241,23 @@ export default function MainStoreApp({
 
   return (
     <>
+      <NavigationDrawer
+        isOpen={isMenuOpen}
+        onClose={() => setIsMenuOpen(false)}
+        storeMode={storeMode}
+        onSwitchStoreMode={handleSwitchStoreMode}
+        isWholesaleLoggedIn={isWholesaleLoggedIn}
+        onOpenWholesaleLogin={() => setIsWholesaleLoginOpen(true)}
+        onNavigateHome={goToHome}
+        onNavigateShop={goToShop}
+        onNavigateCart={goToCart}
+        onNavigateAccount={goToAccount}
+        onOpenAboutUs={() => setIsAboutUsOpen(true)}
+        onOpenCategories={() => setIsCategoriesOpen(true)}
+        onSignOut={handleSignOut}
+        cartCount={cartCount}
+      />
+
       <WholesaleLoginModal
         isOpen={isWholesaleLoginOpen}
         onClose={() => setIsWholesaleLoginOpen(false)}
@@ -242,6 +265,18 @@ export default function MainStoreApp({
           setIsWholesaleLoggedIn(true);
           setUserMobile(mob);
         }}
+      />
+
+      <AboutUsModal
+        isOpen={isAboutUsOpen}
+        onClose={() => setIsAboutUsOpen(false)}
+      />
+
+      <CategoriesModal
+        isOpen={isCategoriesOpen}
+        onClose={() => setIsCategoriesOpen(false)}
+        categories={initialCategories}
+        onSelectCategory={goToShop}
       />
 
       {tab === "shop" && (
@@ -260,6 +295,7 @@ export default function MainStoreApp({
           onSelectProduct={goToProduct}
           onSelectCategory={goToShop}
           onSignOut={handleSignOut}
+          onOpenMenu={() => setIsMenuOpen(true)}
         />
       )}
 
@@ -333,6 +369,7 @@ export default function MainStoreApp({
           onSelectProduct={goToProduct}
           onSelectCategory={goToShop}
           onSignOut={handleSignOut}
+          onOpenMenu={() => setIsMenuOpen(true)}
         />
       )}
     </>

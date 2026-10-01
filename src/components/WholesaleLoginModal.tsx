@@ -19,6 +19,13 @@ import {
   MessageCircle,
   Sparkles,
 } from "lucide-react";
+import {
+  isFirebaseConfigured,
+  initRecaptchaVerifier,
+  sendPhoneOtp,
+  confirmPhoneOtp,
+} from "@/lib/firebase";
+import type { ConfirmationResult } from "firebase/auth";
 
 interface WholesaleLoginModalProps {
   isOpen: boolean;
@@ -44,13 +51,15 @@ export default function WholesaleLoginModal({
   const [email, setEmail] = useState("");
   const [instagramId, setInstagramId] = useState("");
   const [mobileNumber, setMobileNumber] = useState("");
-  const [regOtp, setRegOtp] = useState(["", "", "", ""]);
+  const [regOtp, setRegOtp] = useState(["", "", "", "", "", ""]);
   const [isOtpSent, setIsOtpSent] = useState(false);
+  const [regConfirmationResult, setRegConfirmationResult] = useState<ConfirmationResult | null>(null);
 
   // Login mode state
   const [loginMobile, setLoginMobile] = useState("");
-  const [loginOtp, setLoginOtp] = useState(["", "", "", ""]);
+  const [loginOtp, setLoginOtp] = useState(["", "", "", "", "", ""]);
   const [loginStep, setLoginStep] = useState<"mobile" | "otp" | "pending" | "rejected">("mobile");
+  const [loginConfirmationResult, setLoginConfirmationResult] = useState<ConfirmationResult | null>(null);
   const [appStatusData, setAppStatusData] = useState<{
     name?: string;
     businessName?: string;
@@ -60,6 +69,7 @@ export default function WholesaleLoginModal({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [firebaseActive, setFirebaseActive] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -104,7 +114,11 @@ export default function WholesaleLoginModal({
     setRegStep(3);
   };
 
-  const handleSendRegOtp = () => {
+  useEffect(() => {
+    setFirebaseActive(isFirebaseConfigured());
+  }, []);
+
+  const handleSendRegOtp = async () => {
     const cleanMobile = mobileNumber.replace(/\D/g, "");
     if (cleanMobile.length !== 10) {
       setError("Please enter a valid 10-digit phone number");
@@ -112,11 +126,29 @@ export default function WholesaleLoginModal({
     }
     setError(null);
     setIsSubmitting(true);
-    setTimeout(() => {
-      setIsSubmitting(false);
-      setIsOtpSent(true);
-      setRegOtp(["1", "2", "3", "4"]); // Demo OTP for ease of use
-    }, 400);
+
+    if (isFirebaseConfigured()) {
+      try {
+        const verifier = initRecaptchaVerifier("wholesale-recaptcha-container");
+        if (!verifier) throw new Error("Security verification failed. Please refresh.");
+        const confirmation = await sendPhoneOtp(cleanMobile, verifier);
+        setRegConfirmationResult(confirmation);
+        setIsSubmitting(false);
+        setIsOtpSent(true);
+        setRegOtp(["", "", "", "", "", ""]);
+      } catch (err: unknown) {
+        console.error("Firebase sendPhoneOtp error:", err);
+        setIsSubmitting(false);
+        const errMessage = err instanceof Error ? err.message : String(err);
+        setError(errMessage.includes("auth/") ? "Failed to send real SMS OTP. Please verify phone number." : errMessage);
+      }
+    } else {
+      setTimeout(() => {
+        setIsSubmitting(false);
+        setIsOtpSent(true);
+        setRegOtp(["1", "2", "3", "4", "5", "6"]); // Demo OTP for ease of use
+      }, 400);
+    }
   };
 
   const handleRegOtpChange = (index: number, val: string) => {
@@ -124,6 +156,10 @@ export default function WholesaleLoginModal({
     const updated = [...regOtp];
     updated[index] = val.slice(-1);
     setRegOtp(updated);
+    if (val && index < 5) {
+      const nextInput = document.getElementById(`reg-otp-${index + 1}`);
+      nextInput?.focus();
+    }
   };
 
   const handleCompleteRegistration = async (e: React.FormEvent) => {
@@ -133,13 +169,26 @@ export default function WholesaleLoginModal({
       setError("Please enter a valid 10-digit mobile number");
       return;
     }
-    if (regOtp.join("").length !== 4) {
-      setError("Please enter the 4-digit OTP");
+    const otpValue = regOtp.join("");
+    if (otpValue.length < 4) {
+      setError("Please enter the complete OTP code");
       return;
     }
 
     setIsSubmitting(true);
     setError(null);
+
+    // If Firebase was used, verify with confirmationResult
+    if (regConfirmationResult) {
+      try {
+        await confirmPhoneOtp(regConfirmationResult, otpValue);
+      } catch (err) {
+        console.error("Firebase confirm error:", err);
+        setIsSubmitting(false);
+        setError("Invalid OTP code. Please check your SMS and try again.");
+        return;
+      }
+    }
 
     try {
       const res = await fetch("/api/wholesale-requests", {
@@ -192,10 +241,9 @@ export default function WholesaleLoginModal({
         cache: "no-store",
       });
       const data = await res.json();
-      setIsSubmitting(false);
 
       if (!data.success || !data.request) {
-        // Not found, suggest applying
+        setIsSubmitting(false);
         setError("No wholesale application found for this number. Please fill out the 3-step application.");
         setMobileNumber(clean);
         setViewMode("register");
@@ -207,13 +255,28 @@ export default function WholesaleLoginModal({
       setAppStatusData(req);
 
       if (req.status === "approved") {
-        setLoginStep("otp");
-        setLoginOtp(["1", "2", "3", "4"]);
+        if (isFirebaseConfigured()) {
+          try {
+            const verifier = initRecaptchaVerifier("wholesale-recaptcha-container");
+            if (!verifier) throw new Error("Security verification failed.");
+            const confirmation = await sendPhoneOtp(clean, verifier);
+            setLoginConfirmationResult(confirmation);
+            setLoginStep("otp");
+            setLoginOtp(["", "", "", "", "", ""]);
+          } catch (err: unknown) {
+            console.error(err);
+            setError("Failed to send login SMS OTP. Please try again.");
+          }
+        } else {
+          setLoginStep("otp");
+          setLoginOtp(["1", "2", "3", "4", "5", "6"]);
+        }
       } else if (req.status === "pending") {
         setLoginStep("pending");
       } else if (req.status === "rejected") {
         setLoginStep("rejected");
       }
+      setIsSubmitting(false);
     } catch (err) {
       console.error(err);
       setIsSubmitting(false);
@@ -221,14 +284,28 @@ export default function WholesaleLoginModal({
     }
   };
 
-  const handleVerifyLoginOtp = (e: React.FormEvent) => {
+  const handleVerifyLoginOtp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (loginOtp.join("").length !== 4) {
-      setError("Please enter 4-digit OTP");
+    const otpValue = loginOtp.join("");
+    if (otpValue.length < 4) {
+      setError("Please enter complete OTP code");
       return;
     }
 
     setIsSubmitting(true);
+    setError(null);
+
+    if (loginConfirmationResult) {
+      try {
+        await confirmPhoneOtp(loginConfirmationResult, otpValue);
+      } catch (err) {
+        console.error("Firebase login confirm error:", err);
+        setIsSubmitting(false);
+        setError("Invalid OTP code. Please check your SMS.");
+        return;
+      }
+    }
+
     setTimeout(() => {
       setIsSubmitting(false);
       const clean = loginMobile.replace(/\D/g, "");
@@ -247,6 +324,9 @@ export default function WholesaleLoginModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in select-none">
       <div className="relative w-full max-w-[460px] bg-[#0c0c0c] border border-[#d69e3d] rounded-[26px] p-6 shadow-2xl overflow-y-auto max-h-[92vh]">
+        {/* Invisible reCAPTCHA container for Firebase Phone Auth */}
+        <div id="wholesale-recaptcha-container" />
+
         {/* Close Button */}
         <button
           type="button"
@@ -476,19 +556,28 @@ export default function WholesaleLoginModal({
                 {isOtpSent && (
                   <div className="space-y-2 pt-1 animate-fade-in">
                     <div className="flex items-center justify-between text-xs text-[#a0a0a0]">
-                      <span>Enter 4-Digit OTP</span>
-                      <span className="text-[#e5a93c] font-medium">Demo OTP: 1234</span>
+                      <span>Enter 6-Digit OTP</span>
+                      <span className="text-[#e5a93c] font-medium">
+                        {firebaseActive ? "SMS OTP Sent" : "Demo OTP: 123456"}
+                      </span>
                     </div>
-                    <div className="flex justify-center gap-3">
+                    <div className="flex justify-center gap-2 sm:gap-2.5">
                       {regOtp.map((digit, i) => (
                         <input
                           key={i}
+                          id={`reg-otp-${i}`}
                           type="text"
                           inputMode="numeric"
                           maxLength={1}
                           value={digit}
                           onChange={(e) => handleRegOtpChange(i, e.target.value)}
-                          className="w-12 h-14 rounded-xl bg-[#141414] border border-[#2a2a2a] focus:border-[#e5a93c] text-white text-xl font-bold text-center outline-none transition-all"
+                          onKeyDown={(e) => {
+                            if (e.key === "Backspace" && !regOtp[i] && i > 0) {
+                              const prev = document.getElementById(`reg-otp-${i - 1}`);
+                              prev?.focus();
+                            }
+                          }}
+                          className="w-10 h-12 sm:w-11 sm:h-13 rounded-xl bg-[#141414] border border-[#2a2a2a] focus:border-[#e5a93c] text-white text-lg sm:text-xl font-bold text-center outline-none transition-all"
                         />
                       ))}
                     </div>
@@ -524,7 +613,7 @@ export default function WholesaleLoginModal({
                   ) : (
                     <button
                       type="submit"
-                      disabled={isSubmitting || regOtp.join("").length !== 4}
+                      disabled={isSubmitting || regOtp.join("").length < 4}
                       className="flex-1 h-[46px] rounded-xl bg-gradient-to-r from-[#d4992e] to-[#f5c767] hover:from-[#e5a93c] text-black font-semibold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-50 cursor-pointer shadow-lg"
                     >
                       {isSubmitting ? (
@@ -669,29 +758,43 @@ export default function WholesaleLoginModal({
             {loginStep === "otp" && (
               <form onSubmit={handleVerifyLoginOtp} className="space-y-4 animate-fade-in">
                 <div className="p-3 rounded-xl bg-emerald-950/40 border border-emerald-500/40 text-xs text-center text-emerald-300">
-                  Account Approved! Enter 4-digit OTP to unlock wholesale pricing.
+                  Account Approved! Enter 6-digit OTP to unlock wholesale pricing.
                 </div>
 
-                <div className="flex justify-center gap-3">
+                <div className="flex justify-center gap-2 sm:gap-2.5">
                   {loginOtp.map((digit, idx) => (
                     <input
                       key={idx}
+                      id={`login-otp-${idx}`}
                       type="text"
                       inputMode="numeric"
                       maxLength={1}
                       value={digit}
                       onChange={(e) => {
+                        const val = e.target.value.replace(/\D/g, "");
                         const copy = [...loginOtp];
-                        copy[idx] = e.target.value.slice(-1);
+                        copy[idx] = val.slice(-1);
                         setLoginOtp(copy);
+                        if (val && idx < 5) {
+                          const next = document.getElementById(`login-otp-${idx + 1}`);
+                          next?.focus();
+                        }
                       }}
-                      className="w-12 h-14 rounded-xl bg-[#141414] border border-[#2a2a2a] focus:border-[#e5a93c] text-white text-xl font-bold text-center outline-none transition-all"
+                      onKeyDown={(e) => {
+                        if (e.key === "Backspace" && !loginOtp[idx] && idx > 0) {
+                          const prev = document.getElementById(`login-otp-${idx - 1}`);
+                          prev?.focus();
+                        }
+                      }}
+                      className="w-10 h-12 sm:w-11 sm:h-13 rounded-xl bg-[#141414] border border-[#2a2a2a] focus:border-[#e5a93c] text-white text-lg sm:text-xl font-bold text-center outline-none transition-all"
                     />
                   ))}
                 </div>
 
                 <div className="flex justify-between text-xs text-[#8e8e93]">
-                  <span>Demo OTP: 1234</span>
+                  <span>
+                    {firebaseActive ? "SMS OTP Sent" : "Demo OTP: 123456"}
+                  </span>
                   <button
                     type="button"
                     onClick={() => setLoginStep("mobile")}
@@ -703,11 +806,17 @@ export default function WholesaleLoginModal({
 
                 <button
                   type="submit"
-                  disabled={isSubmitting}
-                  className="w-full h-[46px] rounded-xl bg-gradient-to-r from-[#d4992e] to-[#f5c767] hover:from-[#e5a93c] text-black font-semibold text-sm flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg"
+                  disabled={isSubmitting || loginOtp.join("").length < 4}
+                  className="w-full h-[46px] rounded-xl bg-gradient-to-r from-[#d4992e] to-[#f5c767] hover:from-[#e5a93c] text-black font-semibold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-50 cursor-pointer shadow-lg"
                 >
-                  <CheckCircle className="w-4 h-4" />
-                  <span>Verify & Unlock Wholesale</span>
+                  {isSubmitting ? (
+                    <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <CheckCircle className="w-4 h-4" />
+                      <span>Verify & Unlock Wholesale</span>
+                    </>
+                  )}
                 </button>
               </form>
             )}

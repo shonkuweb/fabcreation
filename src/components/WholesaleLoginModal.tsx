@@ -72,9 +72,14 @@ export default function WholesaleLoginModal({
   const [firebaseActive, setFirebaseActive] = useState(false);
 
   useEffect(() => {
+    setFirebaseActive(isFirebaseConfigured());
+  }, []);
+
+  useEffect(() => {
     if (isOpen) {
       setError(null);
       setIsSubmitting(false);
+      setFirebaseActive(isFirebaseConfigured());
       try {
         const savedMobile = localStorage.getItem("fc_wholesale_mobile") || localStorage.getItem("fc_user_mobile");
         if (savedMobile && savedMobile.length === 10) {
@@ -113,10 +118,6 @@ export default function WholesaleLoginModal({
     setError(null);
     setRegStep(3);
   };
-
-  useEffect(() => {
-    setFirebaseActive(isFirebaseConfigured());
-  }, []);
 
   const handleSendRegOtp = async () => {
     const cleanMobile = mobileNumber.replace(/\D/g, "");

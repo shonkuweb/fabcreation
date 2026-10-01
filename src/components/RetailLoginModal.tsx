@@ -8,6 +8,7 @@ import {
   initRecaptchaVerifier,
   sendPhoneOtp,
   confirmPhoneOtp,
+  formatFirebaseError,
 } from "@/lib/firebase";
 import type { ConfirmationResult } from "firebase/auth";
 
@@ -86,16 +87,7 @@ export default function RetailLoginModal({
       } catch (err: unknown) {
         console.error("Firebase sendPhoneOtp error:", err);
         setIsSubmitting(false);
-        const errMessage = err instanceof Error ? err.message : String(err);
-        if (errMessage.includes("auth/invalid-phone-number")) {
-          setError("Invalid phone number format. Please check the 10-digit number.");
-        } else if (errMessage.includes("auth/too-many-requests")) {
-          setError("Too many requests from this number. Please wait a few minutes.");
-        } else if (errMessage.includes("auth/quota-exceeded")) {
-          setError("SMS quota reached for today. Please contact support.");
-        } else {
-          setError("Failed to send real SMS OTP. Check your connection or Firebase settings.");
-        }
+        setError(formatFirebaseError(err));
       }
     } else {
       // Fallback demo mode
@@ -151,7 +143,7 @@ export default function RetailLoginModal({
       } catch (err: unknown) {
         console.error("Firebase confirmPhoneOtp error:", err);
         setIsSubmitting(false);
-        setError("Invalid OTP code. Please check the SMS and enter the 6-digit code.");
+        setError(formatFirebaseError(err));
       }
     } else {
       // Demo validation

@@ -24,6 +24,7 @@ import {
   initRecaptchaVerifier,
   sendPhoneOtp,
   confirmPhoneOtp,
+  formatFirebaseError,
 } from "@/lib/firebase";
 import type { ConfirmationResult } from "firebase/auth";
 
@@ -140,8 +141,7 @@ export default function WholesaleLoginModal({
       } catch (err: unknown) {
         console.error("Firebase sendPhoneOtp error:", err);
         setIsSubmitting(false);
-        const errMessage = err instanceof Error ? err.message : String(err);
-        setError(errMessage.includes("auth/") ? "Failed to send real SMS OTP. Please verify phone number." : errMessage);
+        setError(formatFirebaseError(err));
       }
     } else {
       setTimeout(() => {
@@ -186,7 +186,7 @@ export default function WholesaleLoginModal({
       } catch (err) {
         console.error("Firebase confirm error:", err);
         setIsSubmitting(false);
-        setError("Invalid OTP code. Please check your SMS and try again.");
+        setError(formatFirebaseError(err));
         return;
       }
     }
@@ -265,8 +265,8 @@ export default function WholesaleLoginModal({
             setLoginStep("otp");
             setLoginOtp(["", "", "", "", "", ""]);
           } catch (err: unknown) {
-            console.error(err);
-            setError("Failed to send login SMS OTP. Please try again.");
+            console.error("Firebase send login OTP error:", err);
+            setError(formatFirebaseError(err));
           }
         } else {
           setLoginStep("otp");
@@ -302,7 +302,7 @@ export default function WholesaleLoginModal({
       } catch (err) {
         console.error("Firebase login confirm error:", err);
         setIsSubmitting(false);
-        setError("Invalid OTP code. Please check your SMS.");
+        setError(formatFirebaseError(err));
         return;
       }
     }

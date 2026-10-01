@@ -19,14 +19,6 @@ import {
   MessageCircle,
   Sparkles,
 } from "lucide-react";
-import {
-  isFirebaseConfigured,
-  initRecaptchaVerifier,
-  sendPhoneOtp,
-  confirmPhoneOtp,
-  formatFirebaseError,
-} from "@/lib/firebase";
-import type { ConfirmationResult } from "firebase/auth";
 
 interface WholesaleLoginModalProps {
   isOpen: boolean;
@@ -54,13 +46,11 @@ export default function WholesaleLoginModal({
   const [mobileNumber, setMobileNumber] = useState("");
   const [regOtp, setRegOtp] = useState(["", "", "", "", "", ""]);
   const [isOtpSent, setIsOtpSent] = useState(false);
-  const [regConfirmationResult, setRegConfirmationResult] = useState<ConfirmationResult | null>(null);
 
   // Login mode state
   const [loginMobile, setLoginMobile] = useState("");
   const [loginOtp, setLoginOtp] = useState(["", "", "", "", "", ""]);
   const [loginStep, setLoginStep] = useState<"mobile" | "otp" | "pending" | "rejected">("mobile");
-  const [loginConfirmationResult, setLoginConfirmationResult] = useState<ConfirmationResult | null>(null);
   const [appStatusData, setAppStatusData] = useState<{
     name?: string;
     businessName?: string;
@@ -70,17 +60,11 @@ export default function WholesaleLoginModal({
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [firebaseActive, setFirebaseActive] = useState(false);
-
-  useEffect(() => {
-    setFirebaseActive(isFirebaseConfigured());
-  }, []);
 
   useEffect(() => {
     if (isOpen) {
       setError(null);
       setIsSubmitting(false);
-      setFirebaseActive(isFirebaseConfigured());
       try {
         const savedMobile = localStorage.getItem("fc_wholesale_mobile") || localStorage.getItem("fc_user_mobile");
         if (savedMobile && savedMobile.length === 10) {
@@ -129,27 +113,11 @@ export default function WholesaleLoginModal({
     setError(null);
     setIsSubmitting(true);
 
-    if (isFirebaseConfigured()) {
-      try {
-        const verifier = initRecaptchaVerifier("wholesale-recaptcha-container");
-        if (!verifier) throw new Error("Security verification failed. Please refresh.");
-        const confirmation = await sendPhoneOtp(cleanMobile, verifier);
-        setRegConfirmationResult(confirmation);
-        setIsSubmitting(false);
-        setIsOtpSent(true);
-        setRegOtp(["", "", "", "", "", ""]);
-      } catch (err: unknown) {
-        console.error("Firebase sendPhoneOtp error:", err);
-        setIsSubmitting(false);
-        setError(formatFirebaseError(err));
-      }
-    } else {
-      setTimeout(() => {
-        setIsSubmitting(false);
-        setIsOtpSent(true);
-        setRegOtp(["1", "2", "3", "4", "5", "6"]); // Demo OTP for ease of use
-      }, 400);
-    }
+    setTimeout(() => {
+      setIsSubmitting(false);
+      setIsOtpSent(true);
+      setRegOtp(["1", "2", "3", "4", "5", "6"]);
+    }, 400);
   };
 
   const handleRegOtpChange = (index: number, val: string) => {
@@ -179,17 +147,6 @@ export default function WholesaleLoginModal({
     setIsSubmitting(true);
     setError(null);
 
-    // If Firebase was used, verify with confirmationResult
-    if (regConfirmationResult) {
-      try {
-        await confirmPhoneOtp(regConfirmationResult, otpValue);
-      } catch (err) {
-        console.error("Firebase confirm error:", err);
-        setIsSubmitting(false);
-        setError(formatFirebaseError(err));
-        return;
-      }
-    }
 
     try {
       const res = await fetch("/api/wholesale-requests", {
@@ -256,22 +213,8 @@ export default function WholesaleLoginModal({
       setAppStatusData(req);
 
       if (req.status === "approved") {
-        if (isFirebaseConfigured()) {
-          try {
-            const verifier = initRecaptchaVerifier("wholesale-recaptcha-container");
-            if (!verifier) throw new Error("Security verification failed.");
-            const confirmation = await sendPhoneOtp(clean, verifier);
-            setLoginConfirmationResult(confirmation);
-            setLoginStep("otp");
-            setLoginOtp(["", "", "", "", "", ""]);
-          } catch (err: unknown) {
-            console.error("Firebase send login OTP error:", err);
-            setError(formatFirebaseError(err));
-          }
-        } else {
-          setLoginStep("otp");
-          setLoginOtp(["1", "2", "3", "4", "5", "6"]);
-        }
+        setLoginStep("otp");
+        setLoginOtp(["1", "2", "3", "4", "5", "6"]);
       } else if (req.status === "pending") {
         setLoginStep("pending");
       } else if (req.status === "rejected") {
@@ -296,17 +239,6 @@ export default function WholesaleLoginModal({
     setIsSubmitting(true);
     setError(null);
 
-    if (loginConfirmationResult) {
-      try {
-        await confirmPhoneOtp(loginConfirmationResult, otpValue);
-      } catch (err) {
-        console.error("Firebase login confirm error:", err);
-        setIsSubmitting(false);
-        setError(formatFirebaseError(err));
-        return;
-      }
-    }
-
     setTimeout(() => {
       setIsSubmitting(false);
       const clean = loginMobile.replace(/\D/g, "");
@@ -325,8 +257,6 @@ export default function WholesaleLoginModal({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fade-in select-none">
       <div className="relative w-full max-w-[460px] bg-[#0c0c0c] border border-[#d69e3d] rounded-[26px] p-6 shadow-2xl overflow-y-auto max-h-[92vh]">
-        {/* Invisible reCAPTCHA container for Firebase Phone Auth */}
-        <div id="wholesale-recaptcha-container" />
 
         {/* Close Button */}
         <button
@@ -559,7 +489,7 @@ export default function WholesaleLoginModal({
                     <div className="flex items-center justify-between text-xs text-[#a0a0a0]">
                       <span>Enter 6-Digit OTP</span>
                       <span className="text-[#e5a93c] font-medium">
-                        {firebaseActive ? "SMS OTP Sent" : "Demo OTP: 123456"}
+                        Demo OTP: 123456
                       </span>
                     </div>
                     <div className="flex justify-center gap-2 sm:gap-2.5">
@@ -793,9 +723,7 @@ export default function WholesaleLoginModal({
                 </div>
 
                 <div className="flex justify-between text-xs text-[#8e8e93]">
-                  <span>
-                    {firebaseActive ? "SMS OTP Sent" : "Demo OTP: 123456"}
-                  </span>
+                  <span>Demo OTP: 123456</span>
                   <button
                     type="button"
                     onClick={() => setLoginStep("mobile")}

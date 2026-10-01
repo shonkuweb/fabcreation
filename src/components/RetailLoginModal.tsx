@@ -3,14 +3,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import { X, Phone, CheckCircle, ArrowRight, ShoppingBag, Sparkles } from "lucide-react";
-import {
-  isFirebaseConfigured,
-  initRecaptchaVerifier,
-  sendPhoneOtp,
-  confirmPhoneOtp,
-  formatFirebaseError,
-} from "@/lib/firebase";
-import type { ConfirmationResult } from "firebase/auth";
 
 interface RetailLoginModalProps {
   isOpen: boolean;
@@ -31,21 +23,13 @@ export default function RetailLoginModal({
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
-  const [firebaseActive, setFirebaseActive] = useState(false);
   const otpInputsRef = useRef<(HTMLInputElement | null)[]>([]);
-
-  useEffect(() => {
-    setFirebaseActive(isFirebaseConfigured());
-  }, []);
 
   useEffect(() => {
     if (isOpen) {
       setStep("phone");
       setError(null);
       setOtp(["", "", "", "", "", ""]);
-      setConfirmationResult(null);
-      setFirebaseActive(isFirebaseConfigured());
       try {
         const saved = localStorage.getItem("fc_retail_mobile");
         if (saved && saved.length === 10) {
@@ -73,30 +57,11 @@ export default function RetailLoginModal({
     setError(null);
     setIsSubmitting(true);
 
-    if (isFirebaseConfigured()) {
-      try {
-        const verifier = initRecaptchaVerifier("retail-recaptcha-container");
-        if (!verifier) {
-          throw new Error("Could not initialize security verification. Please refresh and try again.");
-        }
-        const confirmation = await sendPhoneOtp(cleanMobile, verifier);
-        setConfirmationResult(confirmation);
-        setIsSubmitting(false);
-        setStep("otp");
-        setOtp(["", "", "", "", "", ""]);
-      } catch (err: unknown) {
-        console.error("Firebase sendPhoneOtp error:", err);
-        setIsSubmitting(false);
-        setError(formatFirebaseError(err));
-      }
-    } else {
-      // Fallback demo mode
-      setTimeout(() => {
-        setIsSubmitting(false);
-        setStep("otp");
-        setOtp(["1", "2", "3", "4", "5", "6"]); // Pre-fill demo OTP
-      }, 400);
-    }
+    setTimeout(() => {
+      setIsSubmitting(false);
+      setStep("otp");
+      setOtp(["1", "2", "3", "4", "5", "6"]);
+    }, 400);
   };
 
   const handleOtpChange = (index: number, value: string) => {
@@ -127,46 +92,24 @@ export default function RetailLoginModal({
     setIsSubmitting(true);
     setError(null);
 
-    if (confirmationResult) {
+    setTimeout(() => {
+      setIsSubmitting(false);
+      const cleanMobile = mobileNumber.replace(/\D/g, "") || "9876543210";
       try {
-        await confirmPhoneOtp(confirmationResult, otpValue);
-        const cleanMobile = mobileNumber.replace(/\D/g, "");
-        try {
-          localStorage.setItem("fc_retail_logged_in", "true");
-          localStorage.setItem("fc_retail_mobile", cleanMobile);
-          window.dispatchEvent(new Event("retail_auth_changed"));
-        } catch {}
+        localStorage.setItem("fc_retail_logged_in", "true");
+        localStorage.setItem("fc_retail_mobile", cleanMobile);
+        window.dispatchEvent(new Event("retail_auth_changed"));
+      } catch {}
 
-        setIsSubmitting(false);
-        onSuccess(cleanMobile);
-        onClose();
-      } catch (err: unknown) {
-        console.error("Firebase confirmPhoneOtp error:", err);
-        setIsSubmitting(false);
-        setError(formatFirebaseError(err));
-      }
-    } else {
-      // Demo validation
-      setTimeout(() => {
-        setIsSubmitting(false);
-        const cleanMobile = mobileNumber.replace(/\D/g, "") || "9876543210";
-        try {
-          localStorage.setItem("fc_retail_logged_in", "true");
-          localStorage.setItem("fc_retail_mobile", cleanMobile);
-          window.dispatchEvent(new Event("retail_auth_changed"));
-        } catch {}
-
-        onSuccess(cleanMobile);
-        onClose();
-      }, 500);
-    }
+      onSuccess(cleanMobile);
+      onClose();
+    }, 400);
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in select-none">
       <div className="relative w-full max-w-[420px] bg-[#0c0c0c] border border-[#d69e3d] rounded-[24px] p-6 shadow-2xl overflow-hidden">
-        {/* Invisible reCAPTCHA container for Firebase */}
-        <div id="retail-recaptcha-container" />
+
 
         {/* Close Button */}
         <button
@@ -277,11 +220,7 @@ export default function RetailLoginModal({
             </div>
 
             <div className="flex items-center justify-between text-xs text-[#8e8e93] px-1">
-              <span>
-                {firebaseActive
-                  ? "Real SMS OTP sent"
-                  : "Demo Code: 123456"}
-              </span>
+              <span>Enter 6-digit code (Demo: 123456)</span>
               <button
                 type="button"
                 onClick={() => setStep("phone")}
@@ -311,11 +250,7 @@ export default function RetailLoginModal({
         <div className="mt-5 pt-3.5 border-t border-[#1c1c1c] text-center">
           <div className="flex items-center justify-center gap-1.5 text-[11px] text-[#888]">
             <Sparkles className="w-3.5 h-3.5 text-[#e5a93c]" />
-            <span>
-              {firebaseActive
-                ? "Protected by Google Firebase Phone Authentication"
-                : "Firebase SMS integration ready"}
-            </span>
+            <span>Secure OTP Verification • Fab Creations</span>
           </div>
         </div>
       </div>

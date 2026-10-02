@@ -13,7 +13,7 @@ import NavigationDrawer from "@/components/NavigationDrawer";
 import AboutUsModal from "@/components/AboutUsModal";
 import CategoriesModal from "@/components/CategoriesModal";
 import type { Product, Category, OrderItem } from "@/lib/db";
-import { getCartCount, fetchCartFromServer } from "@/lib/cart";
+import { getCartCount, fetchCartFromServer, addToCartByMode } from "@/lib/cart";
 
 interface MainStoreAppProps {
   initialProducts?: Product[];
@@ -35,10 +35,18 @@ export default function MainStoreApp({
   const [, startTransition] = useTransition();
 
   // Store channel mode: "retail" | "wholesale" (defaults to "retail" without login)
-  const [storeMode, setStoreMode] = useState<"retail" | "wholesale">("retail");
+  const [storeMode, setStoreMode] = useState<"retail" | "wholesale">(() => {
+    const urlMode = searchParams?.get("mode");
+    if (urlMode === "wholesale" || urlMode === "retail") return urlMode;
+    return "retail";
+  });
   const [isWholesaleLoggedIn, setIsWholesaleLoggedIn] = useState(false);
-  const [isWholesaleLoginOpen, setIsWholesaleLoginOpen] = useState(false);
+  const [isRetailLoggedIn, setIsRetailLoggedIn] = useState(false);
+  const [isWholesaleLoginOpen, setIsWholesaleLoginOpen] = useState(() => {
+    return searchParams?.get("login") === "true";
+  });
   const [isRetailLoginOpen, setIsRetailLoginOpen] = useState(false);
+  const [retailAuthMode, setRetailAuthMode] = useState<"login" | "register">("login");
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isAboutUsOpen, setIsAboutUsOpen] = useState(false);
   const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
@@ -73,21 +81,35 @@ export default function MainStoreApp({
   useEffect(() => {
     let currentMode: "retail" | "wholesale" = storeMode;
     try {
-      const savedMode = localStorage.getItem("fc_store_mode");
-      if (savedMode === "wholesale" || savedMode === "retail") {
-        setStoreMode(savedMode);
-        currentMode = savedMode;
+      const urlMode = searchParams?.get("mode");
+      if (urlMode === "wholesale" || urlMode === "retail") {
+        setStoreMode(urlMode);
+        currentMode = urlMode;
+        localStorage.setItem("fc_store_mode", urlMode);
+      } else {
+        const savedMode = localStorage.getItem("fc_store_mode");
+        if (savedMode === "wholesale" || savedMode === "retail") {
+          setStoreMode(savedMode);
+          currentMode = savedMode;
+        }
       }
 
-      const isAuth =
-        localStorage.getItem("fc_wholesale_logged_in") === "true" ||
+      if (searchParams?.get("login") === "true") {
+        setIsWholesaleLoginOpen(true);
+      }
+
+      const wholesaleAuth = localStorage.getItem("fc_wholesale_logged_in") === "true";
+      setIsWholesaleLoggedIn(wholesaleAuth);
+
+      const retailAuth =
+        localStorage.getItem("fc_retail_logged_in") === "true" ||
         localStorage.getItem("fc_user_logged_in") === "true";
-      setIsWholesaleLoggedIn(isAuth);
+      setIsRetailLoggedIn(retailAuth);
 
       const mobile =
         currentMode === "wholesale"
-          ? localStorage.getItem("fc_wholesale_mobile") || localStorage.getItem("fc_user_mobile")
-          : localStorage.getItem("fc_retail_mobile");
+          ? localStorage.getItem("fc_wholesale_mobile")
+          : localStorage.getItem("fc_retail_mobile") || localStorage.getItem("fc_user_mobile");
       if (mobile) setUserMobile(mobile);
 
       setCartCount(getCartCount(currentMode));
@@ -109,23 +131,32 @@ export default function MainStoreApp({
 
     const handleAuthChange = () => {
       try {
-        const isAuth =
-          localStorage.getItem("fc_wholesale_logged_in") === "true" ||
+        const wholesaleAuth = localStorage.getItem("fc_wholesale_logged_in") === "true";
+        setIsWholesaleLoggedIn(wholesaleAuth);
+
+        const retailAuth =
+          localStorage.getItem("fc_retail_logged_in") === "true" ||
           localStorage.getItem("fc_user_logged_in") === "true";
-        setIsWholesaleLoggedIn(isAuth);
-        const mobile = localStorage.getItem("fc_user_mobile");
+        setIsRetailLoggedIn(retailAuth);
+
+        const mobile =
+          storeMode === "wholesale"
+            ? localStorage.getItem("fc_wholesale_mobile")
+            : localStorage.getItem("fc_retail_mobile") || localStorage.getItem("fc_user_mobile");
         if (mobile) setUserMobile(mobile);
       } catch {}
     };
 
     window.addEventListener("cart_updated", handleCartUpdate);
     window.addEventListener("wholesale_auth_changed", handleAuthChange);
+    window.addEventListener("retail_auth_changed", handleAuthChange);
     window.addEventListener("storage", handleCartUpdate);
     window.addEventListener("storage", handleAuthChange);
 
     return () => {
       window.removeEventListener("cart_updated", handleCartUpdate);
       window.removeEventListener("wholesale_auth_changed", handleAuthChange);
+      window.removeEventListener("retail_auth_changed", handleAuthChange);
       window.removeEventListener("storage", handleCartUpdate);
       window.removeEventListener("storage", handleAuthChange);
     };
@@ -232,13 +263,49 @@ export default function MainStoreApp({
 
   const handleSignOut = () => {
     try {
-      localStorage.removeItem("fc_wholesale_logged_in");
-      localStorage.removeItem("fc_user_logged_in");
-      window.dispatchEvent(new Event("wholesale_auth_changed"));
+      if (storeMode === "wholesale") {
+        localStorage.removeItem("fc_wholesale_logged_in");
+        localStorage.removeItem("fc_wholesale_mobile");
+        localStorage.removeItem("fc_wholesale_company");
+        window.dispatchEvent(new Event("wholesale_auth_changed"));
+        setIsWholesaleLoggedIn(false);
+      } else {
+        localStorage.removeItem("fc_retail_logged_in");
+        localStorage.removeItem("fc_user_logged_in");
+        localStorage.removeItem("fc_retail_mobile");
+        localStorage.removeItem("fc_user_mobile");
+        localStorage.removeItem("fc_user_name");
+        localStorage.removeItem("fc_user_email");
+        window.dispatchEvent(new Event("retail_auth_changed"));
+        setIsRetailLoggedIn(false);
+      }
     } catch {}
-    setIsWholesaleLoggedIn(false);
-    setStoreMode("retail");
     goToHome();
+  };
+
+  const [pendingCartProduct, setPendingCartProduct] = useState<{
+    product: Product;
+    quantity: number;
+  } | null>(null);
+
+  const openRetailLogin = (productToBuy?: Product | null, quantity = 1) => {
+    if (productToBuy) {
+      setPendingCartProduct({ product: productToBuy, quantity });
+    } else {
+      setPendingCartProduct(null);
+    }
+    setRetailAuthMode("login");
+    setIsRetailLoginOpen(true);
+  };
+
+  const openRetailRegister = (productToBuy?: Product | null, quantity = 1) => {
+    if (productToBuy) {
+      setPendingCartProduct({ product: productToBuy, quantity });
+    } else {
+      setPendingCartProduct(null);
+    }
+    setRetailAuthMode("register");
+    setIsRetailLoginOpen(true);
   };
 
   return (
@@ -249,6 +316,7 @@ export default function MainStoreApp({
         storeMode={storeMode}
         onSwitchStoreMode={handleSwitchStoreMode}
         isWholesaleLoggedIn={isWholesaleLoggedIn}
+        isRetailLoggedIn={isRetailLoggedIn}
         onOpenWholesaleLogin={() => setIsWholesaleLoginOpen(true)}
         onNavigateHome={goToHome}
         onNavigateShop={goToShop}
@@ -271,10 +339,30 @@ export default function MainStoreApp({
 
       <RetailLoginModal
         isOpen={isRetailLoginOpen}
-        onClose={() => setIsRetailLoginOpen(false)}
+        onClose={() => {
+          setIsRetailLoginOpen(false);
+          setPendingCartProduct(null);
+        }}
+        initialMode={retailAuthMode}
         onSuccess={(identifier) => {
+          setIsRetailLoggedIn(true);
           setIsRetailLoginOpen(false);
           setUserMobile(identifier);
+          try {
+            window.dispatchEvent(new Event("retail_auth_changed"));
+          } catch {}
+
+          if (pendingCartProduct) {
+            const { items } = addToCartByMode(
+              pendingCartProduct.product,
+              "retail",
+              pendingCartProduct.quantity
+            );
+            setCartCount(items.reduce((s: number, i: OrderItem) => s + i.quantity, 0));
+            setPendingCartProduct(null);
+            // Go to checkout page immediately
+            goToCart();
+          }
         }}
       />
 
@@ -299,8 +387,10 @@ export default function MainStoreApp({
           storeMode={storeMode}
           onSwitchStoreMode={handleSwitchStoreMode}
           isWholesaleLoggedIn={isWholesaleLoggedIn}
+          isRetailLoggedIn={isRetailLoggedIn}
           onOpenWholesaleLogin={() => setIsWholesaleLoginOpen(true)}
-          onOpenRetailLogin={() => setIsRetailLoginOpen(true)}
+          onOpenRetailLogin={openRetailLogin}
+          onOpenRetailRegister={openRetailRegister}
           onOpenAboutUs={() => setIsAboutUsOpen(true)}
           onNavigateHome={goToHome}
           onNavigateCart={goToCart}
@@ -316,6 +406,7 @@ export default function MainStoreApp({
         <CartScreen
           userMobile={userMobile}
           categories={initialCategories}
+          products={initialProducts}
           storeMode={storeMode}
           onSwitchStoreMode={handleSwitchStoreMode}
           isWholesaleLoggedIn={isWholesaleLoggedIn}
@@ -324,6 +415,7 @@ export default function MainStoreApp({
           onNavigateShop={goToShop}
           onNavigateAccount={goToAccount}
           onSelectCategory={goToShop}
+          onSelectProduct={goToProduct}
           onSignOut={handleSignOut}
         />
       )}
@@ -355,7 +447,9 @@ export default function MainStoreApp({
           storeMode={storeMode}
           onSwitchStoreMode={handleSwitchStoreMode}
           isWholesaleLoggedIn={isWholesaleLoggedIn}
+          isRetailLoggedIn={isRetailLoggedIn}
           onOpenWholesaleLogin={() => setIsWholesaleLoginOpen(true)}
+          onOpenRetailLogin={openRetailLogin}
           onNavigateHome={goToHome}
           onNavigateShop={goToShop}
           onNavigateCart={goToCart}
@@ -375,8 +469,10 @@ export default function MainStoreApp({
           storeMode={storeMode}
           onSwitchStoreMode={handleSwitchStoreMode}
           isWholesaleLoggedIn={isWholesaleLoggedIn}
+          isRetailLoggedIn={isRetailLoggedIn}
           onOpenWholesaleLogin={() => setIsWholesaleLoginOpen(true)}
-          onOpenRetailLogin={() => setIsRetailLoginOpen(true)}
+          onOpenRetailLogin={openRetailLogin}
+          onOpenRetailRegister={openRetailRegister}
           onOpenAboutUs={() => setIsAboutUsOpen(true)}
           onNavigateShop={goToShop}
           onNavigateCart={goToCart}

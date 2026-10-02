@@ -415,24 +415,6 @@ export default function Header({
                 </button>
               );
             })}
-
-            {/* Dedicated Wholesale Portal Link Tab */}
-            <a
-              href="/wholesale"
-              onClick={(e) => {
-                e.preventDefault();
-                onSwitchStoreMode("wholesale");
-                router.push("/wholesale");
-              }}
-              className={`px-3.5 py-1.5 ml-2 text-[12.5px] whitespace-nowrap rounded-full transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
-                storeMode === "wholesale"
-                  ? "bg-[#e5a93c] text-black font-bold shadow-md"
-                  : "bg-[#181308] border border-[#e5a93c]/50 text-[#f5c767] hover:bg-[#241b0b] font-semibold"
-              }`}
-            >
-              <Building2 className="w-3.5 h-3.5" />
-              <span>Wholesale Portal</span>
-            </a>
           </nav>
         </div>
       </div>

@@ -325,8 +325,8 @@ export default function ShopScreen({
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col">
 
         {/* Hero Banner Section */}
-        <section className="pt-1 pb-3">
-          <div className="relative w-full h-[200px] sm:h-[260px] md:h-[300px] rounded-[24px] overflow-hidden border border-[#222222] shadow-[0_8px_30px_rgba(0,0,0,0.85)]">
+        <section className="pt-1 pb-4">
+          <div className="relative w-full h-[230px] sm:h-[320px] md:h-[400px] lg:h-[460px] rounded-[24px] overflow-hidden border border-[#222222] shadow-[0_8px_30px_rgba(0,0,0,0.85)]">
             <Image
               src={heroSrc}
               alt="Designed for Every You - Fab Creations"
@@ -337,63 +337,44 @@ export default function ShopScreen({
               className="object-cover object-right sm:object-center"
             />
 
+            {/* Gradient Dark Overlay on Left */}
             <div
-              className="absolute inset-0 bg-gradient-to-r from-black/95 via-black/80 to-transparent sm:via-black/60"
-              style={{ width: "90%" }}
+              className="absolute inset-0 bg-gradient-to-r from-black/95 via-black/75 to-transparent sm:via-black/60"
+              style={{ width: "85%" }}
             />
 
-            <div className="absolute inset-0 p-5 flex flex-col justify-between z-10">
-              <div className="space-y-1 max-w-[240px]">
-                <p className="text-[#e5a93c] text-[10px] font-semibold tracking-[0.2em] uppercase">
-                  WHOLESALE STORE
+            {/* Banner Content */}
+            <div className="absolute inset-0 p-5 sm:p-8 md:p-12 lg:p-14 flex flex-col justify-between md:justify-center md:gap-5 lg:gap-6 z-10">
+              <div className="space-y-1.5 sm:space-y-2 md:space-y-2.5 max-w-[230px] sm:max-w-sm md:max-w-md lg:max-w-lg">
+                <p className="text-[#e5a93c] text-[10.5px] sm:text-[11.5px] md:text-[12.5px] lg:text-[13.5px] font-semibold tracking-[0.2em] uppercase">
+                  TIMELESS JEWELRY
                 </p>
-                <h2 className="text-white text-[22px] font-serif font-normal leading-[1.2] tracking-tight">
-                  Premium B2B <br />
-                  Jewelry Catalog
+
+                <h2 className="text-white text-[23px] sm:text-[28px] md:text-[36px] lg:text-[42px] font-serif font-normal leading-[1.18] tracking-tight">
+                  Designed <br />
+                  for Every You
                 </h2>
-                <p className="text-[#a8a8a8] text-[9.5px] tracking-[0.14em] uppercase pt-0.5">
-                  FACTORY DIRECT <span className="text-[#e5a93c] mx-1">|</span> ANTI TARNISH
+
+                <p className="text-[#a8a8a8] text-[9.5px] sm:text-[10.5px] md:text-[11.5px] lg:text-[12px] tracking-[0.14em] uppercase pt-0.5">
+                  ANTI TARNISH <span className="text-[#e5a93c] mx-1">|</span> PREMIUM QUALITY
                 </p>
               </div>
 
-              {/* Dynamic Stats Row */}
-              <div className="pt-2 border-t border-[#333333]/60 max-w-[340px]">
-                <div className="flex items-center justify-between text-center pr-4">
-                  {/* Col 1: Dynamic Products Count */}
-                  <div className="flex flex-col">
-                    <span className="text-[#e5a93c] text-[18px] font-semibold leading-tight">
-                      {products.length}
-                    </span>
-                    <span className="text-[#8e8e93] text-[11px] font-normal">
-                      Products
-                    </span>
-                  </div>
-
-                  <div className="w-[1px] h-7 bg-[#3a3a3a]" />
-
-                  {/* Col 2: Authentic */}
-                  <div className="flex flex-col">
-                    <span className="text-[#e5a93c] text-[18px] font-semibold leading-tight">
-                      100%
-                    </span>
-                    <span className="text-[#8e8e93] text-[11px] font-normal">
-                      Authentic
-                    </span>
-                  </div>
-
-                  <div className="w-[1px] h-7 bg-[#3a3a3a]" />
-
-                  {/* Col 3: Rating */}
-                  <div className="flex flex-col">
-                    <div className="flex items-center gap-0.5 text-[#e5a93c] text-[18px] font-semibold leading-tight">
-                      <span>4.8</span>
-                      <span className="text-[14px]">★</span>
-                    </div>
-                    <span className="text-[#8e8e93] text-[11px] font-normal">
-                      Rating
-                    </span>
-                  </div>
-                </div>
+              <div>
+                <button
+                  onClick={() => {
+                    const el = document.getElementById("products-catalog");
+                    if (el) {
+                      el.scrollIntoView({ behavior: "smooth" });
+                    } else {
+                      window.scrollTo({ top: 400, behavior: "smooth" });
+                    }
+                  }}
+                  className="h-[34px] sm:h-[38px] md:h-[42px] px-4 sm:px-5 md:px-6 rounded-full border border-[#e5a93c] bg-black/40 backdrop-blur-sm text-[#e5a93c] hover:bg-[#e5a93c] hover:text-black transition-all text-[11.5px] sm:text-[12px] md:text-[13px] font-semibold tracking-wide flex items-center gap-1.5 shadow-md active:scale-95 cursor-pointer"
+                >
+                  <span>SHOP NOW</span>
+                  <ArrowRight className="w-3 h-3 md:w-3.5 md:h-3.5" />
+                </button>
               </div>
             </div>
           </div>
@@ -473,7 +454,7 @@ export default function ShopScreen({
         )}
 
         {/* Dynamic Products Grid */}
-        <section className="px-4 py-2">
+        <section id="products-catalog" className="px-4 py-2">
           {filteredProducts.length > 0 ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-3.5 sm:gap-4 md:gap-6">
               {filteredProducts.map((product) => (

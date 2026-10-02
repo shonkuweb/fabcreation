@@ -132,6 +132,9 @@ export interface WholesaleApplication {
   updatedAt: string;
 }
 
+export * from "./settings";
+import { StoreSettings, defaultSettings } from "./settings";
+
 export interface DatabaseData {
   products: Product[];
   categories: Category[];
@@ -142,6 +145,7 @@ export interface DatabaseData {
   carts: DbCart[];
   wishlists: DbWishlist[];
   wholesaleApplications: WholesaleApplication[];
+  settings?: StoreSettings;
 }
 
 const DB_DIR = process.env.DATABASE_DIR
@@ -160,6 +164,7 @@ const defaultData: DatabaseData = {
   carts: [],
   wishlists: [],
   wholesaleApplications: [],
+  settings: { ...defaultSettings },
 };
 
 // In-memory RAM cache for 0ms read operations
@@ -264,6 +269,7 @@ function getDb(): DatabaseData {
       wholesaleApplications: Array.isArray(parsed.wholesaleApplications)
         ? parsed.wholesaleApplications
         : [],
+      settings: parsed.settings ? { ...defaultSettings, ...parsed.settings } : { ...defaultSettings },
     };
     return cachedDb;
   } catch {
@@ -277,6 +283,7 @@ function getDb(): DatabaseData {
       carts: [],
       wishlists: [],
       wholesaleApplications: [],
+      settings: { ...defaultSettings },
     };
     return cachedDb;
   }
@@ -1004,3 +1011,27 @@ export function updateWholesaleApplicationStatus(
 export function deleteWholesaleApplication(id: string): boolean {
   return deleteWholesaleUser(id);
 }
+
+// ---------------- STORE SETTINGS ----------------
+export function getSettings(): StoreSettings {
+  const db = getDb();
+  if (!db.settings) {
+    db.settings = { ...defaultSettings };
+    saveDb(db);
+  }
+  return { ...defaultSettings, ...db.settings };
+}
+
+export function updateSettings(updates: Partial<StoreSettings>): StoreSettings {
+  const db = getDb();
+  const current = db.settings ? { ...defaultSettings, ...db.settings } : { ...defaultSettings };
+  const updated: StoreSettings = {
+    ...current,
+    ...updates,
+    updatedAt: new Date().toISOString(),
+  };
+  db.settings = updated;
+  saveDb(db);
+  return updated;
+}
+

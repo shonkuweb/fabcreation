@@ -1,0 +1,41 @@
+export interface StoreSettings {
+  // Navbar announcement offer tags
+  navbarRetailOffer: string;
+  navbarWholesaleOffer: string;
+  // Hero banner
+  heroBannerImage: string;
+  heroTitle: string;
+  heroSubtitle: string;
+  heroTagline: string;
+  heroButtonText: string;
+  // About Us section/modal content
+  aboutBadge: string;
+  aboutHeadline: string;
+  aboutParagraph1: string;
+  aboutParagraph2: string;
+  aboutParagraph3: string;
+  aboutHighlightTitle: string;
+  aboutHighlightDesc: string;
+  aboutFooterSubtitle: string;
+  aboutFooterHighlight: string;
+  updatedAt?: string;
+}
+
+export const defaultSettings: StoreSettings = {
+  navbarRetailOffer: "New customers enjoy 15% off on their first order • Code: FAB15",
+  navbarWholesaleOffer: "B2B Wholesale Portal Active • Minimum Order: ₹3,000 across cart",
+  heroBannerImage: "https://pub-ce8688bc6c654bcfb99716f7c9373bcd.r2.dev/fab-creations/hero-banner.jpg",
+  heroTitle: "Designed for Every You",
+  heroSubtitle: "Exquisite Anti-Tarnish Luxury Jewellery",
+  heroTagline: "Waterproof • Hypoallergenic • 18K Gold Plated",
+  heroButtonText: "Explore Collection",
+  aboutBadge: "About Us",
+  aboutHeadline: "Jewellery that completes the look.\nA collection that creates the impression.",
+  aboutParagraph1: "At Fab Creation, we believe jewellery is more than an accessory—it’s the detail that makes an outfit unforgettable.",
+  aboutParagraph2: "Based in Lucknow, we bring together a carefully selected range of chains, anklets, earrings, bangles, fancy kadas, necklaces, bridal jewellery and AD jewellery, serving both wholesale and retail customers.",
+  aboutParagraph3: "Whether you’re looking for everyday elegance, statement pieces for a special occasion, or exquisite bridal jewellery, our collection is curated to offer style, variety and value under one roof.",
+  aboutHighlightTitle: "Built for Modern Jewellery Businesses",
+  aboutHighlightDesc: "Fab Creation goes beyond jewellery. We also provide E-commerce services, helping jewellery businesses take their collections online and reach customers beyond their physical store.",
+  aboutFooterSubtitle: "Wholesale or retail. Traditional or contemporary. Jewellery or digital.",
+  aboutFooterHighlight: "Fab Creation is where craftsmanship meets modern commerce.",
+};

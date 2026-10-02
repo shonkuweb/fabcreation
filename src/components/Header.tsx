@@ -40,6 +40,8 @@ interface HeaderProps {
   setSearchQuery?: (q: string) => void;
   onSearchSubmit?: () => void;
   currentTab?: string;
+  navbarRetailOffer?: string;
+  navbarWholesaleOffer?: string;
 }
 
 const R2_BASE = "https://pub-ce8688bc6c654bcfb99716f7c9373bcd.r2.dev/fab-creations";
@@ -67,6 +69,8 @@ export default function Header({
   setSearchQuery,
   onSearchSubmit,
   currentTab = "home",
+  navbarRetailOffer,
+  navbarWholesaleOffer,
 }: HeaderProps) {
   const router = useRouter();
   const [logoSrc, setLogoSrc] = useState(LOGO_R2_URL);
@@ -166,10 +170,10 @@ export default function Header({
             <span className="text-[#f5c767]">★</span>
             {storeMode === "wholesale" ? (
               <span className="text-[#f5c767]">
-                B2B Wholesale Portal Active • Minimum Order: ₹3,000 across cart
+                {navbarWholesaleOffer || "B2B Wholesale Portal Active • Minimum Order: ₹3,000 across cart"}
               </span>
             ) : (
-              <span>New customers enjoy 15% off on their first order • Code: <strong className="text-white">FAB15</strong></span>
+              <span>{navbarRetailOffer || "New customers enjoy 15% off on their first order • Code: FAB15"}</span>
             )}
             <span className="text-[#f5c767]">★</span>
           </p>

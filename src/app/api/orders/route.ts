@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getOrders, createOrder } from "@/lib/db";
+import { sendOrderConfirmationEmail } from "@/lib/resend";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -90,6 +91,50 @@ export async function POST(req: Request) {
       status: "Pending",
       orderType,
     });
+
+    // 4. Send Confirmation Email to Registered Email Address
+    let recipientEmail = emailStr || (validMobile.includes("@") ? validMobile : "");
+    if (!recipientEmail) {
+      try {
+        const { getRetailUsers, getWholesaleUsers } = await import("@/lib/db");
+        if (orderType === "wholesale") {
+          const wsUser = getWholesaleUsers().find(
+            (u) =>
+              (u.mobile && u.mobile.replace(/\D/g, "") === validMobile.replace(/\D/g, "")) ||
+              (u.name && u.name.toLowerCase() === (customerName || "").toLowerCase())
+          );
+          if (wsUser?.email) recipientEmail = wsUser.email;
+        } else {
+          const retUser = getRetailUsers().find(
+            (u) =>
+              (u.mobile && u.mobile.replace(/\D/g, "") === validMobile.replace(/\D/g, "")) ||
+              (u.email && u.email.includes("@"))
+          );
+          if (retUser?.email) recipientEmail = retUser.email;
+        }
+      } catch (lookupErr) {
+        console.warn("[Orders API] User email lookup note:", lookupErr);
+      }
+    }
+
+    if (recipientEmail && recipientEmail.includes("@")) {
+      // Fire confirmation email asynchronously
+      sendOrderConfirmationEmail({
+        orderNumber: newOrder.orderNumber,
+        customerName: newOrder.customerName,
+        customerEmail: recipientEmail,
+        customerMobile: newOrder.customerMobile,
+        orderType: newOrder.orderType,
+        items: newOrder.items,
+        subtotal: newOrder.subtotal,
+        gst: newOrder.gst,
+        shipping: newOrder.shipping,
+        total: newOrder.total,
+        createdAt: newOrder.createdAt,
+      }).catch((emailErr) => {
+        console.error("[Orders API] Background order email failed:", emailErr);
+      });
+    }
 
     return NextResponse.json({ success: true, order: newOrder }, { status: 201 });
   } catch (err) {

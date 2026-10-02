@@ -14,6 +14,7 @@ import AboutUsModal from "@/components/AboutUsModal";
 import CategoriesModal from "@/components/CategoriesModal";
 import WholesaleGateScreen from "@/components/WholesaleGateScreen";
 import type { Product, Category, OrderItem } from "@/lib/db";
+import { type StoreSettings, defaultSettings } from "@/lib/settings";
 import { getCartCount, fetchCartFromServer, addToCartByMode } from "@/lib/cart";
 
 interface MainStoreAppProps {
@@ -22,6 +23,7 @@ interface MainStoreAppProps {
   initialTab?: string;
   initialCategory?: string;
   initialProductId?: string;
+  initialSettings?: StoreSettings;
 }
 
 export default function MainStoreApp({
@@ -30,10 +32,25 @@ export default function MainStoreApp({
   initialTab = "home",
   initialCategory,
   initialProductId,
+  initialSettings,
 }: MainStoreAppProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [, startTransition] = useTransition();
+
+  // Dynamic store settings (hero banner, about us, offer tags)
+  const [settings, setSettings] = useState<StoreSettings>(initialSettings || defaultSettings);
+
+  useEffect(() => {
+    fetch("/api/settings", { cache: "no-store" })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.settings) {
+          setSettings(data.settings);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // Store channel mode: "retail" | "wholesale" (defaults to "retail" without login)
   const [storeMode, setStoreMode] = useState<"retail" | "wholesale">(() => {
@@ -385,6 +402,7 @@ export default function MainStoreApp({
       <AboutUsModal
         isOpen={isAboutUsOpen}
         onClose={() => setIsAboutUsOpen(false)}
+        settings={settings}
       />
 
       <CategoriesModal
@@ -413,6 +431,7 @@ export default function MainStoreApp({
               cartCount={cartCount}
               selectedCategory={selectedCategory}
               storeMode={storeMode}
+              settings={settings}
               onSwitchStoreMode={handleSwitchStoreMode}
               isWholesaleLoggedIn={isWholesaleLoggedIn}
               isRetailLoggedIn={isRetailLoggedIn}
@@ -498,6 +517,7 @@ export default function MainStoreApp({
           categories={initialCategories}
           cartCount={cartCount}
           storeMode={storeMode}
+          settings={settings}
           onSwitchStoreMode={handleSwitchStoreMode}
           isWholesaleLoggedIn={isWholesaleLoggedIn}
           isRetailLoggedIn={isRetailLoggedIn}

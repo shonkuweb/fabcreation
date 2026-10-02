@@ -18,6 +18,9 @@ export const metadata: Metadata = {
     icon: "/images/logo.png",
     apple: "/images/logo.png",
   },
+  alternates: {
+    canonical: "/",
+  },
   openGraph: {
     title: "Fab Creations | Luxury Jewellery",
     description: "Exclusive anti-tarnish jewellery for retail & wholesale.",

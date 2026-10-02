@@ -20,14 +20,44 @@
   ],
   "categories": [
     {
-      "id": "cat-1789891252268",
-      "name": "test",
-      "createdAt": "2026-09-20T08:00:52.268Z"
+      "id": "cat-anklets",
+      "name": "Anklets",
+      "createdAt": "2026-09-20T08:00:59.476Z"
     },
     {
-      "id": "cat-1789891259476",
-      "name": "anklets",
-      "createdAt": "2026-09-20T08:00:59.476Z"
+      "id": "cat-watches",
+      "name": "Watches",
+      "createdAt": "2026-09-20T08:01:00.000Z"
+    },
+    {
+      "id": "cat-gifting",
+      "name": "Gifting",
+      "createdAt": "2026-09-20T08:01:01.000Z"
+    },
+    {
+      "id": "cat-bangles",
+      "name": "Bangles",
+      "createdAt": "2026-09-20T08:01:02.000Z"
+    },
+    {
+      "id": "cat-bracelets",
+      "name": "Bracelets",
+      "createdAt": "2026-09-20T08:01:03.000Z"
+    },
+    {
+      "id": "cat-rings",
+      "name": "Rings",
+      "createdAt": "2026-09-20T08:01:04.000Z"
+    },
+    {
+      "id": "cat-earrings",
+      "name": "Earrings",
+      "createdAt": "2026-09-20T08:01:05.000Z"
+    },
+    {
+      "id": "cat-chains",
+      "name": "Chains",
+      "createdAt": "2026-09-20T08:01:06.000Z"
     }
   ],
   "orders": [

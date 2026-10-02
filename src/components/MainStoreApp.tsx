@@ -8,6 +8,7 @@ import CartScreen from "@/components/CartScreen";
 import AccountScreen from "@/components/AccountScreen";
 import ProductDetailsScreen from "@/components/ProductDetailsScreen";
 import WholesaleLoginModal from "@/components/WholesaleLoginModal";
+import RetailLoginModal from "@/components/RetailLoginModal";
 import NavigationDrawer from "@/components/NavigationDrawer";
 import AboutUsModal from "@/components/AboutUsModal";
 import CategoriesModal from "@/components/CategoriesModal";
@@ -37,6 +38,7 @@ export default function MainStoreApp({
   const [storeMode, setStoreMode] = useState<"retail" | "wholesale">("retail");
   const [isWholesaleLoggedIn, setIsWholesaleLoggedIn] = useState(false);
   const [isWholesaleLoginOpen, setIsWholesaleLoginOpen] = useState(false);
+  const [isRetailLoginOpen, setIsRetailLoginOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isAboutUsOpen, setIsAboutUsOpen] = useState(false);
   const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
@@ -267,6 +269,15 @@ export default function MainStoreApp({
         }}
       />
 
+      <RetailLoginModal
+        isOpen={isRetailLoginOpen}
+        onClose={() => setIsRetailLoginOpen(false)}
+        onSuccess={(identifier) => {
+          setIsRetailLoginOpen(false);
+          setUserMobile(identifier);
+        }}
+      />
+
       <AboutUsModal
         isOpen={isAboutUsOpen}
         onClose={() => setIsAboutUsOpen(false)}
@@ -289,6 +300,8 @@ export default function MainStoreApp({
           onSwitchStoreMode={handleSwitchStoreMode}
           isWholesaleLoggedIn={isWholesaleLoggedIn}
           onOpenWholesaleLogin={() => setIsWholesaleLoginOpen(true)}
+          onOpenRetailLogin={() => setIsRetailLoginOpen(true)}
+          onOpenAboutUs={() => setIsAboutUsOpen(true)}
           onNavigateHome={goToHome}
           onNavigateCart={goToCart}
           onNavigateAccount={goToAccount}
@@ -363,6 +376,8 @@ export default function MainStoreApp({
           onSwitchStoreMode={handleSwitchStoreMode}
           isWholesaleLoggedIn={isWholesaleLoggedIn}
           onOpenWholesaleLogin={() => setIsWholesaleLoginOpen(true)}
+          onOpenRetailLogin={() => setIsRetailLoginOpen(true)}
+          onOpenAboutUs={() => setIsAboutUsOpen(true)}
           onNavigateShop={goToShop}
           onNavigateCart={goToCart}
           onNavigateAccount={goToAccount}

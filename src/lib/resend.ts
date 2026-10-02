@@ -1,7 +1,12 @@
 import { Resend } from "resend";
 
-const resendApiKey = process.env.RESEND_API_KEY || "";
-const resend = new Resend(resendApiKey);
+function getResendClient(): Resend | null {
+  const apiKey = process.env.RESEND_API_KEY?.trim();
+  if (!apiKey) {
+    return null;
+  }
+  return new Resend(apiKey);
+}
 
 const LOGO_URL =
   "https://pub-ce8688bc6c654bcfb99716f7c9373bcd.r2.dev/fab-creations/brand-logo.png";
@@ -24,6 +29,16 @@ export async function sendOtpEmail(
   const normalizedEmail = toEmail.trim().toLowerCase();
   const fromEmail = process.env.RESEND_FROM_EMAIL || "Fab Creations <onboarding@resend.dev>";
   const isWholesale = purpose === "wholesale";
+
+  const resend = getResendClient();
+  if (!resend) {
+    console.warn("[RESEND] RESEND_API_KEY not configured on server. Fallback demo OTP active.");
+    return {
+      success: true,
+      isDemoFallback: true,
+      message: "Resend email service not configured. Please use demo code 123456.",
+    };
+  }
 
   const subject = isWholesale
     ? `${otpCode} is your Fab Creations Wholesale Verification Code`

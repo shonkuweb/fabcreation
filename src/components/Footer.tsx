@@ -27,6 +27,7 @@ export default function Footer({ onNavigateShop, onNavigateHome, onNavigateAccou
   const navShop = onNavigateShop || (() => router.push("/shop"));
   const navHome = onNavigateHome || (() => router.push("/home"));
   const navAccount = onNavigateAccount || (() => router.push("/account"));
+  const navWholesale = () => router.push("/wholesale");
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -141,14 +142,17 @@ export default function Footer({ onNavigateShop, onNavigateHome, onNavigateAccou
                 </button>
               </li>
               <li>
-                <button
-                  type="button"
-                  onClick={navHome}
+                <a
+                  href="/wholesale"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    navWholesale();
+                  }}
                   className="flex items-center gap-2 text-[#d1d5db] hover:text-[#e5a93c] transition-colors cursor-pointer"
                 >
                   <ChevronRight className="w-3.5 h-3.5 text-[#e5a93c]" />
                   <span>B2B Wholesale Portal</span>
-                </button>
+                </a>
               </li>
               <li>
                 <button

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Search,
   LogIn,
@@ -13,6 +14,7 @@ import {
   ArrowRight,
   Menu,
   X,
+  Building2,
 } from "lucide-react";
 import type { Category } from "@/lib/db";
 
@@ -43,18 +45,6 @@ interface HeaderProps {
 const R2_BASE = "https://pub-ce8688bc6c654bcfb99716f7c9373bcd.r2.dev/fab-creations";
 const LOGO_R2_URL = `${R2_BASE}/brand-logo.png`;
 
-// Standard jewellery categories matching user reference design
-const DEFAULT_CATEGORIES = [
-  "Anklets",
-  "Watches",
-  "Gifting",
-  "Bangles",
-  "Bracelets",
-  "Rings",
-  "Earrings",
-  "Chains",
-];
-
 export default function Header({
   storeMode,
   onSwitchStoreMode,
@@ -78,6 +68,7 @@ export default function Header({
   onSearchSubmit,
   currentTab = "home",
 }: HeaderProps) {
+  const router = useRouter();
   const [logoSrc, setLogoSrc] = useState(LOGO_R2_URL);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userName, setUserName] = useState<string>("");
@@ -114,21 +105,21 @@ export default function Header({
     } catch {}
   }, [storeMode]);
 
-  // Combine default categories with any dynamic categories from database
+  // Only display real categories that exist in the database/admin
   const displayedCategories = React.useMemo(() => {
-    const list = [...DEFAULT_CATEGORIES];
-    if (Array.isArray(categories)) {
-      categories.forEach((c) => {
-        if (
-          c &&
-          c.name &&
-          c.name.toLowerCase() !== "test" &&
-          !list.some((item) => item.toLowerCase() === c.name.toLowerCase())
-        ) {
-          list.push(c.name);
-        }
-      });
-    }
+    if (!Array.isArray(categories) || categories.length === 0) return [];
+    const list: string[] = [];
+    categories.forEach((c) => {
+      if (
+        c &&
+        c.name &&
+        c.name.trim() &&
+        c.name.toLowerCase() !== "test" &&
+        !list.some((item) => item.toLowerCase() === c.name.trim().toLowerCase())
+      ) {
+        list.push(c.name.trim());
+      }
+    });
     return list;
   }, [categories]);
 
@@ -184,15 +175,32 @@ export default function Header({
           </p>
 
           {/* Desktop switch mode quick button in announcement bar */}
-          {storeMode === "wholesale" && (
+          {storeMode === "wholesale" ? (
             <button
               type="button"
-              onClick={() => onSwitchStoreMode("retail")}
+              onClick={() => {
+                onSwitchStoreMode("retail");
+                router.push("/home");
+              }}
               className="hidden md:inline-flex absolute right-0 text-[11px] text-[#e5a93c] hover:text-[#f5c767] hover:underline items-center gap-1 cursor-pointer font-semibold"
             >
               <span>Return to Retail Store</span>
               <ArrowRight className="w-3 h-3" />
             </button>
+          ) : (
+            <a
+              href="/wholesale"
+              onClick={(e) => {
+                e.preventDefault();
+                onSwitchStoreMode("wholesale");
+                router.push("/wholesale");
+              }}
+              className="hidden md:inline-flex absolute right-0 text-[11px] text-[#e5a93c] hover:text-[#f5c767] hover:underline items-center gap-1 cursor-pointer font-semibold"
+            >
+              <Building2 className="w-3 h-3" />
+              <span>B2B Wholesale Portal</span>
+              <ArrowRight className="w-3 h-3" />
+            </a>
           )}
         </div>
       </div>
@@ -266,6 +274,34 @@ export default function Header({
 
           {/* Right Action Icons & Buttons */}
           <div className="flex items-center gap-3 xl:gap-4 shrink-0">
+            {/* Wholesale B2B Link */}
+            {storeMode !== "wholesale" ? (
+              <a
+                href="/wholesale"
+                onClick={(e) => {
+                  e.preventDefault();
+                  onSwitchStoreMode("wholesale");
+                  router.push("/wholesale");
+                }}
+                className="hidden xl:flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-[#e5a93c]/50 bg-[#161208] text-[#e5a93c] hover:border-[#e5a93c] hover:bg-[#201808] hover:text-[#f5c767] text-xs font-semibold tracking-wide transition-all shadow-sm cursor-pointer"
+              >
+                <Building2 className="w-3.5 h-3.5" />
+                <span>Wholesale B2B</span>
+              </a>
+            ) : (
+              <button
+                type="button"
+                onClick={() => {
+                  onSwitchStoreMode("retail");
+                  router.push("/home");
+                }}
+                className="hidden xl:flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-emerald-500/40 bg-[#0d140c] text-emerald-300 hover:bg-[#121c10] text-xs font-semibold tracking-wide transition-all shadow-sm cursor-pointer"
+              >
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                <span>Wholesale Active</span>
+              </button>
+            )}
+
             {/* Login */}
             <button
               type="button"
@@ -379,6 +415,24 @@ export default function Header({
                 </button>
               );
             })}
+
+            {/* Dedicated Wholesale Portal Link Tab */}
+            <a
+              href="/wholesale"
+              onClick={(e) => {
+                e.preventDefault();
+                onSwitchStoreMode("wholesale");
+                router.push("/wholesale");
+              }}
+              className={`px-3.5 py-1.5 ml-2 text-[12.5px] whitespace-nowrap rounded-full transition-all cursor-pointer flex items-center gap-1.5 shrink-0 ${
+                storeMode === "wholesale"
+                  ? "bg-[#e5a93c] text-black font-bold shadow-md"
+                  : "bg-[#181308] border border-[#e5a93c]/50 text-[#f5c767] hover:bg-[#241b0b] font-semibold"
+              }`}
+            >
+              <Building2 className="w-3.5 h-3.5" />
+              <span>Wholesale Portal</span>
+            </a>
           </nav>
         </div>
       </div>

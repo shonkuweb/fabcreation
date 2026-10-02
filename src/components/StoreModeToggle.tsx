@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useRouter } from "next/navigation";
 import { ShoppingBag, Building2, Check, Lock } from "lucide-react";
 
 interface StoreModeToggleProps {
@@ -16,6 +17,7 @@ export default function StoreModeToggle({
   isWholesaleLoggedIn,
   onOpenWholesaleLogin,
 }: StoreModeToggleProps) {
+  const router = useRouter();
   return (
     <div className="w-full px-4 pt-2.5 pb-1 flex flex-col items-center">
       {/* Dual Tab Switcher */}
@@ -23,7 +25,10 @@ export default function StoreModeToggle({
         {/* Retail Tab */}
         <button
           type="button"
-          onClick={() => onSwitch("retail")}
+          onClick={() => {
+            onSwitch("retail");
+            router.push("/home");
+          }}
           className={`flex-1 py-2 px-2.5 rounded-xl text-xs sm:text-[12.5px] font-medium transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer ${
             mode === "retail"
               ? "bg-gradient-to-r from-[#d4992e] to-[#f5c767] text-black font-semibold shadow-md"
@@ -46,9 +51,7 @@ export default function StoreModeToggle({
           type="button"
           onClick={() => {
             onSwitch("wholesale");
-            if (!isWholesaleLoggedIn && onOpenWholesaleLogin) {
-              onOpenWholesaleLogin();
-            }
+            router.push("/wholesale");
           }}
           className={`flex-1 py-2 px-2.5 rounded-xl text-xs sm:text-[12.5px] font-medium transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer ${
             mode === "wholesale"

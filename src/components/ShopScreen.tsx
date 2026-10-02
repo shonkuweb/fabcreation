@@ -59,18 +59,6 @@ const R2_BASE = "https://pub-ce8688bc6c654bcfb99716f7c9373bcd.r2.dev/fab-creatio
 const LOGO_R2_URL = `${R2_BASE}/brand-logo.png`;
 const HERO_R2_URL = `${R2_BASE}/hero-banner.jpg`;
 
-// Standard jewellery categories matching user reference design
-const DEFAULT_CATEGORIES = [
-  "Anklets",
-  "Watches",
-  "Gifting",
-  "Bangles",
-  "Bracelets",
-  "Rings",
-  "Earrings",
-  "Chains",
-];
-
 export default function ShopScreen({
   products: initialProducts = [],
   categories: initialCategories = [],
@@ -119,18 +107,14 @@ export default function ShopScreen({
         if (
           c &&
           c.name &&
+          c.name.trim() &&
           c.name.toLowerCase() !== "test" &&
-          !list.some((item) => item.name.toLowerCase() === c.name.toLowerCase())
+          !list.some((item) => item.name.toLowerCase() === c.name.trim().toLowerCase())
         ) {
-          list.push({ id: c.id || `cat-${c.name.toLowerCase()}`, name: c.name });
+          list.push({ id: c.id || `cat-${c.name.toLowerCase()}`, name: c.name.trim() });
         }
       });
     }
-    DEFAULT_CATEGORIES.forEach((name) => {
-      if (!list.some((item) => item.name.toLowerCase() === name.toLowerCase())) {
-        list.push({ id: `cat-${name.toLowerCase()}`, name });
-      }
-    });
     return list;
   }, [categories]);
 

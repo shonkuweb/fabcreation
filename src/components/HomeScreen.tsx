@@ -59,17 +59,6 @@ const R2_BASE = "https://pub-ce8688bc6c654bcfb99716f7c9373bcd.r2.dev/fab-creatio
 const LOGO_R2_URL = `${R2_BASE}/brand-logo.png`;
 const HERO_R2_URL = `${R2_BASE}/hero-banner.jpg`;
 
-const DEFAULT_CATEGORIES = [
-  "Anklets",
-  "Watches",
-  "Gifting",
-  "Bangles",
-  "Bracelets",
-  "Rings",
-  "Earrings",
-  "Chains",
-];
-
 export default function HomeScreen({
   products: initialProducts = [],
   categories: initialCategories = [],
@@ -105,27 +94,25 @@ export default function HomeScreen({
   const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
+  // Only display real categories that actually exist in the database / admin panel
   const displayedCategoryItems = React.useMemo(() => {
-    const list: Array<{ name: string; image?: string }> = [];
-    if (Array.isArray(categories)) {
-      categories.forEach((c) => {
-        if (
-          c &&
-          c.name &&
-          c.name.toLowerCase() !== "test" &&
-          !list.some((item) => item.name.toLowerCase() === c.name.toLowerCase())
-        ) {
-          list.push({ name: c.name, image: c.image || "" });
-        }
-      });
-    }
-
-    DEFAULT_CATEGORIES.forEach((catName) => {
-      if (!list.some((item) => item.name.toLowerCase() === catName.toLowerCase())) {
-        list.push({ name: catName, image: "" });
+    if (!Array.isArray(categories) || categories.length === 0) return [];
+    const list: Array<{ id: string; name: string; image?: string }> = [];
+    categories.forEach((c) => {
+      if (
+        c &&
+        c.name &&
+        c.name.trim() &&
+        c.name.toLowerCase() !== "test" &&
+        !list.some((item) => item.name.toLowerCase() === c.name.trim().toLowerCase())
+      ) {
+        list.push({
+          id: c.id,
+          name: c.name.trim(),
+          image: c.image || "",
+        });
       }
     });
-
     return list;
   }, [categories]);
 
@@ -389,65 +376,67 @@ export default function HomeScreen({
         </section>
 
         {/* Categories Section (Mobile Only: lg:hidden - on desktop categories are directly in the navbar) */}
-        <section className="lg:hidden px-4 py-2">
-          <div className="flex items-center justify-between mb-2.5">
-            <h3 className="text-white text-[17px] font-serif font-medium tracking-tight">
-              Shop by Category
-            </h3>
-            <button
-              onClick={() => setIsCategoriesOpen(true)}
-              className="text-[#e5a93c] hover:text-[#f5c767] text-[12px] font-medium flex items-center gap-1 cursor-pointer transition-colors"
-            >
-              <span>View All</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
+        {displayedCategoryItems.length > 0 && (
+          <section className="lg:hidden px-4 py-2">
+            <div className="flex items-center justify-between mb-2.5">
+              <h3 className="text-white text-[17px] font-serif font-medium tracking-tight">
+                Shop by Category
+              </h3>
+              <button
+                onClick={() => setIsCategoriesOpen(true)}
+                className="text-[#e5a93c] hover:text-[#f5c767] text-[12px] font-medium flex items-center gap-1 cursor-pointer transition-colors"
+              >
+                <span>View All</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
 
-          <div className="flex items-center gap-3.5 sm:gap-4 overflow-x-auto pb-2 pt-1 scrollbar-none px-1">
-            {displayedCategoryItems.map((catItem) => {
-              const catName = catItem.name;
-              // Fallback to product image if no category thumbnail is explicitly uploaded
-              const categoryProduct = products.find(
-                (p) => p.category?.toLowerCase() === catName.toLowerCase() && p.image
-              );
-              const thumbnailSrc = catItem.image || categoryProduct?.image;
+            <div className="flex items-center gap-3.5 sm:gap-4 overflow-x-auto pb-2 pt-1 scrollbar-none px-1">
+              {displayedCategoryItems.map((catItem) => {
+                const catName = catItem.name;
+                // Fallback to product image if no category thumbnail is explicitly uploaded
+                const categoryProduct = products.find(
+                  (p) => p.category?.toLowerCase() === catName.toLowerCase() && p.image
+                );
+                const thumbnailSrc = catItem.image || categoryProduct?.image;
 
-              return (
-                <button
-                  key={catName}
-                  type="button"
-                  onClick={() => {
-                    onSelectCategory?.(catName);
-                    navigateToShop();
-                  }}
-                  className="flex flex-col items-center gap-1.5 shrink-0 cursor-pointer group focus:outline-none"
-                >
-                  {/* Round Shape Container with Luxury Gold Gradient Ring */}
-                  <div className="relative w-[66px] h-[66px] sm:w-[72px] sm:h-[72px] rounded-full p-[2px] bg-gradient-to-tr from-[#d69e3d] via-[#f5c767] to-[#8a6828] group-hover:scale-105 group-hover:from-[#f5c767] group-hover:to-[#e5a93c] transition-all duration-300 shadow-md">
-                    <div className="w-full h-full rounded-full bg-[#121212] overflow-hidden flex items-center justify-center p-[2px]">
-                      {thumbnailSrc ? (
-                        <img
-                          src={thumbnailSrc}
-                          alt={catName}
-                          className="w-full h-full rounded-full object-cover transition-transform duration-300 group-hover:scale-110"
-                        />
-                      ) : (
-                        <div className="w-full h-full rounded-full bg-[#181308] border border-[#3a2c14] flex items-center justify-center text-[#e5a93c]">
-                          <Grid className="w-5 h-5 group-hover:scale-110 transition-transform" />
-                        </div>
-                      )}
+                return (
+                  <button
+                    key={catName}
+                    type="button"
+                    onClick={() => {
+                      onSelectCategory?.(catName);
+                      navigateToShop();
+                    }}
+                    className="flex flex-col items-center gap-1.5 shrink-0 cursor-pointer group focus:outline-none"
+                  >
+                    {/* Round Shape Container with Luxury Gold Gradient Ring */}
+                    <div className="relative w-[66px] h-[66px] sm:w-[72px] sm:h-[72px] rounded-full p-[2px] bg-gradient-to-tr from-[#d69e3d] via-[#f5c767] to-[#8a6828] group-hover:scale-105 group-hover:from-[#f5c767] group-hover:to-[#e5a93c] transition-all duration-300 shadow-md">
+                      <div className="w-full h-full rounded-full bg-[#121212] overflow-hidden flex items-center justify-center p-[2px]">
+                        {thumbnailSrc ? (
+                          <img
+                            src={thumbnailSrc}
+                            alt={catName}
+                            className="w-full h-full rounded-full object-cover transition-transform duration-300 group-hover:scale-110"
+                          />
+                        ) : (
+                          <div className="w-full h-full rounded-full bg-[#181308] border border-[#3a2c14] flex items-center justify-center text-[#e5a93c]">
+                            <Grid className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Category Name */}
-                  <span className="text-white text-[11.5px] sm:text-[12px] font-medium group-hover:text-[#e5a93c] transition-colors max-w-[76px] truncate text-center tracking-tight">
-                    {catName}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </section>
+                    {/* Category Name */}
+                    <span className="text-white text-[11.5px] sm:text-[12px] font-medium group-hover:text-[#e5a93c] transition-colors max-w-[76px] truncate text-center tracking-tight">
+                      {catName}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </section>
+        )}
 
         {/* Featured Products Section */}
         <section className="px-4 py-2">

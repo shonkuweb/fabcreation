@@ -3,6 +3,7 @@
 import React, { useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   X,
   Building2,
@@ -61,6 +62,8 @@ export default function NavigationDrawer({
   onSignOut,
   cartCount = 0,
 }: NavigationDrawerProps) {
+  const router = useRouter();
+
   // Prevent background scroll when drawer is open
   useEffect(() => {
     if (isOpen) {
@@ -86,16 +89,13 @@ export default function NavigationDrawer({
 
   const handleEnterWholesale = () => {
     onSwitchStoreMode("wholesale");
-    if (!isWholesaleLoggedIn && onOpenWholesaleLogin) {
-      onOpenWholesaleLogin();
-    }
-    onNavigateShop?.();
+    router.push("/wholesale");
     onClose();
   };
 
   const handleSwitchToRetail = () => {
     onSwitchStoreMode("retail");
-    onNavigateHome?.();
+    router.push("/home");
     onClose();
   };
 
@@ -169,9 +169,13 @@ export default function NavigationDrawer({
             {storeMode === "retail" ? (
               // Option to Enter Wholesale Portal (only shown when NOT logged in as a retail customer)
               !isRetailLoggedIn ? (
-                <div
-                  onClick={handleEnterWholesale}
-                  className="w-full p-3.5 rounded-2xl bg-gradient-to-br from-[#1c1508] via-[#141008] to-[#0d0d0d] border border-[#e5a93c]/70 shadow-[0_4px_20px_rgba(229,169,60,0.18)] hover:border-[#f5c767] transition-all cursor-pointer group"
+                <a
+                  href="/wholesale"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleEnterWholesale();
+                  }}
+                  className="block w-full p-3.5 rounded-2xl bg-gradient-to-br from-[#1c1508] via-[#141008] to-[#0d0d0d] border border-[#e5a93c]/70 shadow-[0_4px_20px_rgba(229,169,60,0.18)] hover:border-[#f5c767] transition-all cursor-pointer group"
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
@@ -209,7 +213,7 @@ export default function NavigationDrawer({
                       )}
                     </span>
                   </div>
-                </div>
+                </a>
               ) : null
             ) : (
               // Option to Return to Retail Store (when in Wholesale Mode and not wholesale logged in)

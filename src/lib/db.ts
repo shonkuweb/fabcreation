@@ -25,6 +25,7 @@ export interface Product {
 export interface Category {
   id: string;
   name: string;
+  image?: string;
   createdAt: string;
 }
 
@@ -367,24 +368,42 @@ export function getCategories(): Category[] {
   return getDb().categories;
 }
 
-export function createCategory(name: string): Category {
+export function createCategory(name: string, image?: string): Category {
   const db = getDb();
   const trimmed = name.trim();
   const existing = db.categories.find(
     (c) => c.name.toLowerCase() === trimmed.toLowerCase()
   );
   if (existing) {
+    if (image !== undefined && image !== existing.image) {
+      existing.image = image;
+      saveDb(db);
+    }
     return existing;
   }
 
   const newCategory: Category = {
     id: `cat-${Date.now()}`,
     name: trimmed,
+    image: image || "",
     createdAt: new Date().toISOString(),
   };
   db.categories.push(newCategory);
   saveDb(db);
   return newCategory;
+}
+
+export function updateCategory(
+  id: string,
+  updates: Partial<Pick<Category, "name" | "image">>
+): Category | null {
+  const db = getDb();
+  const cat = db.categories.find((c) => c.id === id);
+  if (!cat) return null;
+  if (updates.name !== undefined) cat.name = updates.name.trim();
+  if (updates.image !== undefined) cat.image = updates.image.trim();
+  saveDb(db);
+  return cat;
 }
 
 export function deleteCategory(id: string): boolean {

@@ -92,6 +92,10 @@ export default function AdminPage() {
 
   // New Category input
   const [newCategoryName, setNewCategoryName] = useState("");
+  const [newCategoryImage, setNewCategoryImage] = useState("");
+  const [isUploadingCategoryImage, setIsUploadingCategoryImage] = useState(false);
+  const categoryFileInputRef = useRef<HTMLInputElement | null>(null);
+  const [updatingCatId, setUpdatingCatId] = useState<string | null>(null);
   const [isCustomCategory, setIsCustomCategory] = useState(false);
 
   const showNotification = (msg: string) => {
@@ -430,6 +434,61 @@ export default function AdminPage() {
     setIsProductModalOpen(true);
   };
 
+  // Category Thumbnail Upload
+  const handleUploadCategoryThumbnail = async (file: File, targetCatId?: string) => {
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      alert("Please upload a valid image file (PNG, JPG, WebP)");
+      return;
+    }
+
+    if (targetCatId) {
+      setUpdatingCatId(targetCatId);
+    } else {
+      setIsUploadingCategoryImage(true);
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.success && data.url) {
+        if (targetCatId) {
+          const patchRes = await fetch(`/api/categories/${targetCatId}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ image: data.url }),
+          });
+          const patchData = await patchRes.json();
+          if (patchData.success) {
+            setCategories((prev) =>
+              prev.map((c) => (c.id === targetCatId ? { ...c, image: data.url } : c))
+            );
+            showNotification("Category thumbnail updated!");
+          } else {
+            alert(patchData.message || "Failed to update category thumbnail");
+          }
+        } else {
+          setNewCategoryImage(data.url);
+          showNotification("Thumbnail uploaded for new category!");
+        }
+      } else {
+        alert("Upload failed: " + (data.message || "Unknown error"));
+      }
+    } catch (err) {
+      console.error("Category image upload error:", err);
+      alert("Error uploading thumbnail image");
+    } finally {
+      setIsUploadingCategoryImage(false);
+      setUpdatingCatId(null);
+    }
+  };
+
   // Add Category
   const handleAddCategory = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -443,12 +502,13 @@ export default function AdminPage() {
       const res = await fetch("/api/categories", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: catName }),
+        body: JSON.stringify({ name: catName, image: newCategoryImage }),
       });
       const data = await res.json();
       if (data.success && data.category) {
         showNotification(`Category "${catName}" added!`);
         setNewCategoryName("");
+        setNewCategoryImage("");
         // Optimistic update
         setCategories((prev) => {
           if (prev.some((c) => c.name.toLowerCase() === catName.toLowerCase())) return prev;
@@ -879,33 +939,117 @@ export default function AdminPage() {
         {activeTab === "categories" && (
           <div className="space-y-5 max-w-xl animate-fade-in">
             {/* Add Category Card */}
-            <div className="bg-[#0d0d0d] border border-[#222222] rounded-[20px] p-5 shadow-sm space-y-3">
-              <h3 className="text-white text-[15px] font-serif font-medium">
-                Add New Category
-              </h3>
-              <form onSubmit={handleAddCategory} className="flex items-center gap-2">
-                <input
-                  type="text"
-                  required
-                  value={newCategoryName}
-                  onChange={(e) => setNewCategoryName(e.target.value)}
-                  placeholder="Enter category name (e.g. Chains, Rings, Bangles)"
-                  className="flex-1 h-11 rounded-xl bg-[#141414] border border-[#262626] px-4 text-sm text-white placeholder-[#666] outline-none focus:border-[#e5a93c]"
-                />
-                <button
-                  type="submit"
-                  className="h-11 px-5 rounded-xl bg-[#e5a93c] hover:bg-[#f5c767] text-black text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shrink-0 shadow-md"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>Add Category</span>
-                </button>
+            <div className="bg-[#0d0d0d] border border-[#222222] rounded-[20px] p-5 shadow-sm space-y-4">
+              <div>
+                <h3 className="text-white text-[15px] font-serif font-medium">
+                  Add New Category
+                </h3>
+                <p className="text-[#8e8e93] text-xs pt-0.5">
+                  Create a new jewellery category and upload its thumbnail for the round mobile boxes.
+                </p>
+              </div>
+
+              <form onSubmit={handleAddCategory} className="space-y-3.5">
+                {/* Name Input */}
+                <div>
+                  <label className="block text-xs font-medium text-[#a0a0a0] mb-1">
+                    Category Name <span className="text-[#e5a93c]">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={newCategoryName}
+                    onChange={(e) => setNewCategoryName(e.target.value)}
+                    placeholder="Enter category name (e.g. Chains, Rings, Bangles)"
+                    className="w-full h-11 rounded-xl bg-[#141414] border border-[#262626] px-4 text-sm text-white placeholder-[#666] outline-none focus:border-[#e5a93c]"
+                  />
+                </div>
+
+                {/* Thumbnail Upload for Round Mobile Box */}
+                <div>
+                  <label className="block text-xs font-medium text-[#a0a0a0] mb-1">
+                    Category Thumbnail <span className="text-[#888] font-normal">(Displayed in the round category boxes)</span>
+                  </label>
+
+                  <div className="flex items-center gap-3.5 p-3 rounded-xl bg-[#141414] border border-[#262626]">
+                    {/* Circle Preview */}
+                    <div className="relative w-14 h-14 rounded-full p-[2px] bg-gradient-to-tr from-[#d69e3d] via-[#f5c767] to-[#8a6828] shrink-0 shadow-md">
+                      <div className="w-full h-full rounded-full bg-[#121212] overflow-hidden flex items-center justify-center">
+                        {newCategoryImage ? (
+                          <img
+                            src={newCategoryImage}
+                            alt="Category preview"
+                            className="w-full h-full object-cover rounded-full"
+                          />
+                        ) : (
+                          <div className="text-[#e5a93c] text-center flex flex-col items-center">
+                            <Upload className="w-4 h-4" />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <input
+                        ref={categoryFileInputRef}
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleUploadCategoryThumbnail(file);
+                        }}
+                      />
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => categoryFileInputRef.current?.click()}
+                          disabled={isUploadingCategoryImage}
+                          className="px-3 py-1.5 rounded-lg bg-[#222] hover:bg-[#2e2e2e] text-white text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer border border-[#333] disabled:opacity-50"
+                        >
+                          {isUploadingCategoryImage ? (
+                            <div className="w-3.5 h-3.5 border-2 border-[#e5a93c] border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <Upload className="w-3.5 h-3.5 text-[#e5a93c]" />
+                          )}
+                          <span>{newCategoryImage ? "Change Thumbnail" : "Upload Thumbnail"}</span>
+                        </button>
+
+                        {newCategoryImage && (
+                          <button
+                            type="button"
+                            onClick={() => setNewCategoryImage("")}
+                            className="p-1.5 rounded-lg text-[#8e8e93] hover:text-rose-400 hover:bg-[#222] transition-colors cursor-pointer"
+                            title="Remove thumbnail"
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-[#777] pt-1">
+                        PNG, JPG or WebP (Renders inside round circular shape)
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-1">
+                  <button
+                    type="submit"
+                    className="h-11 px-6 rounded-xl bg-[#e5a93c] hover:bg-[#f5c767] text-black text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-md"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Create Category</span>
+                  </button>
+                </div>
               </form>
             </div>
 
             {/* Categories List */}
             <div className="bg-[#0d0d0d] border border-[#222222] rounded-[20px] p-3 divide-y divide-[#1a1a1a]">
               <div className="p-3 flex items-center justify-between text-xs text-[#8e8e93]">
-                <span>Category Name</span>
+                <span>Category</span>
                 <span>Actions</span>
               </div>
               {categories.length > 0 ? (
@@ -913,29 +1057,81 @@ export default function AdminPage() {
                   const count = products.filter(
                     (p) => p.category?.toLowerCase() === c.name?.toLowerCase()
                   ).length;
+                  const isUpdatingThis = updatingCatId === c.id;
+
                   return (
                     <div
                       key={c.id}
-                      className="p-3.5 flex items-center justify-between hover:bg-[#121212] rounded-xl transition-colors"
+                      className="p-3.5 flex items-center justify-between hover:bg-[#121212] rounded-xl transition-colors gap-3"
                     >
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-xl bg-[#171207] border border-[#3a2c16] flex items-center justify-center text-[#e5a93c]">
-                          <Layers className="w-4 h-4" />
+                      <div className="flex items-center gap-3 min-w-0">
+                        {/* Round Avatar Thumbnail */}
+                        <div className="relative w-11 h-11 rounded-full p-[1.5px] bg-gradient-to-tr from-[#d69e3d] via-[#f5c767] to-[#8a6828] shrink-0 shadow-sm">
+                          <div className="w-full h-full rounded-full bg-[#121212] overflow-hidden flex items-center justify-center">
+                            {c.image ? (
+                              <img
+                                src={c.image}
+                                alt={c.name}
+                                className="w-full h-full rounded-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full rounded-full bg-[#171207] flex items-center justify-center text-[#e5a93c]">
+                                <Layers className="w-4 h-4" />
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-white font-medium text-[14px]">{c.name}</p>
+
+                        <div className="min-w-0">
+                          <p className="text-white font-medium text-[14px] flex items-center gap-2">
+                            <span className="truncate">{c.name}</span>
+                            {c.image && (
+                              <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-950/80 border border-emerald-800 text-emerald-400 font-normal shrink-0">
+                                Thumbnail active
+                              </span>
+                            )}
+                          </p>
                           <p className="text-[#8e8e93] text-[11.5px]">{count} products</p>
                         </div>
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteCategory(c.id, c.name)}
-                        className="p-2 rounded-lg border border-[#333] hover:border-rose-500 text-[#8e8e93] hover:text-rose-400 transition-colors cursor-pointer"
-                        title="Delete category"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {/* Upload / Change thumbnail button for existing category */}
+                        <label className="cursor-pointer">
+                          <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            disabled={isUpdatingThis}
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) handleUploadCategoryThumbnail(file, c.id);
+                            }}
+                          />
+                          <span
+                            className="px-2.5 py-1.5 rounded-lg border border-[#333] hover:border-[#e5a93c] text-[11px] text-[#ccc] hover:text-[#e5a93c] flex items-center gap-1 transition-colors"
+                            title="Upload or change thumbnail for this category"
+                          >
+                            {isUpdatingThis ? (
+                              <div className="w-3 h-3 border-2 border-[#e5a93c] border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                              <Upload className="w-3.5 h-3.5 text-[#e5a93c]" />
+                            )}
+                            <span className="hidden sm:inline">
+                              {c.image ? "Change Thumbnail" : "Upload Thumbnail"}
+                            </span>
+                          </span>
+                        </label>
+
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteCategory(c.id, c.name)}
+                          className="p-2 rounded-lg border border-[#333] hover:border-rose-500 text-[#8e8e93] hover:text-rose-400 transition-colors cursor-pointer"
+                          title="Delete category"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   );
                 })

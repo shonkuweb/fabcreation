@@ -105,22 +105,33 @@ export default function HomeScreen({
   const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const displayedCategories = React.useMemo(() => {
-    const list = [...DEFAULT_CATEGORIES];
+  const displayedCategoryItems = React.useMemo(() => {
+    const list: Array<{ name: string; image?: string }> = [];
     if (Array.isArray(categories)) {
       categories.forEach((c) => {
         if (
           c &&
           c.name &&
           c.name.toLowerCase() !== "test" &&
-          !list.some((item) => item.toLowerCase() === c.name.toLowerCase())
+          !list.some((item) => item.name.toLowerCase() === c.name.toLowerCase())
         ) {
-          list.push(c.name);
+          list.push({ name: c.name, image: c.image || "" });
         }
       });
     }
+
+    DEFAULT_CATEGORIES.forEach((catName) => {
+      if (!list.some((item) => item.name.toLowerCase() === catName.toLowerCase())) {
+        list.push({ name: catName, image: "" });
+      }
+    });
+
     return list;
   }, [categories]);
+
+  const displayedCategories = React.useMemo(() => {
+    return displayedCategoryItems.map((c) => c.name);
+  }, [displayedCategoryItems]);
 
   // Sync props if provided
   useEffect(() => {
@@ -392,11 +403,15 @@ export default function HomeScreen({
             </button>
           </div>
 
-          <div className="flex items-center gap-2.5 overflow-x-auto pb-1 scrollbar-none">
-            {displayedCategories.map((catName) => {
-              const count = products.filter(
-                (p) => p.category?.toLowerCase() === catName.toLowerCase()
-              ).length;
+          <div className="flex items-center gap-3.5 sm:gap-4 overflow-x-auto pb-2 pt-1 scrollbar-none px-1">
+            {displayedCategoryItems.map((catItem) => {
+              const catName = catItem.name;
+              // Fallback to product image if no category thumbnail is explicitly uploaded
+              const categoryProduct = products.find(
+                (p) => p.category?.toLowerCase() === catName.toLowerCase() && p.image
+              );
+              const thumbnailSrc = catItem.image || categoryProduct?.image;
+
               return (
                 <button
                   key={catName}
@@ -405,16 +420,28 @@ export default function HomeScreen({
                     onSelectCategory?.(catName);
                     navigateToShop();
                   }}
-                  className="flex flex-col items-center justify-center min-w-[90px] px-3 py-2.5 rounded-[16px] bg-[#0d0d0d] border border-[#222222] hover:border-[#e5a93c] transition-all group shrink-0 cursor-pointer"
+                  className="flex flex-col items-center gap-1.5 shrink-0 cursor-pointer group focus:outline-none"
                 >
-                  <div className="w-9 h-9 rounded-full bg-[#161208] border border-[#3a2c14] flex items-center justify-center text-[#e5a93c] mb-1.5 group-hover:scale-110 transition-transform">
-                    <Grid className="w-4 h-4" />
+                  {/* Round Shape Container with Luxury Gold Gradient Ring */}
+                  <div className="relative w-[66px] h-[66px] sm:w-[72px] sm:h-[72px] rounded-full p-[2px] bg-gradient-to-tr from-[#d69e3d] via-[#f5c767] to-[#8a6828] group-hover:scale-105 group-hover:from-[#f5c767] group-hover:to-[#e5a93c] transition-all duration-300 shadow-md">
+                    <div className="w-full h-full rounded-full bg-[#121212] overflow-hidden flex items-center justify-center p-[2px]">
+                      {thumbnailSrc ? (
+                        <img
+                          src={thumbnailSrc}
+                          alt={catName}
+                          className="w-full h-full rounded-full object-cover transition-transform duration-300 group-hover:scale-110"
+                        />
+                      ) : (
+                        <div className="w-full h-full rounded-full bg-[#181308] border border-[#3a2c14] flex items-center justify-center text-[#e5a93c]">
+                          <Grid className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                        </div>
+                      )}
+                    </div>
                   </div>
-                  <span className="text-white text-[12px] font-medium group-hover:text-[#e5a93c] transition-colors max-w-[85px] truncate">
+
+                  {/* Category Name */}
+                  <span className="text-white text-[11.5px] sm:text-[12px] font-medium group-hover:text-[#e5a93c] transition-colors max-w-[76px] truncate text-center tracking-tight">
                     {catName}
-                  </span>
-                  <span className="text-[#8e8e93] text-[10px] pt-0.5">
-                    {count > 0 ? `${count} items` : "Explore"}
                   </span>
                 </button>
               );

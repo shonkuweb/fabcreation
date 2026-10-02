@@ -28,6 +28,7 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     const name = body?.name;
+    const image = body?.image ? String(body.image).trim() : undefined;
     if (!name || typeof name !== "string" || !name.trim()) {
       return NextResponse.json(
         { success: false, message: "Category name is required" },
@@ -35,7 +36,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const newCategory = createCategory(name.trim());
+    const newCategory = createCategory(name.trim(), image);
     return NextResponse.json(
       { success: true, category: newCategory },
       {

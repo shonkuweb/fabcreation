@@ -27,7 +27,7 @@ export async function sendOtpEmail(
   purpose: "retail" | "wholesale" = "retail"
 ): Promise<SendOtpResult> {
   const normalizedEmail = toEmail.trim().toLowerCase();
-  const fromEmail = process.env.RESEND_FROM_EMAIL || "Fab Creations <onboarding@resend.dev>";
+  const fromEmail = process.env.RESEND_FROM_EMAIL || "Fab Creations <otp@fab-creations.com>";
   const isWholesale = purpose === "wholesale";
 
   const resend = getResendClient();

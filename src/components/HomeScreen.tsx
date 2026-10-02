@@ -57,6 +57,17 @@ const R2_BASE = "https://pub-ce8688bc6c654bcfb99716f7c9373bcd.r2.dev/fab-creatio
 const LOGO_R2_URL = `${R2_BASE}/brand-logo.png`;
 const HERO_R2_URL = `${R2_BASE}/hero-banner.jpg`;
 
+const DEFAULT_CATEGORIES = [
+  "Anklets",
+  "Watches",
+  "Gifting",
+  "Bangles",
+  "Bracelets",
+  "Rings",
+  "Earrings",
+  "Chains",
+];
+
 export default function HomeScreen({
   products: initialProducts = [],
   categories: initialCategories = [],
@@ -89,6 +100,23 @@ export default function HomeScreen({
   const [notification, setNotification] = useState<string | null>(null);
   const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+
+  const displayedCategories = React.useMemo(() => {
+    const list = [...DEFAULT_CATEGORIES];
+    if (Array.isArray(categories)) {
+      categories.forEach((c) => {
+        if (
+          c &&
+          c.name &&
+          c.name.toLowerCase() !== "test" &&
+          !list.some((item) => item.toLowerCase() === c.name.toLowerCase())
+        ) {
+          list.push(c.name);
+        }
+      });
+    }
+    return list;
+  }, [categories]);
 
   // Sync props if provided
   useEffect(() => {
@@ -334,52 +362,50 @@ export default function HomeScreen({
           </div>
         </section>
 
-        {/* Categories Section */}
-        {categories.length > 0 && (
-          <section className="px-4 py-2">
-            <div className="flex items-center justify-between mb-2.5">
-              <h3 className="text-white text-[17px] font-serif font-medium tracking-tight">
-                Shop by Category
-              </h3>
-              <button
-                onClick={() => setIsCategoriesOpen(true)}
-                className="text-[#e5a93c] hover:text-[#f5c767] text-[12px] font-medium flex items-center gap-1 cursor-pointer transition-colors"
-              >
-                <span>View All</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </button>
-            </div>
+        {/* Categories Section (Mobile Only: lg:hidden - on desktop categories are directly in the navbar) */}
+        <section className="lg:hidden px-4 py-2">
+          <div className="flex items-center justify-between mb-2.5">
+            <h3 className="text-white text-[17px] font-serif font-medium tracking-tight">
+              Shop by Category
+            </h3>
+            <button
+              onClick={() => setIsCategoriesOpen(true)}
+              className="text-[#e5a93c] hover:text-[#f5c767] text-[12px] font-medium flex items-center gap-1 cursor-pointer transition-colors"
+            >
+              <span>View All</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
 
-            <div className="flex items-center gap-2.5 overflow-x-auto pb-1 scrollbar-none">
-              {categories.map((cat) => {
-                const count = products.filter(
-                  (p) => p.category?.toLowerCase() === cat.name.toLowerCase()
-                ).length;
-                return (
-                  <button
-                    key={cat.id}
-                    type="button"
-                    onClick={() => {
-                      onSelectCategory?.(cat.name);
-                      navigateToShop();
-                    }}
-                    className="flex flex-col items-center justify-center min-w-[90px] px-3 py-2.5 rounded-[16px] bg-[#0d0d0d] border border-[#222222] hover:border-[#e5a93c] transition-all group shrink-0 cursor-pointer"
-                  >
-                    <div className="w-9 h-9 rounded-full bg-[#161208] border border-[#3a2c14] flex items-center justify-center text-[#e5a93c] mb-1.5 group-hover:scale-110 transition-transform">
-                      <Grid className="w-4 h-4" />
-                    </div>
-                    <span className="text-white text-[12px] font-medium group-hover:text-[#e5a93c] transition-colors max-w-[85px] truncate">
-                      {cat.name}
-                    </span>
-                    <span className="text-[#8e8e93] text-[10px] pt-0.5">
-                      {count} items
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          </section>
-        )}
+          <div className="flex items-center gap-2.5 overflow-x-auto pb-1 scrollbar-none">
+            {displayedCategories.map((catName) => {
+              const count = products.filter(
+                (p) => p.category?.toLowerCase() === catName.toLowerCase()
+              ).length;
+              return (
+                <button
+                  key={catName}
+                  type="button"
+                  onClick={() => {
+                    onSelectCategory?.(catName);
+                    navigateToShop();
+                  }}
+                  className="flex flex-col items-center justify-center min-w-[90px] px-3 py-2.5 rounded-[16px] bg-[#0d0d0d] border border-[#222222] hover:border-[#e5a93c] transition-all group shrink-0 cursor-pointer"
+                >
+                  <div className="w-9 h-9 rounded-full bg-[#161208] border border-[#3a2c14] flex items-center justify-center text-[#e5a93c] mb-1.5 group-hover:scale-110 transition-transform">
+                    <Grid className="w-4 h-4" />
+                  </div>
+                  <span className="text-white text-[12px] font-medium group-hover:text-[#e5a93c] transition-colors max-w-[85px] truncate">
+                    {catName}
+                  </span>
+                  <span className="text-[#8e8e93] text-[10px] pt-0.5">
+                    {count > 0 ? `${count} items` : "Explore"}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </section>
 
         {/* Featured Products Section */}
         <section className="px-4 py-2">

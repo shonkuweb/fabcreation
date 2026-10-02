@@ -57,6 +57,18 @@ const R2_BASE = "https://pub-ce8688bc6c654bcfb99716f7c9373bcd.r2.dev/fab-creatio
 const LOGO_R2_URL = `${R2_BASE}/brand-logo.png`;
 const HERO_R2_URL = `${R2_BASE}/hero-banner.jpg`;
 
+// Standard jewellery categories matching user reference design
+const DEFAULT_CATEGORIES = [
+  "Anklets",
+  "Watches",
+  "Gifting",
+  "Bangles",
+  "Bracelets",
+  "Rings",
+  "Earrings",
+  "Chains",
+];
+
 export default function ShopScreen({
   products: initialProducts = [],
   categories: initialCategories = [],
@@ -90,6 +102,33 @@ export default function ShopScreen({
   const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeCategory, setActiveCategory] = useState<string | null>(initialCategory);
+
+  // Sync activeCategory when initialCategory changes
+  useEffect(() => {
+    setActiveCategory(initialCategory);
+  }, [initialCategory]);
+
+  const displayedCategories = React.useMemo(() => {
+    const list: { id: string; name: string }[] = [];
+    if (Array.isArray(categories) && categories.length > 0) {
+      categories.forEach((c) => {
+        if (
+          c &&
+          c.name &&
+          c.name.toLowerCase() !== "test" &&
+          !list.some((item) => item.name.toLowerCase() === c.name.toLowerCase())
+        ) {
+          list.push({ id: c.id || `cat-${c.name.toLowerCase()}`, name: c.name });
+        }
+      });
+    }
+    DEFAULT_CATEGORIES.forEach((name) => {
+      if (!list.some((item) => item.name.toLowerCase() === name.toLowerCase())) {
+        list.push({ id: `cat-${name.toLowerCase()}`, name });
+      }
+    });
+    return list;
+  }, [categories]);
 
   // Sync props if provided
   useEffect(() => {
@@ -361,9 +400,9 @@ export default function ShopScreen({
           </div>
         </section>
 
-        {/* Categories Pills Filter */}
-        {categories.length > 0 && (
-          <section className="px-4 py-2">
+        {/* Categories Pills Filter (Mobile Only: lg:hidden - on desktop categories are directly in the navbar) */}
+        {displayedCategories.length > 0 && (
+          <section className="lg:hidden px-4 py-2">
             <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
               <button
                 type="button"
@@ -380,7 +419,7 @@ export default function ShopScreen({
                 All ({products.length})
               </button>
 
-              {categories.map((cat) => {
+              {displayedCategories.map((cat) => {
                 const count = products.filter(
                   (p) => p.category?.toLowerCase() === cat.name.toLowerCase()
                 ).length;
@@ -408,6 +447,30 @@ export default function ShopScreen({
               })}
             </div>
           </section>
+        )}
+
+        {/* Active Category Filter Indicator for Desktop (lg:flex - hero banner has no category pills on desktop) */}
+        {activeCategory && (
+          <div className="hidden lg:flex items-center justify-between px-4 py-2 mb-2 border-b border-[#1c1c1c]">
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-[#8e8e93]">Category:</span>
+              <span className="text-xs font-semibold text-[#f5c767] bg-[#1a1408] border border-[#e5a93c]/50 px-3 py-1 rounded-full flex items-center gap-2 shadow-sm">
+                <span>{activeCategory}</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveCategory(null);
+                    onSelectCategory?.(null);
+                  }}
+                  className="hover:text-white transition-colors cursor-pointer text-xs font-bold leading-none"
+                  title="Clear category filter"
+                >
+                  ✕
+                </button>
+              </span>
+            </div>
+            <span className="text-xs text-[#8e8e93]">{filteredProducts.length} items found</span>
+          </div>
         )}
 
         {/* Dynamic Products Grid */}

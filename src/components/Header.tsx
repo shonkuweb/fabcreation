@@ -17,7 +17,6 @@ import {
   Building2,
   Lock,
   MessageCircle,
-  CheckCircle2,
 } from "lucide-react";
 import type { Category } from "@/lib/db";
 
@@ -202,18 +201,18 @@ export default function Header({
   const isHomeActive = currentTab === "home" && !activeCategory;
 
   return (
-    <header className="w-full bg-white select-none z-30 sticky top-0 shadow-sm border-b border-neutral-200">
-      {/* 1. Top Announcement Bar */}
-      <div className="w-full py-1.5 px-4 bg-[#0b6651] text-white text-center">
+    <header className="w-full bg-[#050505] text-white select-none z-30 sticky top-0 shadow-[0_4px_25px_rgba(0,0,0,0.85)] border-b border-[#181818]">
+      {/* 1. Top Announcement Bar in Luxury Dark & Gold */}
+      <div className="w-full py-1.5 px-4 bg-gradient-to-r from-[#0a0804] via-[#140e06] to-[#0a0804] border-b border-[#201808] text-center">
         <div className="max-w-7xl mx-auto flex items-center justify-center relative text-xs sm:text-[12.5px] font-medium tracking-wide">
-          <p className="flex items-center gap-1.5 justify-center">
+          <p className="flex items-center gap-1.5 justify-center text-[#e5a93c]">
             <span className="text-[#f5c767]">★</span>
             {storeMode === "wholesale" ? (
-              <span>
+              <span className="text-[#f5c767]">
                 B2B Wholesale Portal Active • Minimum Order: ₹3,000 across cart
               </span>
             ) : (
-              <span>New customers enjoy 15% off on their first order</span>
+              <span>New customers enjoy 15% off on their first order • Code: <strong className="text-white">FAB15</strong></span>
             )}
             <span className="text-[#f5c767]">★</span>
           </p>
@@ -223,7 +222,7 @@ export default function Header({
             <button
               type="button"
               onClick={() => onSwitchStoreMode("retail")}
-              className="hidden md:inline-flex absolute right-0 text-[11px] text-[#f5c767] hover:underline items-center gap-1 cursor-pointer font-semibold"
+              className="hidden md:inline-flex absolute right-0 text-[11px] text-[#e5a93c] hover:text-[#f5c767] hover:underline items-center gap-1 cursor-pointer font-semibold"
             >
               <span>Return to Retail Store</span>
               <ArrowRight className="w-3 h-3" />
@@ -234,9 +233,9 @@ export default function Header({
 
       {/* ======================================================== */}
       {/* 2. DESKTOP HEADER BAR (lg:flex)                          */}
-      {/* Matches user's uploaded reference screenshot             */}
+      {/* Layout from user reference, matched to Dark Gold theme   */}
       {/* ======================================================== */}
-      <div className="hidden lg:block border-b border-neutral-100">
+      <div className="hidden lg:block border-b border-[#161616] bg-[#070707]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 flex items-center justify-between gap-4">
           {/* Brand Logo & Name */}
           <div
@@ -244,7 +243,7 @@ export default function Header({
             title="Fab Creations - Home"
             className="flex items-center gap-3 cursor-pointer shrink-0 group"
           >
-            <div className="w-12 h-12 relative rounded-full overflow-hidden shrink-0 border border-amber-300/70 shadow-xs group-hover:scale-105 transition-transform">
+            <div className="w-12 h-12 relative rounded-full overflow-hidden shrink-0 border border-[#e5a93c]/50 p-0.5 shadow-[0_0_15px_rgba(229,169,60,0.2)] group-hover:scale-105 transition-transform">
               <Image
                 src={logoSrc}
                 alt="Fab Creations Logo"
@@ -257,32 +256,32 @@ export default function Header({
               />
             </div>
             <div>
-              <span className="text-lg font-serif font-bold text-neutral-900 tracking-wide block leading-tight group-hover:text-amber-700 transition-colors">
+              <span className="text-lg font-serif font-bold text-white tracking-wide block leading-tight group-hover:text-[#e5a93c] transition-colors">
                 FAB CREATIONS
               </span>
-              <span className="text-[9.5px] text-neutral-400 tracking-[0.22em] uppercase font-semibold block">
-                PRESENTED BY EEAS LIFESTYLE
+              <span className="text-[9.5px] text-[#e5a93c] tracking-[0.22em] uppercase font-semibold block">
+                {storeMode === "wholesale" ? "Wholesale B2B Portal" : "Luxury Jewellery"}
               </span>
             </div>
           </div>
 
-          {/* Pill Search Bar */}
+          {/* Pill Search Bar in Dark Luxury Theme */}
           <div className="flex-1 max-w-xl mx-2 xl:mx-6">
-            <div className="relative flex items-center w-full h-11 rounded-full border border-neutral-200 bg-neutral-50/70 hover:border-neutral-300 focus-within:border-teal-600 focus-within:bg-white transition-all px-4 gap-2.5 shadow-xs">
-              <Search className="w-4 h-4 text-neutral-400 shrink-0" />
+            <div className="relative flex items-center w-full h-11 rounded-full border border-[#282828] bg-[#0f0f0f] hover:border-[#383838] focus-within:border-[#e5a93c] focus-within:bg-[#141414] transition-all px-4 gap-2.5 shadow-inner">
+              <Search className="w-4 h-4 text-[#8e8e93] shrink-0" />
               <input
                 type="text"
                 placeholder="Search rings, necklaces, earrings..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery?.(e.target.value)}
                 onKeyDown={handleSearchKeyPress}
-                className="flex-1 bg-transparent text-[13.5px] text-neutral-800 placeholder-neutral-400 outline-none"
+                className="flex-1 bg-transparent text-[13.5px] text-white placeholder-[#8e8e93] outline-none"
               />
               {searchQuery && (
                 <button
                   type="button"
                   onClick={() => setSearchQuery?.("")}
-                  className="text-neutral-400 hover:text-neutral-600 p-0.5"
+                  className="text-[#8e8e93] hover:text-white p-0.5"
                   title="Clear search"
                 >
                   <X className="w-3.5 h-3.5" />
@@ -292,7 +291,7 @@ export default function Header({
                 type="button"
                 onClick={onSearchSubmit}
                 aria-label="Submit Search"
-                className="text-teal-600 hover:text-teal-700 transition-colors p-1 cursor-pointer"
+                className="text-[#e5a93c] hover:text-[#f5c767] transition-colors p-1 cursor-pointer"
               >
                 <ArrowRight className="w-4 h-4" />
               </button>
@@ -301,21 +300,21 @@ export default function Header({
 
           {/* Right Action Icons & Buttons */}
           <div className="flex items-center gap-3 xl:gap-4 shrink-0">
-            {/* DELIVER TO / Enter Pincode */}
+            {/* DELIVER TO / Enter Pincode in Dark Luxury Theme */}
             <button
               type="button"
               onClick={() => setIsPincodeModalOpen(true)}
-              className="flex items-center gap-2 text-left hover:opacity-85 transition-opacity cursor-pointer group"
+              className="flex items-center gap-2 text-left hover:opacity-90 transition-opacity cursor-pointer group"
               title="Set Delivery Pincode"
             >
-              <div className="w-9 h-9 rounded-xl bg-teal-600 flex items-center justify-center text-white shrink-0 shadow-xs group-hover:bg-teal-700 transition-colors">
-                <MapPin className="w-4 h-4 fill-white" />
+              <div className="w-9 h-9 rounded-xl bg-[#18140a] border border-[#e5a93c]/50 flex items-center justify-center text-[#e5a93c] shrink-0 shadow-sm group-hover:border-[#e5a93c] group-hover:scale-105 transition-all">
+                <MapPin className="w-4 h-4 fill-[#e5a93c]" />
               </div>
               <div className="flex flex-col">
-                <span className="text-[9.5px] font-semibold text-neutral-400 uppercase tracking-wider leading-none">
+                <span className="text-[9.5px] font-semibold text-[#8e8e93] uppercase tracking-wider leading-none">
                   DELIVER TO
                 </span>
-                <span className="text-[12.5px] font-bold text-neutral-800 leading-tight mt-0.5">
+                <span className="text-[12.5px] font-bold text-white group-hover:text-[#f5c767] leading-tight mt-0.5 transition-colors">
                   {deliveryPincode ? `Pin ${deliveryPincode}` : "Enter Pincode"}
                 </span>
               </div>
@@ -325,32 +324,32 @@ export default function Header({
             <button
               type="button"
               onClick={handleLoginClick}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-neutral-700 hover:text-teal-700 transition-colors cursor-pointer"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-[#c5c5c5] hover:text-[#e5a93c] transition-colors cursor-pointer"
               title={isLoggedIn ? "View Account" : "Login"}
             >
-              <LogIn className="w-4 h-4 text-neutral-700" />
+              <LogIn className="w-4 h-4 text-[#e5a93c]" />
               <span>{isLoggedIn ? userName || "Account" : "Login"}</span>
             </button>
 
-            {/* Register Pill Button */}
+            {/* Register Pill Button in Gold Theme */}
             <button
               type="button"
               onClick={handleRegisterClick}
-              className="h-9 px-4 rounded-full bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold flex items-center gap-1.5 shadow-xs transition-all active:scale-95 cursor-pointer"
+              className="h-9 px-4 rounded-full bg-gradient-to-r from-[#e5a93c] to-[#f5c767] hover:brightness-110 text-black text-xs font-bold flex items-center gap-1.5 shadow-[0_2px_12px_rgba(229,169,60,0.25)] transition-all active:scale-95 cursor-pointer"
             >
               <User className="w-3.5 h-3.5" />
               <span>{isLoggedIn ? "Profile" : "Register"}</span>
             </button>
 
             {/* Subtle Divider */}
-            <div className="h-5 w-px bg-neutral-200" />
+            <div className="h-5 w-px bg-[#262626]" />
 
-            {/* Wishlist Icon Button */}
+            {/* Wishlist Icon Button in Dark Theme */}
             <button
               type="button"
               onClick={onNavigateAccount}
               title="Saved Items / Wishlist"
-              className="w-9 h-9 rounded-xl border border-neutral-200 hover:border-neutral-300 hover:bg-neutral-50 flex items-center justify-center text-neutral-700 transition-all relative cursor-pointer shadow-xs"
+              className="w-9 h-9 rounded-xl border border-[#262626] bg-[#0e0e0e] hover:border-[#e5a93c]/60 hover:bg-[#161616] flex items-center justify-center text-[#e5a93c] transition-all relative cursor-pointer shadow-sm"
             >
               <Heart
                 className={`w-4 h-4 ${
@@ -358,26 +357,26 @@ export default function Header({
                 }`}
               />
               {wishlistCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 min-w-[17px] h-[17px] px-1 bg-rose-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center shadow-xs">
+                <span className="absolute -top-1.5 -right-1.5 min-w-[17px] h-[17px] px-1 bg-rose-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center shadow-sm">
                   {wishlistCount}
                 </span>
               )}
             </button>
 
-            {/* Cart Icon Button */}
+            {/* Cart Icon Button in Dark Theme */}
             <button
               type="button"
               onClick={onNavigateCart}
               title="Shopping Cart"
-              className="h-9 px-2.5 rounded-xl border border-neutral-200 hover:border-neutral-300 hover:bg-neutral-50 flex items-center justify-center gap-1 text-neutral-700 transition-all relative cursor-pointer shadow-xs"
+              className="h-9 px-2.5 rounded-xl border border-[#262626] bg-[#0e0e0e] hover:border-[#e5a93c]/60 hover:bg-[#161616] flex items-center justify-center gap-1 text-[#e5a93c] transition-all relative cursor-pointer shadow-sm"
             >
               <ShoppingBag className="w-4 h-4" />
               {cartCount > 0 && (
-                <span className="min-w-[18px] h-[18px] px-1 bg-teal-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-xs">
+                <span className="min-w-[18px] h-[18px] px-1 bg-gradient-to-r from-[#d4992e] to-[#f5c767] text-black text-[10px] font-bold rounded-full flex items-center justify-center shadow-sm">
                   {cartCount}
                 </span>
               )}
-              <ChevronDown className="w-3 h-3 text-neutral-400" />
+              <ChevronDown className="w-3 h-3 text-[#8e8e93]" />
             </button>
           </div>
         </div>
@@ -385,9 +384,9 @@ export default function Header({
 
       {/* ======================================================== */}
       {/* 3. DESKTOP CATEGORIES & HAMBURGER LINKS ROW (lg:flex)    */}
-      {/* Matches user's second reference screenshot               */}
+      {/* Dark Luxury Gold Theme                                   */}
       {/* ======================================================== */}
-      <div className="hidden lg:block bg-white border-b border-neutral-200">
+      <div className="hidden lg:block bg-[#090909] border-b border-[#1a1a1a]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
           {/* Categories Bar */}
           <nav className="flex items-center space-x-1 py-1 overflow-x-auto no-scrollbar">
@@ -398,10 +397,10 @@ export default function Header({
                 onSelectCategory?.(null);
                 onNavigateHome();
               }}
-              className={`px-4 py-2.5 text-[13px] transition-all cursor-pointer ${
+              className={`px-4 py-2 text-[13px] transition-all cursor-pointer ${
                 isHomeActive
-                  ? "bg-teal-50 text-teal-800 border-b-2 border-teal-600 font-semibold rounded-t-md"
-                  : "text-neutral-700 hover:text-teal-700 font-medium hover:bg-neutral-50 rounded-md"
+                  ? "bg-[#1c160a] text-[#f5c767] border-b-2 border-[#e5a93c] font-semibold rounded-t-md"
+                  : "text-[#a0a0a0] hover:text-[#f5c767] font-medium hover:bg-white/5 rounded-md"
               }`}
             >
               Home
@@ -419,10 +418,10 @@ export default function Header({
                     onSelectCategory?.(cat);
                     onNavigateShop(cat);
                   }}
-                  className={`px-3.5 py-2.5 text-[13px] whitespace-nowrap transition-all cursor-pointer ${
+                  className={`px-3.5 py-2 text-[13px] whitespace-nowrap transition-all cursor-pointer ${
                     isActive
-                      ? "bg-teal-50 text-teal-800 border-b-2 border-teal-600 font-semibold rounded-t-md"
-                      : "text-neutral-700 hover:text-teal-700 font-medium hover:bg-neutral-50 rounded-md"
+                      ? "bg-[#1c160a] text-[#f5c767] border-b-2 border-[#e5a93c] font-semibold rounded-t-md"
+                      : "text-[#a0a0a0] hover:text-[#f5c767] font-medium hover:bg-white/5 rounded-md"
                   }`}
                 >
                   {cat}
@@ -439,8 +438,8 @@ export default function Header({
               onClick={handleWholesaleToggle}
               className={`px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
                 storeMode === "wholesale"
-                  ? "bg-emerald-600 text-white shadow-xs"
-                  : "bg-amber-50 border border-amber-300 text-amber-900 hover:bg-amber-100"
+                  ? "bg-[#e5a93c] text-black shadow-md font-bold"
+                  : "bg-[#181308] border border-[#e5a93c]/50 text-[#e5a93c] hover:bg-[#e5a93c] hover:text-black"
               }`}
               title="Access B2B Wholesale Portal"
             >
@@ -450,7 +449,7 @@ export default function Header({
                   ? "Wholesale Active"
                   : "Wholesale Portal"}
               </span>
-              <span className="text-[9px] px-1 py-0.2 rounded bg-black/10 font-bold uppercase">
+              <span className="text-[9px] px-1 py-0.2 rounded bg-black/20 font-bold uppercase">
                 B2B
               </span>
             </button>
@@ -460,7 +459,7 @@ export default function Header({
               <button
                 type="button"
                 onClick={onOpenAboutUs}
-                className="text-xs font-medium text-neutral-600 hover:text-neutral-900 transition-colors px-2 py-1 cursor-pointer"
+                className="text-xs font-medium text-[#a0a0a0] hover:text-white transition-colors px-2 py-1 cursor-pointer"
               >
                 About Us
               </button>
@@ -471,17 +470,17 @@ export default function Header({
               href="https://wa.me/916289417338?text=Hello%20Fab%20Creations"
               target="_blank"
               rel="noopener noreferrer"
-              className="text-xs font-medium text-emerald-700 hover:text-emerald-800 transition-colors flex items-center gap-1 px-2 py-1 cursor-pointer"
+              className="text-xs font-medium text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-1 px-2 py-1 cursor-pointer"
               title="Chat on WhatsApp"
             >
               <MessageCircle className="w-3.5 h-3.5" />
-              <span className="hidden xl:inline">WhatsApp</span>
+              <span className="hidden xl:inline">Support</span>
             </a>
 
             {/* Admin Panel */}
             <Link
               href="/admin"
-              className="text-xs font-medium text-neutral-400 hover:text-neutral-800 transition-colors flex items-center gap-1 px-1.5 py-1 cursor-pointer"
+              className="text-xs font-medium text-[#777] hover:text-[#e5a93c] transition-colors flex items-center gap-1 px-1.5 py-1 cursor-pointer"
               title="Admin Panel"
             >
               <Lock className="w-3.5 h-3.5" />
@@ -493,12 +492,12 @@ export default function Header({
 
       {/* ======================================================== */}
       {/* 4. MOBILE NAVBAR (lg:hidden)                             */}
-      {/* Requirements:                                            */}
+      {/* Matches Website Dark Gold Theme                          */}
       {/* - NO Wholesale Portal link in mobile navbar              */}
       {/* - Account and Cart buttons are ALWAYS visible!           */}
       {/* ======================================================== */}
-      <div className="lg:hidden flex flex-col w-full bg-white px-3 pt-2.5 pb-2 border-b border-neutral-200 gap-2">
-        {/* Mobile Top Row: Hamburger | Logo | Account | Wishlist | Cart */}
+      <div className="lg:hidden flex flex-col w-full bg-[#070707] px-3 pt-2.5 pb-2 border-b border-[#181818] gap-2">
+        {/* Mobile Top Row: Hamburger | Logo | Pincode | Account | Wishlist | Cart */}
         <div className="flex items-center justify-between gap-2">
           {/* Left: Hamburger & Brand Logo */}
           <div className="flex items-center gap-2">
@@ -506,7 +505,7 @@ export default function Header({
               type="button"
               onClick={onOpenMenu}
               aria-label="Open Navigation Menu"
-              className="w-9 h-9 rounded-xl bg-neutral-100 border border-neutral-200 flex items-center justify-center text-neutral-800 hover:bg-neutral-200 transition-colors cursor-pointer shrink-0"
+              className="w-9 h-9 rounded-xl bg-[#0f0f0f] border border-[#262626] flex items-center justify-center text-[#e5a93c] hover:border-[#e5a93c]/60 active:scale-95 transition-all cursor-pointer shrink-0"
               title="Menu"
             >
               <Menu className="w-5 h-5" />
@@ -514,9 +513,9 @@ export default function Header({
 
             <div
               onClick={onNavigateHome}
-              className="flex items-center gap-2 cursor-pointer"
+              className="flex items-center gap-2 cursor-pointer group"
             >
-              <div className="w-8 h-8 relative rounded-full overflow-hidden border border-amber-300/70 shrink-0">
+              <div className="w-8 h-8 relative rounded-full overflow-hidden border border-[#e5a93c]/50 p-0.5 shrink-0">
                 <Image
                   src={logoSrc}
                   alt="Fab Creations"
@@ -528,7 +527,7 @@ export default function Header({
                   className="object-contain w-full h-full"
                 />
               </div>
-              <span className="text-sm font-serif font-bold text-neutral-900 tracking-wide">
+              <span className="text-sm font-serif font-bold text-white tracking-wide group-hover:text-[#e5a93c] transition-colors">
                 FAB CREATIONS
               </span>
             </div>
@@ -541,10 +540,10 @@ export default function Header({
               type="button"
               onClick={() => setIsPincodeModalOpen(true)}
               aria-label="Delivery Pincode"
-              className="w-8 h-8 rounded-lg bg-teal-50 border border-teal-200 text-teal-700 flex items-center justify-center cursor-pointer shrink-0"
+              className="w-8 h-8 rounded-lg bg-[#14120a] border border-[#e5a93c]/40 text-[#e5a93c] flex items-center justify-center cursor-pointer shrink-0"
               title={deliveryPincode ? `Pin ${deliveryPincode}` : "Set Pincode"}
             >
-              <MapPin className="w-3.5 h-3.5 fill-teal-600" />
+              <MapPin className="w-3.5 h-3.5 fill-[#e5a93c]" />
             </button>
 
             {/* Account Button (FIXED: ALWAYS VISIBLE ON MOBILE!) */}
@@ -552,7 +551,7 @@ export default function Header({
               type="button"
               onClick={handleLoginClick}
               aria-label="Account"
-              className="w-8 h-8 rounded-lg border border-neutral-200 bg-neutral-50 flex items-center justify-center text-neutral-700 hover:bg-neutral-100 transition-colors cursor-pointer shrink-0"
+              className="w-8 h-8 rounded-lg border border-[#262626] bg-[#0e0e0e] flex items-center justify-center text-[#e5a93c] hover:text-white hover:border-[#444] transition-colors cursor-pointer shrink-0"
               title="My Account"
             >
               <User className="w-4 h-4" />
@@ -563,7 +562,7 @@ export default function Header({
               type="button"
               onClick={onNavigateAccount}
               aria-label="Wishlist"
-              className="w-8 h-8 rounded-lg border border-neutral-200 bg-neutral-50 flex items-center justify-center text-neutral-700 hover:bg-neutral-100 transition-colors cursor-pointer shrink-0 relative"
+              className="w-8 h-8 rounded-lg border border-[#262626] bg-[#0e0e0e] flex items-center justify-center text-[#e5a93c] hover:border-[#444] transition-colors cursor-pointer shrink-0 relative"
               title="Saved Items"
             >
               <Heart
@@ -583,12 +582,12 @@ export default function Header({
               type="button"
               onClick={onNavigateCart}
               aria-label="Shopping Cart"
-              className="w-8 h-8 rounded-lg border border-neutral-200 bg-neutral-50 flex items-center justify-center text-neutral-800 hover:bg-neutral-100 transition-colors cursor-pointer shrink-0 relative"
+              className="w-8 h-8 rounded-lg border border-[#262626] bg-[#0e0e0e] flex items-center justify-center text-[#e5a93c] hover:border-[#e5a93c]/60 transition-colors cursor-pointer shrink-0 relative"
               title="Cart"
             >
               <ShoppingBag className="w-4 h-4" />
               {cartCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-[16px] px-1 bg-teal-600 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-[16px] px-1 bg-gradient-to-r from-[#d4992e] to-[#f5c767] text-black text-[9px] font-bold rounded-full flex items-center justify-center">
                   {cartCount}
                 </span>
               )}
@@ -596,22 +595,22 @@ export default function Header({
           </div>
         </div>
 
-        {/* Mobile Row 2: Full-Width Search Input */}
-        <div className="relative flex items-center w-full h-9 rounded-full border border-neutral-200 bg-neutral-50/80 px-3 gap-2 focus-within:border-teal-600 focus-within:bg-white transition-all">
-          <Search className="w-3.5 h-3.5 text-neutral-400 shrink-0" />
+        {/* Mobile Row 2: Full-Width Search Input in Dark Luxury Theme */}
+        <div className="relative flex items-center w-full h-9 rounded-full border border-[#282828] bg-[#0f0f0f] px-3 gap-2 focus-within:border-[#e5a93c] focus-within:bg-[#141414] transition-all">
+          <Search className="w-3.5 h-3.5 text-[#8e8e93] shrink-0" />
           <input
             type="text"
             placeholder="Search rings, necklaces, earrings..."
             value={searchQuery}
             onChange={(e) => setSearchQuery?.(e.target.value)}
             onKeyDown={handleSearchKeyPress}
-            className="flex-1 bg-transparent text-xs text-neutral-800 placeholder-neutral-400 outline-none"
+            className="flex-1 bg-transparent text-xs text-white placeholder-[#8e8e93] outline-none"
           />
           {searchQuery && (
             <button
               type="button"
               onClick={() => setSearchQuery?.("")}
-              className="text-neutral-400 hover:text-neutral-600 p-0.5"
+              className="text-[#8e8e93] hover:text-white p-0.5"
             >
               <X className="w-3.5 h-3.5" />
             </button>
@@ -620,79 +619,39 @@ export default function Header({
             type="button"
             onClick={onSearchSubmit}
             aria-label="Search"
-            className="text-teal-600 hover:text-teal-700 transition-colors p-1"
+            className="text-[#e5a93c] hover:text-[#f5c767] transition-colors p-1"
           >
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
-
-        {/* Mobile Row 3: Horizontal Scrollable Category Pills (NO Wholesale Portal link!) */}
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-0.5 pb-0.5">
-          <button
-            type="button"
-            onClick={() => {
-              onSelectCategory?.(null);
-              onNavigateHome();
-            }}
-            className={`px-3 py-1 rounded-full text-xs whitespace-nowrap transition-all cursor-pointer font-medium ${
-              isHomeActive
-                ? "bg-teal-600 text-white shadow-xs font-semibold"
-                : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200"
-            }`}
-          >
-            Home
-          </button>
-
-          {displayedCategories.map((cat) => {
-            const isActive =
-              activeCategory?.toLowerCase() === cat.toLowerCase();
-            return (
-              <button
-                key={cat}
-                type="button"
-                onClick={() => {
-                  onSelectCategory?.(cat);
-                  onNavigateShop(cat);
-                }}
-                className={`px-3 py-1 rounded-full text-xs whitespace-nowrap transition-all cursor-pointer font-medium ${
-                  isActive
-                    ? "bg-teal-600 text-white shadow-xs font-semibold"
-                    : "bg-neutral-100 text-neutral-700 hover:bg-neutral-200"
-                }`}
-              >
-                {cat}
-              </button>
-            );
-          })}
-        </div>
       </div>
 
       {/* ======================================================== */}
-      {/* 5. INTERACTIVE PINCODE DELIVERY MODAL                     */}
+      {/* 5. INTERACTIVE PINCODE DELIVERY MODAL (Dark Gold Theme)   */}
       {/* ======================================================== */}
       {isPincodeModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="w-full max-w-sm bg-white rounded-2xl p-5 shadow-2xl border border-neutral-200 relative animate-in fade-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="w-full max-w-sm bg-[#0e0e0e] rounded-2xl p-5 shadow-2xl border border-[#2a2a2a] relative animate-in fade-in zoom-in-95 duration-150">
             <button
               type="button"
               onClick={() => {
                 setIsPincodeModalOpen(false);
                 setPincodeMessage(null);
               }}
-              className="absolute top-4 right-4 w-7 h-7 rounded-full bg-neutral-100 hover:bg-neutral-200 flex items-center justify-center text-neutral-500 cursor-pointer"
+              className="absolute top-4 right-4 w-7 h-7 rounded-full bg-[#181818] hover:bg-[#252525] border border-[#333] flex items-center justify-center text-[#8e8e93] hover:text-white cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
 
             <div className="flex items-center gap-2.5 mb-3">
-              <div className="w-9 h-9 rounded-xl bg-teal-600 flex items-center justify-center text-white shrink-0">
-                <MapPin className="w-5 h-5 fill-white" />
+              <div className="w-9 h-9 rounded-xl bg-[#1c1508] border border-[#e5a93c]/50 flex items-center justify-center text-[#e5a93c] shrink-0">
+                <MapPin className="w-5 h-5 fill-[#e5a93c]" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-neutral-900 leading-tight">
+                <h3 className="text-sm font-bold text-white leading-tight">
                   Delivery Location
                 </h3>
-                <p className="text-[11px] text-neutral-500">
+                <p className="text-[11px] text-[#8e8e93]">
                   Enter 6-digit PIN code to check shipping
                 </p>
               </div>
@@ -712,12 +671,12 @@ export default function Header({
                   value={pincodeInput}
                   onChange={(e) => setPincodeInput(e.target.value)}
                   placeholder="e.g. 226001"
-                  className="flex-1 px-3.5 py-2 rounded-xl border border-neutral-300 text-sm font-semibold tracking-wider text-neutral-900 focus:border-teal-600 focus:ring-1 focus:ring-teal-600 outline-none"
+                  className="flex-1 px-3.5 py-2 rounded-xl bg-[#161616] border border-[#333] text-sm font-semibold tracking-wider text-white placeholder-[#777] focus:border-[#e5a93c] outline-none"
                   autoFocus
                 />
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-semibold rounded-xl transition-all cursor-pointer shrink-0 shadow-xs"
+                  className="px-4 py-2 bg-gradient-to-r from-[#e5a93c] to-[#f5c767] hover:brightness-110 text-black text-xs font-bold rounded-xl transition-all cursor-pointer shrink-0 shadow-sm"
                 >
                   Apply
                 </button>
@@ -727,8 +686,8 @@ export default function Header({
                 <p
                   className={`text-xs ${
                     pincodeMessage.includes("available")
-                      ? "text-emerald-700 font-medium"
-                      : "text-rose-600 font-medium"
+                      ? "text-emerald-400 font-medium"
+                      : "text-rose-400 font-medium"
                   }`}
                 >
                   {pincodeMessage}
@@ -736,8 +695,8 @@ export default function Header({
               )}
 
               {/* Quick pincode chips */}
-              <div className="pt-2 border-t border-neutral-100">
-                <span className="text-[10px] text-neutral-400 font-medium uppercase tracking-wider block mb-1.5">
+              <div className="pt-2 border-t border-[#222]">
+                <span className="text-[10px] text-[#8e8e93] font-medium uppercase tracking-wider block mb-1.5">
                   Popular Locations
                 </span>
                 <div className="flex flex-wrap gap-1.5">
@@ -755,7 +714,7 @@ export default function Header({
                         setPincodeInput(loc.pin);
                         handleApplyPincode(loc.pin);
                       }}
-                      className="px-2 py-1 rounded-lg bg-neutral-100 hover:bg-teal-50 hover:text-teal-700 text-[11px] text-neutral-700 transition-colors cursor-pointer"
+                      className="px-2 py-1 rounded-lg bg-[#141414] hover:bg-[#1f190c] hover:border-[#e5a93c]/50 border border-[#262626] text-[11px] text-[#c5c5c5] hover:text-[#f5c767] transition-all cursor-pointer"
                     >
                       {loc.city} ({loc.pin})
                     </button>

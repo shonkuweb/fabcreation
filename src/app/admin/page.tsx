@@ -31,8 +31,9 @@ import {
   Building2,
   Phone,
   AlertCircle,
+  Crown,
 } from "lucide-react";
-import { Product, Category, Order, WholesaleApplication } from "@/lib/db";
+import { Product, Category, Order, WholesaleApplication, RetailUser } from "@/lib/db";
 
 const R2_BASE = "https://pub-ce8688bc6c654bcfb99716f7c9373bcd.r2.dev/fab-creations";
 const LOGO_R2_URL = `${R2_BASE}/brand-logo.png`;
@@ -56,6 +57,8 @@ export default function AdminPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [adminOrdersTab, setAdminOrdersTab] = useState<"wholesale" | "retail">("wholesale");
   const [accountRequests, setAccountRequests] = useState<WholesaleApplication[]>([]);
+  const [retailUsers, setRetailUsers] = useState<RetailUser[]>([]);
+  const [usersSubTab, setUsersSubTab] = useState<"wholesale" | "retail">("wholesale");
   const [requestFilter, setRequestFilter] = useState<"all" | "pending" | "approved" | "rejected">("all");
   const [requestSearch, setRequestSearch] = useState("");
   const [loading, setLoading] = useState(false);
@@ -141,18 +144,20 @@ export default function AdminPage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [prodRes, catRes, ordRes, reqRes] = await Promise.all([
+      const [prodRes, catRes, ordRes, reqRes, retRes] = await Promise.all([
         fetch("/api/products", { cache: "no-store" }),
         fetch("/api/categories", { cache: "no-store" }),
         fetch("/api/orders", { cache: "no-store" }),
         fetch("/api/wholesale-requests", { cache: "no-store" }),
+        fetch("/api/retail-users", { cache: "no-store" }),
       ]);
 
-      const [prodData, catData, ordData, reqData] = await Promise.all([
+      const [prodData, catData, ordData, reqData, retData] = await Promise.all([
         prodRes.json(),
         catRes.json(),
         ordRes.json(),
         reqRes.json(),
+        retRes.json(),
       ]);
 
       if (prodData.success && Array.isArray(prodData.products)) {
@@ -169,6 +174,9 @@ export default function AdminPage() {
       }
       if (reqData.success && Array.isArray(reqData.requests)) {
         setAccountRequests(reqData.requests);
+      }
+      if (retData.success && Array.isArray(retData.users)) {
+        setRetailUsers(retData.users);
       }
     } catch (err) {
       console.error("Error fetching data:", err);
@@ -1170,11 +1178,124 @@ export default function AdminPage() {
         )}
 
         {/* ============================================================= */}
-        {/* TAB 5: WHOLESALE ACCOUNT REQUESTS (B2B APPROVAL SYSTEM)       */}
+        {/* TAB 5: USERS & ACCOUNTS (WHOLESALE PARTNERS & RETAIL USERS)   */}
         {/* ============================================================= */}
         {activeTab === "requests" && (
           <div className="space-y-4 animate-fade-in">
-            {/* Header & Filter Controls */}
+            {/* Top Switcher: Wholesale Partners vs Retail Customers */}
+            <div className="flex bg-[#111] p-1.5 rounded-2xl border border-[#262626] max-w-lg mb-2">
+              <button
+                type="button"
+                onClick={() => setUsersSubTab("wholesale")}
+                className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                  usersSubTab === "wholesale"
+                    ? "bg-[#e5a93c] text-black shadow-md"
+                    : "text-[#8e8e93] hover:text-white"
+                }`}
+              >
+                <Crown className="w-3.5 h-3.5" />
+                <span>Wholesale Partners</span>
+                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${usersSubTab === "wholesale" ? "bg-black/25 text-black" : "bg-[#222] text-[#aaa]"}`}>
+                  {accountRequests.length}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setUsersSubTab("retail")}
+                className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                  usersSubTab === "retail"
+                    ? "bg-[#e5a93c] text-black shadow-md"
+                    : "text-[#8e8e93] hover:text-white"
+                }`}
+              >
+                <Users className="w-3.5 h-3.5" />
+                <span>Retail Customers</span>
+                <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${usersSubTab === "retail" ? "bg-black/25 text-black" : "bg-[#222] text-[#aaa]"}`}>
+                  {retailUsers.length}
+                </span>
+              </button>
+            </div>
+
+            {usersSubTab === "retail" ? (
+              <div className="space-y-4">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-[#0d0d0d] border border-[#222] p-4 rounded-[20px]">
+                  <div>
+                    <h4 className="text-white font-serif font-bold text-sm">Retail Customers Table</h4>
+                    <p className="text-[11px] text-[#8e8e93]">
+                      Direct 2-step OTP customers. Zero admin approval needed for purchasing.
+                    </p>
+                  </div>
+                  <div className="relative w-full sm:w-64">
+                    <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[#777]" />
+                    <input
+                      type="text"
+                      placeholder="Search retail email or name..."
+                      value={requestSearch}
+                      onChange={(e) => setRequestSearch(e.target.value)}
+                      className="w-full h-9 rounded-xl bg-[#141414] border border-[#262626] pl-8 pr-3 text-xs text-white placeholder-[#666] outline-none focus:border-[#e5a93c]"
+                    />
+                  </div>
+                </div>
+
+                {(() => {
+                  const filteredRetail = retailUsers.filter((u) => {
+                    if (!requestSearch) return true;
+                    const q = requestSearch.toLowerCase();
+                    return (
+                      u.name.toLowerCase().includes(q) ||
+                      u.email.toLowerCase().includes(q) ||
+                      (u.mobile && u.mobile.includes(q))
+                    );
+                  });
+
+                  if (filteredRetail.length === 0) {
+                    return (
+                      <div className="p-12 text-center bg-[#0d0d0d] border border-[#222] rounded-[24px] space-y-2">
+                        <Users className="w-10 h-10 mx-auto text-[#555]" />
+                        <h4 className="text-white text-base font-serif font-medium">No Retail Customers Found</h4>
+                        <p className="text-xs text-[#777]">Retail customers who verify OTP will appear here.</p>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {filteredRetail.map((u) => (
+                        <div
+                          key={u.id}
+                          className="p-4 rounded-[20px] bg-[#0d0d0d] border border-[#222] hover:border-[#333] transition-all space-y-2.5 shadow-sm"
+                        >
+                          <div className="flex items-center justify-between">
+                            <h4 className="text-white font-semibold text-sm">{u.name}</h4>
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                              Active • Instant Access
+                            </span>
+                          </div>
+                          <div className="space-y-1 text-xs text-[#8e8e93]">
+                            <p className="flex items-center gap-1.5 text-white/90">
+                              <Mail className="w-3.5 h-3.5 text-[#e5a93c]" />
+                              <span>{u.email}</span>
+                            </p>
+                            {u.mobile && u.mobile !== u.email && (
+                              <p className="flex items-center gap-1.5">
+                                <Phone className="w-3.5 h-3.5 text-[#e5a93c]" />
+                                <span>+91 {u.mobile}</span>
+                              </p>
+                            )}
+                            <p className="text-[11px] text-[#666] pt-1">
+                              Registered: {new Date(u.createdAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
+            ) : (
+              <>
+            {/* Header & Filter Controls for Wholesale */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-[#0d0d0d] border border-[#222] p-4 rounded-[20px]">
               <div className="flex items-center gap-2 overflow-x-auto">
                 {(["all", "pending", "approved", "rejected"] as const).map((filter) => {
@@ -1384,6 +1505,8 @@ export default function AdminPage() {
                 </div>
               );
             })()}
+            </>
+          )}
           </div>
         )}
       </div>

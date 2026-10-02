@@ -12,6 +12,7 @@ import RetailLoginModal from "@/components/RetailLoginModal";
 import NavigationDrawer from "@/components/NavigationDrawer";
 import AboutUsModal from "@/components/AboutUsModal";
 import CategoriesModal from "@/components/CategoriesModal";
+import WholesaleGateScreen from "@/components/WholesaleGateScreen";
 import type { Product, Category, OrderItem } from "@/lib/db";
 import { getCartCount, fetchCartFromServer, addToCartByMode } from "@/lib/cart";
 
@@ -79,19 +80,18 @@ export default function MainStoreApp({
 
   // Load user details, store mode, and initial cart count from database & storage
   useEffect(() => {
-    let currentMode: "retail" | "wholesale" = storeMode;
+    let currentMode: "retail" | "wholesale" = "retail";
     try {
       const urlMode = searchParams?.get("mode");
-      if (urlMode === "wholesale" || urlMode === "retail") {
-        setStoreMode(urlMode);
-        currentMode = urlMode;
-        localStorage.setItem("fc_store_mode", urlMode);
+      if (urlMode === "wholesale") {
+        setStoreMode("wholesale");
+        currentMode = "wholesale";
+        localStorage.setItem("fc_store_mode", "wholesale");
       } else {
-        const savedMode = localStorage.getItem("fc_store_mode");
-        if (savedMode === "wholesale" || savedMode === "retail") {
-          setStoreMode(savedMode);
-          currentMode = savedMode;
-        }
+        // Any first visit or direct visit to domain MUST strictly default to retail portal
+        setStoreMode("retail");
+        currentMode = "retail";
+        localStorage.setItem("fc_store_mode", "retail");
       }
 
       if (searchParams?.get("login") === "true") {
@@ -109,7 +109,10 @@ export default function MainStoreApp({
       const mobile =
         currentMode === "wholesale"
           ? localStorage.getItem("fc_wholesale_mobile")
-          : localStorage.getItem("fc_retail_mobile") || localStorage.getItem("fc_user_mobile");
+          : localStorage.getItem("fc_retail_email") ||
+            localStorage.getItem("fc_retail_mobile") ||
+            localStorage.getItem("fc_user_email") ||
+            localStorage.getItem("fc_user_mobile");
       if (mobile) setUserMobile(mobile);
 
       setCartCount(getCartCount(currentMode));
@@ -142,7 +145,10 @@ export default function MainStoreApp({
         const mobile =
           storeMode === "wholesale"
             ? localStorage.getItem("fc_wholesale_mobile")
-            : localStorage.getItem("fc_retail_mobile") || localStorage.getItem("fc_user_mobile");
+            : localStorage.getItem("fc_retail_email") ||
+              localStorage.getItem("fc_retail_mobile") ||
+              localStorage.getItem("fc_user_email") ||
+              localStorage.getItem("fc_user_mobile");
         if (mobile) setUserMobile(mobile);
       } catch {}
     };
@@ -168,6 +174,15 @@ export default function MainStoreApp({
     try {
       localStorage.setItem("fc_store_mode", mode);
     } catch {}
+    if (typeof window !== "undefined") {
+      const currentUrl = new URL(window.location.href);
+      if (mode === "wholesale") {
+        currentUrl.searchParams.set("mode", "wholesale");
+      } else {
+        currentUrl.searchParams.delete("mode");
+      }
+      window.history.replaceState(null, "", currentUrl.toString());
+    }
   };
 
   // Sync tab with URL back/forward navigation
@@ -272,6 +287,7 @@ export default function MainStoreApp({
       } else {
         localStorage.removeItem("fc_retail_logged_in");
         localStorage.removeItem("fc_user_logged_in");
+        localStorage.removeItem("fc_retail_email");
         localStorage.removeItem("fc_retail_mobile");
         localStorage.removeItem("fc_user_mobile");
         localStorage.removeItem("fc_user_name");
@@ -378,65 +394,80 @@ export default function MainStoreApp({
         onSelectCategory={goToShop}
       />
 
-      {tab === "shop" && (
-        <ShopScreen
-          products={initialProducts}
-          categories={initialCategories}
-          cartCount={cartCount}
-          selectedCategory={selectedCategory}
-          storeMode={storeMode}
-          onSwitchStoreMode={handleSwitchStoreMode}
-          isWholesaleLoggedIn={isWholesaleLoggedIn}
-          isRetailLoggedIn={isRetailLoggedIn}
-          onOpenWholesaleLogin={() => setIsWholesaleLoginOpen(true)}
-          onOpenRetailLogin={openRetailLogin}
-          onOpenRetailRegister={openRetailRegister}
-          onOpenAboutUs={() => setIsAboutUsOpen(true)}
-          onNavigateHome={goToHome}
-          onNavigateCart={goToCart}
-          onNavigateAccount={goToAccount}
-          onSelectProduct={goToProduct}
-          onSelectCategory={goToShop}
-          onSignOut={handleSignOut}
-          onOpenMenu={() => setIsMenuOpen(true)}
+      {/* WHOLESALE ACCESS GATE: If in wholesale mode and not logged in as approved partner */}
+      {storeMode === "wholesale" && !isWholesaleLoggedIn ? (
+        <WholesaleGateScreen
+          onSuccess={(mob) => {
+            setIsWholesaleLoggedIn(true);
+            if (mob) setUserMobile(mob);
+            setCartCount(getCartCount("wholesale"));
+          }}
+          onReturnToRetail={() => handleSwitchStoreMode("retail")}
         />
-      )}
+      ) : (
+        <>
+          {tab === "shop" && (
+            <ShopScreen
+              products={initialProducts}
+              categories={initialCategories}
+              cartCount={cartCount}
+              selectedCategory={selectedCategory}
+              storeMode={storeMode}
+              onSwitchStoreMode={handleSwitchStoreMode}
+              isWholesaleLoggedIn={isWholesaleLoggedIn}
+              isRetailLoggedIn={isRetailLoggedIn}
+              onOpenWholesaleLogin={() => setIsWholesaleLoginOpen(true)}
+              onOpenRetailLogin={openRetailLogin}
+              onOpenRetailRegister={openRetailRegister}
+              onOpenAboutUs={() => setIsAboutUsOpen(true)}
+              onNavigateHome={goToHome}
+              onNavigateCart={goToCart}
+              onNavigateAccount={goToAccount}
+              onSelectProduct={goToProduct}
+              onSelectCategory={goToShop}
+              onSignOut={handleSignOut}
+              onOpenMenu={() => setIsMenuOpen(true)}
+            />
+          )}
 
-      {tab === "cart" && (
-        <CartScreen
-          userMobile={userMobile}
-          categories={initialCategories}
-          products={initialProducts}
-          storeMode={storeMode}
-          onSwitchStoreMode={handleSwitchStoreMode}
-          isWholesaleLoggedIn={isWholesaleLoggedIn}
-          onOpenWholesaleLogin={() => setIsWholesaleLoginOpen(true)}
-          onNavigateHome={goToHome}
-          onNavigateShop={goToShop}
-          onNavigateAccount={goToAccount}
-          onSelectCategory={goToShop}
-          onSelectProduct={goToProduct}
-          onSignOut={handleSignOut}
-        />
-      )}
+          {tab === "cart" && (
+            <CartScreen
+              userMobile={userMobile}
+              categories={initialCategories}
+              products={initialProducts}
+              storeMode={storeMode}
+              onSwitchStoreMode={handleSwitchStoreMode}
+              isWholesaleLoggedIn={isWholesaleLoggedIn}
+              onOpenWholesaleLogin={() => setIsWholesaleLoginOpen(true)}
+              onNavigateHome={goToHome}
+              onNavigateShop={goToShop}
+              onNavigateAccount={goToAccount}
+              onSelectCategory={goToShop}
+              onSelectProduct={goToProduct}
+              onSignOut={handleSignOut}
+            />
+          )}
 
-      {tab === "account" && (
-        <AccountScreen
-          userMobile={userMobile}
-          categories={initialCategories}
-          cartCount={cartCount}
-          storeMode={storeMode}
-          onSwitchStoreMode={handleSwitchStoreMode}
-          isWholesaleLoggedIn={isWholesaleLoggedIn}
-          onOpenWholesaleLogin={() => setIsWholesaleLoginOpen(true)}
-          onNavigateHome={goToHome}
-          onNavigateShop={goToShop}
-          onNavigateCart={goToCart}
-          onSelectProduct={goToProduct}
-          onSelectCategory={goToShop}
-          onSignOut={handleSignOut}
-        />
-      )}
+          {tab === "account" && (
+            <AccountScreen
+              userMobile={userMobile}
+              categories={initialCategories}
+              cartCount={cartCount}
+              storeMode={storeMode}
+              onSwitchStoreMode={handleSwitchStoreMode}
+              isWholesaleLoggedIn={isWholesaleLoggedIn}
+              isRetailLoggedIn={isRetailLoggedIn}
+              onOpenWholesaleLogin={() => setIsWholesaleLoginOpen(true)}
+              onOpenRetailLogin={openRetailLogin}
+              onOpenRetailRegister={openRetailRegister}
+              onNavigateHome={goToHome}
+              onNavigateShop={goToShop}
+              onNavigateCart={goToCart}
+              onSelectProduct={goToProduct}
+              onSelectCategory={goToShop}
+              onSignOut={handleSignOut}
+            />
+          )}
 
       {tab === "product" && (
         <ProductDetailsScreen
@@ -482,6 +513,8 @@ export default function MainStoreApp({
           onSignOut={handleSignOut}
           onOpenMenu={() => setIsMenuOpen(true)}
         />
+      )}
+        </>
       )}
     </>
   );

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { generateOtp } from "@/lib/otp";
 import { sendOtpEmail } from "@/lib/resend";
+import { getWholesaleUserByEmail } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -17,6 +18,43 @@ export async function POST(req: NextRequest) {
     }
 
     const normalizedEmail = email.trim().toLowerCase();
+
+    // STRICT CHECK: For wholesale login, ONLY approved wholesale users get OTP
+    if (purpose === "wholesale_login") {
+      const wsUser = getWholesaleUserByEmail(normalizedEmail);
+      if (!wsUser) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "No wholesale account found with this email. Please submit a wholesale application first.",
+          },
+          { status: 404 }
+        );
+      }
+
+      if (wsUser.status === "pending") {
+        return NextResponse.json(
+          {
+            success: false,
+            status: "pending",
+            error: "Your wholesale account is currently pending administrator approval. Login OTP is only sent once approved.",
+          },
+          { status: 403 }
+        );
+      }
+
+      if (wsUser.status === "rejected") {
+        return NextResponse.json(
+          {
+            success: false,
+            status: "rejected",
+            error: `Your wholesale application was not approved. Reason: ${wsUser.rejectionReason || "Verification criteria not met"}.`,
+          },
+          { status: 403 }
+        );
+      }
+    }
+
     const code = generateOtp(normalizedEmail);
     console.log(`[AUTH] Generated OTP for ${normalizedEmail}: ${code}`);
 

@@ -42,7 +42,9 @@ interface ProductDetailsScreenProps {
   storeMode?: "retail" | "wholesale";
   onSwitchStoreMode?: (mode: "retail" | "wholesale") => void;
   isWholesaleLoggedIn?: boolean;
+  isRetailLoggedIn?: boolean;
   onOpenWholesaleLogin?: () => void;
+  onOpenRetailLogin?: (product?: Product | null) => void;
   onToggleWishlist?: (productId: string) => void;
   onAddToCart?: (product: Product, quantity?: number) => void;
   onSelectProduct?: (product: Product) => void;
@@ -64,7 +66,9 @@ export default function ProductDetailsScreen({
   storeMode = "retail",
   onSwitchStoreMode,
   isWholesaleLoggedIn = false,
+  isRetailLoggedIn = false,
   onOpenWholesaleLogin,
+  onOpenRetailLogin,
   onToggleWishlist,
   onAddToCart,
   onSelectProduct,
@@ -215,41 +219,57 @@ export default function ProductDetailsScreen({
   // Add to cart handler for current product
   const handleAddToCart = () => {
     if (!product) return;
-    if (storeMode === "wholesale" && !isWholesaleLoggedIn) {
-      if (onOpenWholesaleLogin) onOpenWholesaleLogin();
+    if (storeMode === "wholesale") {
+      if (!isWholesaleLoggedIn) {
+        if (onOpenWholesaleLogin) onOpenWholesaleLogin();
+        return;
+      }
+      const { items, effectivePrice } = addToCartByMode(product, storeMode, quantity);
+      setCartCount(items.reduce((s, i) => s + i.quantity, 0));
+      onAddToCart?.({ ...product, price: effectivePrice }, quantity);
+      navCart();
       return;
     }
 
+    // Retail Store: User must be logged in to add to cart
+    if (!isRetailLoggedIn) {
+      if (onOpenRetailLogin) onOpenRetailLogin(product);
+      return;
+    }
+
+    // If retail user is logged in, immediately add and go to checkout page!
     const { items, effectivePrice } = addToCartByMode(product, storeMode, quantity);
     setCartCount(items.reduce((s, i) => s + i.quantity, 0));
     onAddToCart?.({ ...product, price: effectivePrice }, quantity);
-
-    const noticeText =
-      storeMode === "wholesale"
-        ? `Added ${quantity} ${product.name} to Wholesale Cart! (₹${effectivePrice})`
-        : `Added ${quantity} ${product.name} to Retail Cart! (₹${effectivePrice})`;
-    setNotification(noticeText);
-    setTimeout(() => setNotification(null), 3000);
+    navCart();
   };
 
   // Quick Add to cart for recommended product
   const handleAddToCartForRelated = (p: Product, e?: React.MouseEvent) => {
     e?.stopPropagation();
-    if (storeMode === "wholesale" && !isWholesaleLoggedIn) {
-      if (onOpenWholesaleLogin) onOpenWholesaleLogin();
+    if (storeMode === "wholesale") {
+      if (!isWholesaleLoggedIn) {
+        if (onOpenWholesaleLogin) onOpenWholesaleLogin();
+        return;
+      }
+      const { items, effectivePrice } = addToCartByMode(p, storeMode, 1);
+      setCartCount(items.reduce((s, i) => s + i.quantity, 0));
+      onAddToCart?.({ ...p, price: effectivePrice }, 1);
+      navCart();
       return;
     }
 
+    // Retail Store: User must be logged in to add to cart
+    if (!isRetailLoggedIn) {
+      if (onOpenRetailLogin) onOpenRetailLogin(p);
+      return;
+    }
+
+    // If retail user is logged in, immediately add and go to checkout page!
     const { items, effectivePrice } = addToCartByMode(p, storeMode, 1);
     setCartCount(items.reduce((s, i) => s + i.quantity, 0));
     onAddToCart?.({ ...p, price: effectivePrice }, 1);
-
-    const noticeText =
-      storeMode === "wholesale"
-        ? `Added ${p.name} to Wholesale Cart! (₹${effectivePrice})`
-        : `Added ${p.name} to Retail Cart! (₹${effectivePrice})`;
-    setNotification(noticeText);
-    setTimeout(() => setNotification(null), 2500);
+    navCart();
   };
 
   // Toggle wishlist for recommended product

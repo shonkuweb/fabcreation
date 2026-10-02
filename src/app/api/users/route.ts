@@ -30,18 +30,19 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     const type = (body.type === "wholesale" ? "wholesale" : "retail") as "wholesale" | "retail";
-    const mobile = (body.mobile || "").trim();
+    const identifier = (body.mobile || body.email || "").trim();
 
-    if (!mobile) {
+    if (!identifier) {
       return NextResponse.json(
-        { success: false, message: "Mobile number is required" },
+        { success: false, message: "Email or mobile number is required" },
         { status: 400 }
       );
     }
 
-    const updated = upsertUserAccount(type, mobile, {
+    const updated = upsertUserAccount(type, identifier, {
       name: body.name,
-      email: body.email,
+      email: body.email || (identifier.includes("@") ? identifier : undefined),
+      mobile: body.mobile || (!identifier.includes("@") ? identifier : undefined),
       companyName: body.companyName,
       gstin: body.gstin,
       addresses: Array.isArray(body.addresses) ? body.addresses : undefined,

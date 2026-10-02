@@ -27,6 +27,7 @@ import {
   CheckCircle2,
   Truck,
   Building,
+  ShieldCheck,
   X,
 } from "lucide-react";
 import CategoriesModal from "@/components/CategoriesModal";
@@ -64,7 +65,10 @@ interface AccountScreenProps {
   storeMode?: "retail" | "wholesale";
   onSwitchStoreMode?: (mode: "retail" | "wholesale") => void;
   isWholesaleLoggedIn?: boolean;
+  isRetailLoggedIn?: boolean;
   onOpenWholesaleLogin?: () => void;
+  onOpenRetailLogin?: () => void;
+  onOpenRetailRegister?: () => void;
   onToggleWishlist?: (productId: string) => void;
   onAddToCart?: (product: Product, quantity?: number) => void;
   onSelectProduct?: (product: Product) => void;
@@ -84,7 +88,10 @@ export default function AccountScreen({
   storeMode = "retail",
   onSwitchStoreMode,
   isWholesaleLoggedIn = false,
+  isRetailLoggedIn = false,
   onOpenWholesaleLogin,
+  onOpenRetailLogin,
+  onOpenRetailRegister,
   onToggleWishlist,
   onAddToCart,
   onSelectProduct,
@@ -312,6 +319,67 @@ export default function AccountScreen({
     showNotification("Address removed.");
   };
 
+  const isAuthenticated =
+    storeMode === "wholesale" ? isWholesaleLoggedIn : isRetailLoggedIn;
+
+  if (!isAuthenticated) {
+    return (
+      <div className="relative min-h-[85vh] w-full bg-[#050505] text-white flex flex-col items-center justify-center px-4 py-12 select-none">
+        <div className="w-full max-w-md bg-[#0c0c0c] border border-[#222222] hover:border-[#e5a93c]/50 rounded-[24px] p-8 text-center shadow-2xl relative overflow-hidden transition-all">
+          <div className="absolute -top-24 left-1/2 -translate-x-1/2 w-48 h-48 bg-[#e5a93c]/15 rounded-full blur-3xl pointer-events-none" />
+
+          <div className="w-16 h-16 mx-auto mb-5 rounded-2xl bg-gradient-to-b from-[#1c1509] to-[#0d0d0d] border border-[#d69e3d]/40 flex items-center justify-center text-[#e5a93c] shadow-lg">
+            <Lock className="w-8 h-8 text-[#e5a93c]" />
+          </div>
+
+          <h2 className="text-xl sm:text-2xl font-serif font-bold text-white mb-2">
+            {storeMode === "wholesale" ? "Wholesale Portal Sign In Required" : "Sign In to Access Account"}
+          </h2>
+
+          <p className="text-xs sm:text-sm text-[#a0a0a0] leading-relaxed mb-6">
+            {storeMode === "wholesale"
+              ? "Wholesale account orders, invoices, and trade company profile are restricted to verified wholesale partners. Please sign in or register at the wholesale portal."
+              : "To view your order history, track deliveries, and manage saved delivery addresses, please sign in or register your account."}
+          </p>
+
+          <div className="flex flex-col gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                if (storeMode === "wholesale") {
+                  if (onOpenWholesaleLogin) onOpenWholesaleLogin();
+                  else router.push("/wholesale");
+                } else {
+                  if (onOpenRetailLogin) onOpenRetailLogin();
+                }
+              }}
+              className="w-full py-3.5 px-6 rounded-full bg-gradient-to-r from-[#d69e3d] via-[#e5a93c] to-[#f5c767] hover:brightness-110 text-black text-xs sm:text-sm font-bold tracking-wider uppercase shadow-[0_4px_20px_rgba(229,169,60,0.3)] active:scale-98 transition-all cursor-pointer"
+            >
+              {storeMode === "wholesale" ? "Sign In to Wholesale Portal" : "Sign In / Register"}
+            </button>
+
+            <button
+              type="button"
+              onClick={navShop}
+              className="w-full py-3 px-6 rounded-full bg-[#141414] hover:bg-[#1a1a1a] border border-[#2a2a2a] text-[#8e8e93] hover:text-white text-xs font-semibold tracking-wider uppercase transition-all cursor-pointer"
+            >
+              Continue Shopping
+            </button>
+          </div>
+
+          <div className="mt-8 pt-6 border-t border-[#1a1a1a] flex items-center justify-center gap-6 text-[11px] text-[#707070]">
+            <span className="flex items-center gap-1.5">
+              <CheckCircle2 className="w-3.5 h-3.5 text-[#e5a93c]" /> Instant Verification
+            </span>
+            <span className="flex items-center gap-1.5">
+              <ShieldCheck className="w-3.5 h-3.5 text-[#e5a93c]" /> 100% Confidential
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="relative min-h-screen w-full bg-[#050505] text-white flex flex-col items-center justify-start pb-28 select-none">
       {/* Toast Notification */}
@@ -359,7 +427,7 @@ export default function AccountScreen({
                 {fullName || "My Account"}
               </h3>
               <p className="text-[#8e8e93] text-[12.5px] font-normal pt-0.5">
-                +91 {userMobile}
+                {email || (userMobile && !userMobile.includes("@") ? `+91 ${userMobile}` : userMobile)}
               </p>
             </div>
           </div>
@@ -546,6 +614,52 @@ export default function AccountScreen({
                   </span>
                 </div>
               </div>
+
+              {/* Wholesale B2B Specific Fields (Hidden for Retail Customers) */}
+              {storeMode === "wholesale" && (
+                <>
+                  <div className="space-y-1.5">
+                    <label className="flex items-center gap-2 text-[#a0a0a0] text-[13px]">
+                      <Building className="w-4 h-4 text-[#e5a93c]" />
+                      <span>Company / Business Name</span>
+                    </label>
+                    {isEditingProfile ? (
+                      <input
+                        type="text"
+                        value={companyName}
+                        onChange={(e) => setCompanyName(e.target.value)}
+                        placeholder="Enter business / firm name"
+                        className="w-full h-[48px] rounded-[13px] bg-[#141414] border border-[#e5a93c] px-4 text-white text-[14px] outline-none"
+                      />
+                    ) : (
+                      <div className="w-full h-[48px] rounded-[13px] bg-[#141414] border border-[#222222] px-4 flex items-center text-[#d1d5db] text-[14px]">
+                        {companyName || "Not provided"}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="flex items-center gap-2 text-[#a0a0a0] text-[13px]">
+                      <Building className="w-4 h-4 text-[#e5a93c]" />
+                      <span>GSTIN Number</span>
+                      <span className="text-[#8e8e93] text-[12px] font-normal">(optional)</span>
+                    </label>
+                    {isEditingProfile ? (
+                      <input
+                        type="text"
+                        value={gstin}
+                        onChange={(e) => setGstin(e.target.value.toUpperCase())}
+                        placeholder="e.g. 09AAAAA0000A1Z5"
+                        className="w-full h-[48px] rounded-[13px] bg-[#141414] border border-[#e5a93c] px-4 text-white text-[14px] outline-none uppercase"
+                      />
+                    ) : (
+                      <div className="w-full h-[48px] rounded-[13px] bg-[#141414] border border-[#222222] px-4 flex items-center text-[#d1d5db] text-[14px]">
+                        {gstin || "Not provided"}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
           </div>
         )}

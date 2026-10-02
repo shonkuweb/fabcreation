@@ -333,10 +333,14 @@ export default function Header({
       {/* 3. DESKTOP CATEGORIES ROW (lg:flex)                      */}
       {/* Dark Luxury Gold Theme                                   */}
       {/* ======================================================== */}
-      <div className="hidden lg:block bg-[#090909] border-b border-[#1a1a1a]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center">
-          {/* Categories Bar */}
-          <nav className="flex items-center space-x-1 py-1 overflow-x-auto no-scrollbar">
+      {/* ======================================================== */}
+      {/* 3. DESKTOP CATEGORIES ROW (lg:flex)                      */}
+      {/* Dark Luxury Gold Theme - Centered with respect to screen */}
+      {/* ======================================================== */}
+      <div className="hidden lg:flex w-full bg-[#090909] border-b border-[#1a1a1a] justify-center items-center">
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-center">
+          {/* Categories Bar Centered */}
+          <nav className="flex items-center justify-center space-x-1 py-1 overflow-x-auto no-scrollbar mx-auto">
             {/* Home Tab */}
             <button
               type="button"

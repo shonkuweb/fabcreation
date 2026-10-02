@@ -29,6 +29,7 @@ interface NavigationDrawerProps {
   storeMode: "retail" | "wholesale";
   onSwitchStoreMode: (mode: "retail" | "wholesale") => void;
   isWholesaleLoggedIn: boolean;
+  isRetailLoggedIn?: boolean;
   onOpenWholesaleLogin?: () => void;
   onNavigateHome?: () => void;
   onNavigateShop?: (category?: string | null) => void;
@@ -49,6 +50,7 @@ export default function NavigationDrawer({
   storeMode,
   onSwitchStoreMode,
   isWholesaleLoggedIn,
+  isRetailLoggedIn = false,
   onOpenWholesaleLogin,
   onNavigateHome,
   onNavigateShop,
@@ -165,74 +167,78 @@ export default function NavigationDrawer({
             {/* WHOLESALE PORTAL ACCESS SECTION                           */}
             {/* ========================================================= */}
             {storeMode === "retail" ? (
-              // Option to Enter Wholesale Portal (when in Retail Mode)
-              <div
-                onClick={handleEnterWholesale}
-                className="w-full p-3.5 rounded-2xl bg-gradient-to-br from-[#1c1508] via-[#141008] to-[#0d0d0d] border border-[#e5a93c]/70 shadow-[0_4px_20px_rgba(229,169,60,0.18)] hover:border-[#f5c767] transition-all cursor-pointer group"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-[#261d0d] border border-[#e5a93c]/50 flex items-center justify-center text-[#e5a93c] shrink-0 group-hover:scale-105 transition-transform">
-                      <Building2 className="w-5 h-5" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-white text-[14px] font-semibold group-hover:text-[#f5c767] transition-colors">
-                          Wholesale Portal
-                        </span>
-                        <span className="px-1.5 py-0.2 rounded-full bg-[#e5a93c] text-black text-[9px] font-bold uppercase tracking-wider">
-                          B2B
-                        </span>
+              // Option to Enter Wholesale Portal (only shown when NOT logged in as a retail customer)
+              !isRetailLoggedIn ? (
+                <div
+                  onClick={handleEnterWholesale}
+                  className="w-full p-3.5 rounded-2xl bg-gradient-to-br from-[#1c1508] via-[#141008] to-[#0d0d0d] border border-[#e5a93c]/70 shadow-[0_4px_20px_rgba(229,169,60,0.18)] hover:border-[#f5c767] transition-all cursor-pointer group"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-[#261d0d] border border-[#e5a93c]/50 flex items-center justify-center text-[#e5a93c] shrink-0 group-hover:scale-105 transition-transform">
+                        <Building2 className="w-5 h-5" />
                       </div>
-                      <p className="text-[#a0a0a0] text-[11px] mt-0.5 leading-snug">
-                        Bulk orders & wholesale prices
-                      </p>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-white text-[14px] font-semibold group-hover:text-[#f5c767] transition-colors">
+                            Wholesale Portal
+                          </span>
+                          <span className="px-1.5 py-0.2 rounded-full bg-[#e5a93c] text-black text-[9px] font-bold uppercase tracking-wider">
+                            B2B
+                          </span>
+                        </div>
+                        <p className="text-[#a0a0a0] text-[11px] mt-0.5 leading-snug">
+                          Bulk orders & wholesale prices
+                        </p>
+                      </div>
                     </div>
+                    <ChevronRight className="w-4 h-4 text-[#e5a93c] group-hover:translate-x-1 transition-transform mt-1" />
                   </div>
-                  <ChevronRight className="w-4 h-4 text-[#e5a93c] group-hover:translate-x-1 transition-transform mt-1" />
-                </div>
 
-                <div className="mt-3 pt-2.5 border-t border-[#262626] flex items-center justify-between text-[11px]">
-                  <span className="text-[#8e8e93]">Min. Order: ₹3,000</span>
-                  <span className="text-[#e5a93c] font-medium flex items-center gap-1">
-                    {isWholesaleLoggedIn ? (
-                      <span className="text-emerald-400 flex items-center gap-1 font-semibold">
-                        <CheckCircle2 className="w-3 h-3" /> Unlocked
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-1">
-                        <Lock className="w-3 h-3" /> OTP Login
-                      </span>
-                    )}
-                  </span>
-                </div>
-              </div>
-            ) : (
-              // Option to Return to Retail Store (when in Wholesale Mode)
-              <div className="w-full p-3.5 rounded-2xl bg-gradient-to-br from-[#121c10] via-[#0d140c] to-[#0a0f09] border border-emerald-500/50 shadow-md">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                    <span className="text-emerald-300 font-semibold text-xs uppercase tracking-wider">
-                      Wholesale Mode Active
+                  <div className="mt-3 pt-2.5 border-t border-[#262626] flex items-center justify-between text-[11px]">
+                    <span className="text-[#8e8e93]">Min. Order: ₹3,000</span>
+                    <span className="text-[#e5a93c] font-medium flex items-center gap-1">
+                      {isWholesaleLoggedIn ? (
+                        <span className="text-emerald-400 flex items-center gap-1 font-semibold">
+                          <CheckCircle2 className="w-3 h-3" /> Unlocked
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1">
+                          <Lock className="w-3 h-3" /> OTP Login
+                        </span>
+                      )}
                     </span>
                   </div>
-                  <span className="px-1.5 py-0.5 rounded text-[9.5px] bg-emerald-950 text-emerald-300 border border-emerald-800 font-semibold">
-                    B2B
-                  </span>
                 </div>
-                <p className="text-[#a0a0a0] text-[11px] leading-relaxed mb-3">
-                  You are viewing wholesale prices. Min order requirement is ₹3,000.
-                </p>
-                <button
-                  type="button"
-                  onClick={handleSwitchToRetail}
-                  className="w-full py-2 px-3 rounded-xl bg-[#141414] hover:bg-[#1e1e1e] border border-[#2a2a2a] text-white text-xs font-medium flex items-center justify-center gap-2 transition-all cursor-pointer"
-                >
-                  <ShoppingBag className="w-3.5 h-3.5 text-[#e5a93c]" />
-                  <span>Switch to Retail Store</span>
-                </button>
-              </div>
+              ) : null
+            ) : (
+              // Option to Return to Retail Store (when in Wholesale Mode and not wholesale logged in)
+              !isWholesaleLoggedIn ? (
+                <div className="w-full p-3.5 rounded-2xl bg-gradient-to-br from-[#121c10] via-[#0d140c] to-[#0a0f09] border border-emerald-500/50 shadow-md">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                      <span className="text-emerald-300 font-semibold text-xs uppercase tracking-wider">
+                        Wholesale Mode Active
+                      </span>
+                    </div>
+                    <span className="px-1.5 py-0.5 rounded text-[9.5px] bg-emerald-950 text-emerald-300 border border-emerald-800 font-semibold">
+                      B2B
+                    </span>
+                  </div>
+                  <p className="text-[#a0a0a0] text-[11px] leading-relaxed mb-3">
+                    You are viewing wholesale prices. Min order requirement is ₹3,000.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleSwitchToRetail}
+                    className="w-full py-2 px-3 rounded-xl bg-[#141414] hover:bg-[#1e1e1e] border border-[#2a2a2a] text-white text-xs font-medium flex items-center justify-center gap-2 transition-all cursor-pointer"
+                  >
+                    <ShoppingBag className="w-3.5 h-3.5 text-[#e5a93c]" />
+                    <span>Switch to Retail Store</span>
+                  </button>
+                </div>
+              ) : null
             )}
 
             {/* Section Divider */}
@@ -252,7 +258,7 @@ export default function NavigationDrawer({
               >
                 <div className="flex items-center gap-3">
                   <Home className="w-4 h-4 text-[#e5a93c] group-hover:scale-110 transition-transform" />
-                  <span>Retail Store (Home)</span>
+                  <span>Home</span>
                 </div>
                 <ChevronRight className="w-3.5 h-3.5 text-[#555] group-hover:text-white transition-colors" />
               </button>
@@ -309,7 +315,7 @@ export default function NavigationDrawer({
                 <div className="flex items-center gap-3">
                   <ShoppingBag className="w-4 h-4 text-[#e5a93c] group-hover:scale-110 transition-transform" />
                   <span>
-                    {storeMode === "wholesale" ? "Wholesale Cart" : "Retail Cart"}
+                    {storeMode === "wholesale" ? "Wholesale Cart" : "Cart"}
                   </span>
                 </div>
                 {cartCount > 0 ? (
@@ -363,8 +369,8 @@ export default function NavigationDrawer({
             <span>Chat on WhatsApp Support</span>
           </a>
 
-          {/* Wholesale Sign Out if logged in */}
-          {storeMode === "wholesale" && isWholesaleLoggedIn && onSignOut && (
+          {/* Sign Out if logged in */}
+          {((storeMode === "wholesale" && isWholesaleLoggedIn) || (storeMode === "retail" && isRetailLoggedIn)) && onSignOut && (
             <button
               type="button"
               onClick={() => {
@@ -374,7 +380,7 @@ export default function NavigationDrawer({
               className="w-full py-2 px-3 rounded-xl bg-[#181818] hover:bg-red-950/40 border border-[#2a2a2a] hover:border-red-500/40 text-[#8e8e93] hover:text-red-300 text-xs transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               <LogOut className="w-3.5 h-3.5" />
-              <span>Sign Out of Wholesale</span>
+              <span>{storeMode === "wholesale" ? "Sign Out of Wholesale" : "Sign Out of Account"}</span>
             </button>
           )}
 

@@ -15,11 +15,13 @@ import {
   User,
   Check,
   CheckCircle,
+  Plus,
+  Sparkles,
 } from "lucide-react";
 import CategoriesModal from "@/components/CategoriesModal";
 import StoreModeToggle from "@/components/StoreModeToggle";
 import RetailLoginModal from "@/components/RetailLoginModal";
-import type { OrderItem, Category } from "@/lib/db";
+import type { OrderItem, Category, Product } from "@/lib/db";
 import {
   getCartItems,
   getCartCount,
@@ -27,12 +29,14 @@ import {
   removeFromCartByMode,
   clearCartByMode,
   fetchCartFromServer,
+  addToCartByMode,
 } from "@/lib/cart";
 
 interface CartScreenProps {
   cart?: OrderItem[];
   userMobile?: string;
   categories?: Category[];
+  products?: Product[];
   storeMode?: "retail" | "wholesale";
   onSwitchStoreMode?: (mode: "retail" | "wholesale") => void;
   isWholesaleLoggedIn?: boolean;
@@ -44,6 +48,7 @@ interface CartScreenProps {
   onNavigateShop?: () => void;
   onNavigateAccount?: () => void;
   onSelectCategory?: (category: string | null) => void;
+  onSelectProduct?: (product: Product) => void;
   onSignOut?: () => void;
 }
 
@@ -51,6 +56,7 @@ export default function CartScreen({
   cart: initialCart = [],
   userMobile = "6289417338",
   categories: initialCategories = [],
+  products: initialProducts = [],
   storeMode = "retail",
   onSwitchStoreMode,
   isWholesaleLoggedIn = false,
@@ -62,6 +68,7 @@ export default function CartScreen({
   onNavigateShop,
   onNavigateAccount,
   onSelectCategory,
+  onSelectProduct,
   onSignOut,
 }: CartScreenProps) {
   const router = useRouter();
@@ -120,6 +127,45 @@ export default function CartScreen({
     }
   }, [initialCategories]);
 
+  // Load products for 'You May Also Like' recommendations
+  const [allProducts, setAllProducts] = useState<Product[]>(initialProducts);
+
+  useEffect(() => {
+    if (initialProducts && initialProducts.length > 0) {
+      setAllProducts(initialProducts);
+    } else {
+      fetch("/api/products", { cache: "no-store" })
+        .then((r) => r.json())
+        .then((d) => {
+          if (d.success && Array.isArray(d.products)) {
+            setAllProducts(d.products);
+          }
+        })
+        .catch(console.error);
+    }
+  }, [initialProducts]);
+
+  const cartProductIds = React.useMemo(() => new Set(cart.map((i) => i.id)), [cart]);
+
+  const recommendedProducts = React.useMemo(() => {
+    return allProducts
+      .filter((p) => {
+        if (cartProductIds.has(p.id)) return false;
+        if (activeCartMode === "wholesale") {
+          return p.channel === "wholesale" || p.channel === "both" || !p.channel;
+        }
+        return p.channel === "retail" || p.channel === "both" || !p.channel;
+      })
+      .slice(0, 4);
+  }, [allProducts, cartProductIds, activeCartMode]);
+
+  const handleQuickAdd = (p: Product) => {
+    const { items, effectivePrice } = addToCartByMode(p, activeCartMode, 1);
+    setCart(items);
+    setNotification(`Added ${p.name} to cart! (₹${effectivePrice})`);
+    setTimeout(() => setNotification(null), 2500);
+  };
+
   // Navigation helpers with fallback
   const navHome = () => {
     if (onNavigateHome) onNavigateHome();
@@ -173,14 +219,20 @@ export default function CartScreen({
     onClearCart?.();
   };
 
-  const handleCheckout = async (overrideMobile?: string) => {
+  const handleCheckout = async (overrideIdentifier?: string) => {
     // 1. Retail Login Check: Must be logged in before checking out from retail store
     if (activeCartMode === "retail") {
       const isRetailAuth =
         typeof window !== "undefined" &&
-        localStorage.getItem("fc_retail_logged_in") === "true" &&
-        Boolean(localStorage.getItem("fc_retail_mobile"));
-      if (!isRetailAuth && !overrideMobile) {
+        (localStorage.getItem("fc_retail_logged_in") === "true" ||
+          localStorage.getItem("fc_user_logged_in") === "true") &&
+        Boolean(
+          localStorage.getItem("fc_retail_email") ||
+            localStorage.getItem("fc_retail_mobile") ||
+            localStorage.getItem("fc_user_email") ||
+            localStorage.getItem("fc_user_mobile")
+        );
+      if (!isRetailAuth && !overrideIdentifier) {
         setIsRetailLoginOpen(true);
         return;
       }
@@ -202,16 +254,38 @@ export default function CartScreen({
       }
     }
 
-    const activeMobile =
-      overrideMobile ||
+    const storedEmail =
+      typeof window !== "undefined"
+        ? localStorage.getItem("fc_retail_email") ||
+          localStorage.getItem("fc_user_email") ||
+          localStorage.getItem("fc_wholesale_email")
+        : null;
+
+    const storedName =
+      typeof window !== "undefined"
+        ? localStorage.getItem("fc_user_name") ||
+          localStorage.getItem("fc_wholesale_owner") ||
+          localStorage.getItem("fc_wholesale_business")
+        : null;
+
+    const activeIdentifier =
+      overrideIdentifier ||
       (activeCartMode === "wholesale"
         ? (userMobile || (typeof window !== "undefined" ? localStorage.getItem("fc_wholesale_mobile") || localStorage.getItem("fc_user_mobile") : null) || "6289417338")
-        : (userMobile || (typeof window !== "undefined" ? localStorage.getItem("fc_retail_mobile") : null) || ""));
+        : (userMobile || storedEmail || (typeof window !== "undefined" ? localStorage.getItem("fc_retail_mobile") : null) || ""));
 
-    if (!activeMobile) {
+    if (!activeIdentifier) {
       setIsRetailLoginOpen(true);
       return;
     }
+
+    const customerEmail =
+      overrideIdentifier && overrideIdentifier.includes("@")
+        ? overrideIdentifier
+        : (storedEmail || (activeIdentifier.includes("@") ? activeIdentifier : undefined));
+
+    const customerMobile =
+      activeIdentifier.includes("@") ? "" : activeIdentifier;
 
     setIsCheckingOut(true);
     try {
@@ -221,7 +295,9 @@ export default function CartScreen({
         body: JSON.stringify({
           orderType: activeCartMode,
           storeMode: activeCartMode,
-          customerMobile: activeMobile,
+          customerMobile: customerMobile || activeIdentifier,
+          customerEmail,
+          customerName: storedName || "Customer",
           items: cart,
           subtotal,
           gst,
@@ -548,9 +624,112 @@ export default function CartScreen({
                     </>
                   )}
                 </button>
+
+                {/* Continue Shopping Button */}
+                <button
+                  type="button"
+                  onClick={navShop}
+                  className="w-full h-[48px] rounded-[16px] bg-[#141414] hover:bg-[#1c1c1c] border border-[#2a2a2a] hover:border-[#e5a93c]/60 text-[#c5c5c5] hover:text-white font-medium text-sm flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.99]"
+                >
+                  <ArrowLeft className="w-4 h-4 text-[#e5a93c]" />
+                  <span>Continue Shopping</span>
+                </button>
               </div>
             </div>
           </div>
+        )}
+
+        {/* ======================================================== */}
+        {/* YOU MAY ALSO LIKE SECTION                                */}
+        {/* ======================================================== */}
+        {recommendedProducts.length > 0 && (
+          <section className="mt-10 pt-8 border-t border-[#1c1c1c] mb-12">
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-[#1c160c] border border-[#e5a93c]/40 flex items-center justify-center text-[#e5a93c]">
+                  <Sparkles className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="text-white text-lg sm:text-xl font-serif font-medium">
+                    You May Also Like
+                  </h3>
+                  <p className="text-[#8e8e93] text-xs">
+                    Popular jewellery pieces that pair well with your cart
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={navShop}
+                className="text-xs text-[#e5a93c] hover:text-[#f5c767] hover:underline flex items-center gap-1 font-medium cursor-pointer"
+              >
+                <span>View All</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4">
+              {recommendedProducts.map((p) => {
+                const effectivePrice =
+                  activeCartMode === "wholesale"
+                    ? p.wholesalePrice ?? p.price
+                    : p.retailPrice ?? p.price;
+
+                return (
+                  <div
+                    key={p.id}
+                    onClick={() => {
+                      if (onSelectProduct) {
+                        onSelectProduct(p);
+                      } else {
+                        router.push(`/product?id=${p.id}`);
+                      }
+                    }}
+                    className="group bg-[#0d0d0d] border border-[#222222] hover:border-[#e5a93c]/50 rounded-[18px] p-3 flex flex-col justify-between transition-all cursor-pointer shadow-md hover:shadow-[0_4px_20px_rgba(229,169,60,0.15)]"
+                  >
+                    <div>
+                      <div className="relative w-full aspect-square rounded-[14px] overflow-hidden bg-[#141414] mb-2.5 border border-[#1f1f1f]">
+                        <Image
+                          src={p.image || "/images/products/moon-necklace.jpg"}
+                          alt={p.name}
+                          fill
+                          sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 25vw"
+                          className="object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      </div>
+
+                      <span className="text-[10px] text-[#e5a93c] uppercase tracking-wider font-semibold">
+                        {p.category || "Jewellery"}
+                      </span>
+                      <h4 className="text-white text-xs sm:text-sm font-medium line-clamp-1 group-hover:text-[#f5c767] transition-colors mt-0.5">
+                        {p.name}
+                      </h4>
+                    </div>
+
+                    <div className="mt-3 pt-2 border-t border-[#1c1c1c] flex items-center justify-between">
+                      <span className="text-white text-xs sm:text-sm font-bold">
+                        ₹{Number(effectivePrice).toLocaleString("en-IN")}
+                      </span>
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleQuickAdd(p);
+                        }}
+                        className="px-2.5 py-1 rounded-lg bg-[#1c160c] hover:bg-[#e5a93c] border border-[#e5a93c]/50 hover:border-[#e5a93c] text-[#e5a93c] hover:text-black text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer active:scale-95 shadow-sm"
+                        title="Add to Cart"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        <span>Add</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
         )}
       </div>
 

@@ -33,7 +33,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { customerMobile, items, subtotal, gst, shipping, total } = body;
+    const { customerMobile, customerEmail, customerName, items, subtotal, gst, shipping, total } = body;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json(
@@ -70,7 +70,9 @@ export async function POST(req: Request) {
         ? Number(total)
         : Number((finalSubtotal + finalGst + finalShipping).toFixed(1));
 
-    const validMobile = (customerMobile || "").trim() || (body.orderType === "wholesale" ? "6289417338" : "Retail Customer");
+    const emailStr = (customerEmail || "").trim();
+    const mobileStr = (customerMobile || "").trim();
+    const validMobile = mobileStr || emailStr || (body.orderType === "wholesale" ? "6289417338" : "Retail Customer");
     const orderType =
       body.orderType === "wholesale" || body.storeMode === "wholesale"
         ? "wholesale"
@@ -78,6 +80,8 @@ export async function POST(req: Request) {
 
     const newOrder = createOrder({
       customerMobile: validMobile,
+      customerEmail: emailStr || (validMobile.includes("@") ? validMobile : undefined),
+      customerName: (customerName || "").trim() || "Customer",
       items: sanitizedItems,
       subtotal: finalSubtotal,
       gst: finalGst,

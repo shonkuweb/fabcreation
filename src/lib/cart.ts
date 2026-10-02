@@ -16,6 +16,8 @@ export function getActiveUserMobile(mode: StoreMode): string {
       );
     } else {
       return (
+        localStorage.getItem("fc_retail_email") ||
+        localStorage.getItem("fc_user_email") ||
         localStorage.getItem("fc_retail_mobile") ||
         localStorage.getItem("fc_guest_id") ||
         "retail_customer"

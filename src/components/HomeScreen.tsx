@@ -346,18 +346,18 @@ export default function HomeScreen({
             />
 
             {/* Banner Content */}
-            <div className="absolute inset-0 p-5 sm:p-6 flex flex-col justify-between z-10">
-              <div className="space-y-1.5 max-w-[230px]">
-                <p className="text-[#e5a93c] text-[10.5px] sm:text-[11px] font-semibold tracking-[0.2em] uppercase">
+            <div className="absolute inset-0 p-5 sm:p-8 md:p-12 lg:p-14 flex flex-col justify-between md:justify-center md:gap-5 lg:gap-6 z-10">
+              <div className="space-y-1.5 sm:space-y-2 md:space-y-2.5 max-w-[230px] sm:max-w-sm md:max-w-md lg:max-w-lg">
+                <p className="text-[#e5a93c] text-[10.5px] sm:text-[11.5px] md:text-[12.5px] lg:text-[13.5px] font-semibold tracking-[0.2em] uppercase">
                   TIMELESS JEWELRY
                 </p>
 
-                <h2 className="text-white text-[23px] sm:text-[25px] font-serif font-normal leading-[1.18] tracking-tight">
+                <h2 className="text-white text-[23px] sm:text-[28px] md:text-[36px] lg:text-[42px] font-serif font-normal leading-[1.18] tracking-tight">
                   Designed <br />
                   for Every You
                 </h2>
 
-                <p className="text-[#a8a8a8] text-[9.5px] sm:text-[10px] tracking-[0.14em] uppercase pt-0.5">
+                <p className="text-[#a8a8a8] text-[9.5px] sm:text-[10.5px] md:text-[11.5px] lg:text-[12px] tracking-[0.14em] uppercase pt-0.5">
                   ANTI TARNISH <span className="text-[#e5a93c] mx-1">|</span> PREMIUM QUALITY
                 </p>
               </div>
@@ -365,10 +365,10 @@ export default function HomeScreen({
               <div>
                 <button
                   onClick={onNavigateShop}
-                  className="h-[34px] px-4 rounded-full border border-[#e5a93c] bg-black/40 backdrop-blur-sm text-[#e5a93c] hover:bg-[#e5a93c] hover:text-black transition-all text-[11.5px] font-semibold tracking-wide flex items-center gap-1.5 shadow-md active:scale-95 cursor-pointer"
+                  className="h-[34px] sm:h-[38px] md:h-[42px] px-4 sm:px-5 md:px-6 rounded-full border border-[#e5a93c] bg-black/40 backdrop-blur-sm text-[#e5a93c] hover:bg-[#e5a93c] hover:text-black transition-all text-[11.5px] sm:text-[12px] md:text-[13px] font-semibold tracking-wide flex items-center gap-1.5 shadow-md active:scale-95 cursor-pointer"
                 >
                   <span>SHOP NOW</span>
-                  <ArrowRight className="w-3 h-3" />
+                  <ArrowRight className="w-3 h-3 md:w-3.5 md:h-3.5" />
                 </button>
               </div>
             </div>

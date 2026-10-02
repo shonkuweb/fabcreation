@@ -20,6 +20,8 @@ services:
       - R2_SECRET_ACCESS_KEY=${R2_SECRET_ACCESS_KEY:-a8000cd7a60e056098ec04e0580328bbf21fff4f0da6126075cc3ed05f79ab95}
       - R2_PUBLIC_URL=${R2_PUBLIC_URL:-https://pub-ce8688bc6c654bcfb99716f7c9373bcd.r2.dev}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-admin@fab2026}
+      - RESEND_API_KEY=${RESEND_API_KEY}
+      - RESEND_FROM_EMAIL=${RESEND_FROM_EMAIL:-Fab Creations <onboarding@resend.dev>}
     volumes:
       # Persistent host mount for database data (products, categories, orders)
       - ./data:/app/data

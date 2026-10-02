@@ -2,12 +2,12 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import Image from "next/image";
-import { X, Phone, CheckCircle, ArrowRight, ShoppingBag, Sparkles } from "lucide-react";
+import { X, Mail, Phone, CheckCircle, ArrowRight, ShoppingBag, Sparkles, AlertCircle } from "lucide-react";
 
 interface RetailLoginModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: (mobile: string) => void;
+  onSuccess: (verifiedIdentifier: string) => void;
 }
 
 const LOGO_R2_URL =
@@ -18,23 +18,26 @@ export default function RetailLoginModal({
   onClose,
   onSuccess,
 }: RetailLoginModalProps) {
-  const [step, setStep] = useState<"phone" | "otp">("phone");
+  const [step, setStep] = useState<"input" | "otp">("input");
+  const [email, setEmail] = useState("");
   const [mobileNumber, setMobileNumber] = useState("");
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [infoMessage, setInfoMessage] = useState<string | null>(null);
   const otpInputsRef = useRef<(HTMLInputElement | null)[]>([]);
 
   useEffect(() => {
     if (isOpen) {
-      setStep("phone");
+      setStep("input");
       setError(null);
+      setInfoMessage(null);
       setOtp(["", "", "", "", "", ""]);
       try {
-        const saved = localStorage.getItem("fc_retail_mobile");
-        if (saved && saved.length === 10) {
-          setMobileNumber(saved);
-        }
+        const savedEmail = localStorage.getItem("fc_retail_email");
+        if (savedEmail) setEmail(savedEmail);
+        const savedMobile = localStorage.getItem("fc_retail_mobile");
+        if (savedMobile) setMobileNumber(savedMobile);
       } catch {}
     }
   }, [isOpen]);
@@ -49,28 +52,51 @@ export default function RetailLoginModal({
 
   const handleSendOtp = async (e: React.FormEvent) => {
     e.preventDefault();
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail || !cleanEmail.includes("@")) {
+      setError("Please enter a valid email address");
+      return;
+    }
     const cleanMobile = mobileNumber.replace(/\D/g, "");
-    if (cleanMobile.length !== 10) {
+    if (cleanMobile && cleanMobile.length !== 10) {
       setError("Please enter a valid 10-digit mobile number");
       return;
     }
+
     setError(null);
     setIsSubmitting(true);
 
-    setTimeout(() => {
+    try {
+      const res = await fetch("/api/auth/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: cleanEmail, purpose: "retail" }),
+      });
+
+      const data = await res.json();
       setIsSubmitting(false);
+
+      if (!data.success) {
+        setError(data.error || "Failed to send verification code. Please try again.");
+        return;
+      }
+
+      setInfoMessage(data.message || `Code sent to ${cleanEmail}`);
       setStep("otp");
-      setOtp(["1", "2", "3", "4", "5", "6"]);
-    }, 400);
+      setOtp(["", "", "", "", "", ""]);
+    } catch {
+      setIsSubmitting(false);
+      setError("Network error sending OTP. Please try again.");
+    }
   };
 
   const handleOtpChange = (index: number, value: string) => {
-    if (!/^\d*$/.test(value)) return;
+    const val = value.replace(/\D/g, "");
     const newOtp = [...otp];
-    newOtp[index] = value.slice(-1);
+    newOtp[index] = val.slice(-1);
     setOtp(newOtp);
 
-    if (value && index < 5) {
+    if (val && index < 5) {
       otpInputsRef.current[index + 1]?.focus();
     }
   };
@@ -83,34 +109,50 @@ export default function RetailLoginModal({
 
   const handleVerifyOtp = async (e: React.FormEvent) => {
     e.preventDefault();
+    const cleanEmail = email.trim().toLowerCase();
     const otpValue = otp.join("");
-    if (otpValue.length < 4) {
-      setError("Please enter the complete OTP code");
+    if (otpValue.length < 6) {
+      setError("Please enter the complete 6-digit verification code");
       return;
     }
 
     setIsSubmitting(true);
     setError(null);
 
-    setTimeout(() => {
+    try {
+      const res = await fetch("/api/auth/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: cleanEmail, otp: otpValue }),
+      });
+
+      const data = await res.json();
       setIsSubmitting(false);
-      const cleanMobile = mobileNumber.replace(/\D/g, "") || "9876543210";
+
+      if (!data.success) {
+        setError(data.error || "Invalid verification code. Please check your email.");
+        return;
+      }
+
+      const cleanMobile = mobileNumber.replace(/\D/g, "") || "6289417338";
       try {
         localStorage.setItem("fc_retail_logged_in", "true");
+        localStorage.setItem("fc_retail_email", cleanEmail);
         localStorage.setItem("fc_retail_mobile", cleanMobile);
         window.dispatchEvent(new Event("retail_auth_changed"));
       } catch {}
 
-      onSuccess(cleanMobile);
+      onSuccess(cleanMobile || cleanEmail);
       onClose();
-    }, 400);
+    } catch {
+      setIsSubmitting(false);
+      setError("Network error verifying code. Please try again.");
+    }
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fade-in select-none">
       <div className="relative w-full max-w-[420px] bg-[#0c0c0c] border border-[#d69e3d] rounded-[24px] p-6 shadow-2xl overflow-hidden">
-
-
         {/* Close Button */}
         <button
           type="button"
@@ -121,7 +163,7 @@ export default function RetailLoginModal({
         </button>
 
         {/* Brand Header */}
-        <div className="flex flex-col items-center text-center space-y-2 mb-6">
+        <div className="flex flex-col items-center text-center space-y-2 mb-5">
           <div className="w-14 h-14 relative rounded-full overflow-hidden border border-[#e5a93c]/50 p-1 shadow-[0_0_20px_rgba(229,169,60,0.2)]">
             <Image
               src={LOGO_R2_URL}
@@ -142,27 +184,55 @@ export default function RetailLoginModal({
               <span>Checkout Login</span>
             </div>
             <h3 className="text-white text-[19px] font-serif font-medium leading-snug">
-              {step === "phone" ? "Enter Mobile to Checkout" : "Verify Mobile Number"}
+              {step === "input" ? "Sign in to Checkout" : "Enter Email Code"}
             </h3>
             <p className="text-[#8e8e93] text-xs pt-1">
-              {step === "phone"
-                ? "Please log in with your phone number to complete your order"
-                : `Enter OTP code sent to +91 ${mobileNumber}`}
+              {step === "input"
+                ? "We'll send an instant security code to verify your order"
+                : `Enter the 6-digit code sent to ${email}`}
             </p>
           </div>
         </div>
 
         {error && (
-          <div className="mb-4 p-2.5 rounded-xl bg-red-950/60 border border-red-800/60 text-red-200 text-xs text-center">
-            {error}
+          <div className="mb-4 p-2.5 rounded-xl bg-red-950/60 border border-red-800/60 text-red-200 text-xs text-center flex items-center justify-center gap-1.5">
+            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+            <span>{error}</span>
           </div>
         )}
 
-        {step === "phone" ? (
-          <form onSubmit={handleSendOtp} className="space-y-4">
-            <div className="space-y-1.5">
+        {infoMessage && step === "otp" && (
+          <div className="mb-4 p-2.5 rounded-xl bg-emerald-950/50 border border-emerald-700/50 text-emerald-300 text-xs text-center">
+            {infoMessage}
+          </div>
+        )}
+
+        {step === "input" ? (
+          <form onSubmit={handleSendOtp} className="space-y-3.5">
+            <div className="space-y-1">
               <label className="text-xs text-[#a0a0a0] font-medium block">
-                Mobile Number
+                Email Address <span className="text-[#e5a93c]">*</span>
+              </label>
+              <div className="flex items-center h-[46px] rounded-xl bg-[#141414] border border-[#2a2a2a] px-3.5 focus-within:border-[#e5a93c] transition-all">
+                <input
+                  type="email"
+                  placeholder="name@example.com"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    setError(null);
+                  }}
+                  required
+                  autoFocus
+                  className="flex-1 bg-transparent text-sm text-white placeholder-[#666] outline-none font-medium"
+                />
+                <Mail className="w-4 h-4 text-[#8e8e93]" />
+              </div>
+            </div>
+
+            <div className="space-y-1">
+              <label className="text-xs text-[#a0a0a0] font-medium block">
+                Mobile Number <span className="text-[#666]">(For order updates)</span>
               </label>
               <div className="flex items-center h-[46px] rounded-xl bg-[#141414] border border-[#2a2a2a] px-3.5 focus-within:border-[#e5a93c] transition-all">
                 <span className="text-[#8e8e93] text-sm font-medium mr-2 border-r border-[#262626] pr-2">
@@ -170,13 +240,12 @@ export default function RetailLoginModal({
                 </span>
                 <input
                   type="tel"
-                  placeholder="Enter 10-digit mobile number"
+                  placeholder="10-digit mobile number"
                   value={mobileNumber}
                   onChange={(e) => {
                     setMobileNumber(e.target.value.replace(/\D/g, "").slice(0, 10));
                     setError(null);
                   }}
-                  autoFocus
                   maxLength={10}
                   className="flex-1 bg-transparent text-sm text-white placeholder-[#666] outline-none font-medium tracking-wide"
                 />
@@ -186,21 +255,21 @@ export default function RetailLoginModal({
 
             <button
               type="submit"
-              disabled={isSubmitting || mobileNumber.length !== 10}
-              className="w-full h-[46px] rounded-xl bg-gradient-to-r from-[#d4992e] to-[#f5c767] hover:from-[#e5a93c] hover:to-[#ffd885] text-black font-semibold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-50 cursor-pointer shadow-lg active:scale-98"
+              disabled={isSubmitting || !email.includes("@")}
+              className="w-full h-[46px] rounded-xl bg-gradient-to-r from-[#d4992e] to-[#f5c767] hover:from-[#e5a93c] hover:to-[#ffd885] text-black font-semibold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-50 cursor-pointer shadow-lg active:scale-98 mt-2"
             >
               {isSubmitting ? (
                 <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
               ) : (
                 <>
-                  <span>Send OTP via SMS</span>
+                  <span>Send Verification Code</span>
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
             </button>
           </form>
         ) : (
-          <form onSubmit={handleVerifyOtp} className="space-y-5">
+          <form onSubmit={handleVerifyOtp} className="space-y-4">
             <div className="flex justify-center gap-2 sm:gap-2.5">
               {otp.map((digit, idx) => (
                 <input
@@ -214,25 +283,25 @@ export default function RetailLoginModal({
                   value={digit}
                   onChange={(e) => handleOtpChange(idx, e.target.value)}
                   onKeyDown={(e) => handleOtpKeyDown(idx, e)}
-                  className="w-11 h-13 sm:w-12 sm:h-14 rounded-xl bg-[#141414] border border-[#2a2a2a] focus:border-[#e5a93c] text-white text-xl font-bold text-center outline-none transition-all"
+                  className="w-10 h-12 sm:w-11 sm:h-13 rounded-xl bg-[#141414] border border-[#2a2a2a] focus:border-[#e5a93c] text-white text-lg sm:text-xl font-bold text-center outline-none transition-all"
                 />
               ))}
             </div>
 
             <div className="flex items-center justify-between text-xs text-[#8e8e93] px-1">
-              <span>Enter 6-digit code (Demo: 123456)</span>
+              <span>Check your email inbox</span>
               <button
                 type="button"
-                onClick={() => setStep("phone")}
+                onClick={() => setStep("input")}
                 className="text-[#e5a93c] hover:underline"
               >
-                Change Number
+                Change Email
               </button>
             </div>
 
             <button
               type="submit"
-              disabled={isSubmitting || otp.join("").length < 4}
+              disabled={isSubmitting || otp.join("").length < 6}
               className="w-full h-[46px] rounded-xl bg-gradient-to-r from-[#d4992e] to-[#f5c767] hover:from-[#e5a93c] hover:to-[#ffd885] text-black font-semibold text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-50 cursor-pointer shadow-lg active:scale-98"
             >
               {isSubmitting ? (
@@ -257,4 +326,3 @@ export default function RetailLoginModal({
     </div>
   );
 }
-

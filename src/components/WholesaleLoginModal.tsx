@@ -54,6 +54,8 @@ export default function WholesaleLoginModal({
   const [appStatusData, setAppStatusData] = useState<{
     name?: string;
     businessName?: string;
+    email?: string;
+    mobile?: string;
     status?: string;
     rejectionReason?: string;
   } | null>(null);
@@ -105,19 +107,39 @@ export default function WholesaleLoginModal({
   };
 
   const handleSendRegOtp = async () => {
+    const cleanEmail = email.trim().toLowerCase();
+    if (!cleanEmail || !cleanEmail.includes("@")) {
+      setError("Please go back to Step 2 and provide a valid business email");
+      return;
+    }
     const cleanMobile = mobileNumber.replace(/\D/g, "");
     if (cleanMobile.length !== 10) {
-      setError("Please enter a valid 10-digit phone number");
+      setError("Please enter a valid 10-digit mobile number");
       return;
     }
     setError(null);
     setIsSubmitting(true);
 
-    setTimeout(() => {
+    try {
+      const res = await fetch("/api/auth/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: cleanEmail, purpose: "wholesale" }),
+      });
+      const data = await res.json();
       setIsSubmitting(false);
+
+      if (!data.success) {
+        setError(data.error || "Failed to send verification code. Please try again.");
+        return;
+      }
+
       setIsOtpSent(true);
-      setRegOtp(["1", "2", "3", "4", "5", "6"]);
-    }, 400);
+      setRegOtp(["", "", "", "", "", ""]);
+    } catch {
+      setIsSubmitting(false);
+      setError("Network error sending OTP. Please try again.");
+    }
   };
 
   const handleRegOtpChange = (index: number, val: string) => {
@@ -138,24 +160,38 @@ export default function WholesaleLoginModal({
       setError("Please enter a valid 10-digit mobile number");
       return;
     }
+    const cleanEmail = email.trim().toLowerCase();
     const otpValue = regOtp.join("");
-    if (otpValue.length < 4) {
-      setError("Please enter the complete OTP code");
+    if (otpValue.length < 6) {
+      setError("Please enter the complete 6-digit OTP code");
       return;
     }
 
     setIsSubmitting(true);
     setError(null);
 
-
+    // Verify OTP first via Resend backend
     try {
+      const verifyRes = await fetch("/api/auth/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: cleanEmail, otp: otpValue }),
+      });
+      const verifyData = await verifyRes.json();
+      if (!verifyData.success) {
+        setIsSubmitting(false);
+        setError(verifyData.error || "Invalid OTP code. Please check your email.");
+        return;
+      }
+
+      // Submit application
       const res = await fetch("/api/wholesale-requests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: name.trim(),
           businessName: businessName.trim(),
-          email: email.trim(),
+          email: cleanEmail,
           instagramId: instagramId.trim(),
           mobile: cleanMobile,
         }),
@@ -172,6 +208,7 @@ export default function WholesaleLoginModal({
       setRegStep(4); // Advance to Submitted screen
       try {
         localStorage.setItem("fc_wholesale_mobile", cleanMobile);
+        localStorage.setItem("fc_wholesale_email", cleanEmail);
       } catch {}
     } catch (err) {
       console.error(err);
@@ -213,8 +250,17 @@ export default function WholesaleLoginModal({
       setAppStatusData(req);
 
       if (req.status === "approved") {
+        if (req.email) {
+          try {
+            await fetch("/api/auth/send-otp", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ email: req.email, purpose: "wholesale" }),
+            });
+          } catch {}
+        }
         setLoginStep("otp");
-        setLoginOtp(["1", "2", "3", "4", "5", "6"]);
+        setLoginOtp(["", "", "", "", "", ""]);
       } else if (req.status === "pending") {
         setLoginStep("pending");
       } else if (req.status === "rejected") {
@@ -231,27 +277,46 @@ export default function WholesaleLoginModal({
   const handleVerifyLoginOtp = async (e: React.FormEvent) => {
     e.preventDefault();
     const otpValue = loginOtp.join("");
-    if (otpValue.length < 4) {
-      setError("Please enter complete OTP code");
+    if (otpValue.length < 6) {
+      setError("Please enter the complete 6-digit OTP code");
       return;
     }
 
     setIsSubmitting(true);
     setError(null);
 
-    setTimeout(() => {
-      setIsSubmitting(false);
-      const clean = loginMobile.replace(/\D/g, "");
+    const targetEmail = appStatusData?.email;
+    if (targetEmail) {
       try {
-        localStorage.setItem("fc_wholesale_logged_in", "true");
-        localStorage.setItem("fc_wholesale_mobile", clean);
-        localStorage.setItem("fc_user_logged_in", "true");
-        window.dispatchEvent(new Event("wholesale_auth_changed"));
-      } catch {}
+        const verifyRes = await fetch("/api/auth/verify-otp", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: targetEmail, otp: otpValue }),
+        });
+        const verifyData = await verifyRes.json();
+        if (!verifyData.success) {
+          setIsSubmitting(false);
+          setError(verifyData.error || "Invalid OTP code. Please check your email.");
+          return;
+        }
+      } catch {
+        setIsSubmitting(false);
+        setError("Network error verifying OTP code.");
+        return;
+      }
+    }
 
-      onSuccess(clean);
-      onClose();
-    }, 400);
+    setIsSubmitting(false);
+    const clean = loginMobile.replace(/\D/g, "");
+    try {
+      localStorage.setItem("fc_wholesale_logged_in", "true");
+      localStorage.setItem("fc_wholesale_mobile", clean);
+      localStorage.setItem("fc_user_logged_in", "true");
+      window.dispatchEvent(new Event("wholesale_auth_changed"));
+    } catch {}
+
+    onSuccess(clean);
+    onClose();
   };
 
   return (
@@ -448,13 +513,25 @@ export default function WholesaleLoginModal({
               </form>
             )}
 
-            {/* STEP 3: Phone Number & OTP Verification */}
+            {/* STEP 3: Phone Number & Email OTP Verification */}
             {regStep === 3 && (
               <form onSubmit={handleCompleteRegistration} className="space-y-4 animate-fade-in">
+                {/* Application Details Summary */}
+                <div className="p-3 rounded-xl bg-[#141414] border border-[#262626] text-xs space-y-1.5">
+                  <div className="flex items-center justify-between text-[#8e8e93]">
+                    <span>Business:</span>
+                    <span className="text-white font-medium">{businessName}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-[#8e8e93]">
+                    <span>Verification Email:</span>
+                    <span className="text-[#e5a93c] font-medium">{email}</span>
+                  </div>
+                </div>
+
                 <div className="space-y-1">
                   <label className="text-xs text-[#a0a0a0] font-medium flex items-center gap-1.5">
                     <Phone className="w-3.5 h-3.5 text-[#e5a93c]" />
-                    <span>Phone Number *</span>
+                    <span>WhatsApp / Mobile Number *</span>
                   </label>
                   <div className="flex items-center h-[46px] rounded-xl bg-[#141414] border border-[#2a2a2a] px-3.5 focus-within:border-[#e5a93c] transition-all">
                     <span className="text-[#8e8e93] text-sm font-medium mr-2 border-r border-[#262626] pr-2">
@@ -469,7 +546,7 @@ export default function WholesaleLoginModal({
                         setIsOtpSent(false);
                       }}
                       maxLength={10}
-                      autoFocus
+                      autoFocus={!isOtpSent}
                       className="flex-1 bg-transparent text-sm text-white placeholder-[#666] outline-none font-medium tracking-wide"
                     />
                     {!isOtpSent && mobileNumber.length === 10 && (
@@ -478,18 +555,24 @@ export default function WholesaleLoginModal({
                         onClick={handleSendRegOtp}
                         className="text-xs text-[#e5a93c] hover:underline font-semibold"
                       >
-                        Send OTP
+                        Send Code
                       </button>
                     )}
                   </div>
+                  <p className="text-[11px] text-[#666]">
+                    Used for wholesale orders, dispatch updates, and account ID.
+                  </p>
                 </div>
 
                 {isOtpSent && (
                   <div className="space-y-2 pt-1 animate-fade-in">
                     <div className="flex items-center justify-between text-xs text-[#a0a0a0]">
-                      <span>Enter 6-Digit OTP</span>
+                      <span className="flex items-center gap-1">
+                        <Mail className="w-3.5 h-3.5 text-[#e5a93c]" />
+                        Enter 6-digit code sent to <strong className="text-white">{email}</strong>
+                      </span>
                       <span className="text-[#e5a93c] font-medium">
-                        Demo OTP: 123456
+                        Demo: 123456
                       </span>
                     </div>
                     <div className="flex justify-center gap-2 sm:gap-2.5">
@@ -511,6 +594,17 @@ export default function WholesaleLoginModal({
                           className="w-10 h-12 sm:w-11 sm:h-13 rounded-xl bg-[#141414] border border-[#2a2a2a] focus:border-[#e5a93c] text-white text-lg sm:text-xl font-bold text-center outline-none transition-all"
                         />
                       ))}
+                    </div>
+                    <div className="flex justify-between items-center text-[11px] text-[#777] pt-1">
+                      <span>Didn&apos;t receive email?</span>
+                      <button
+                        type="button"
+                        onClick={handleSendRegOtp}
+                        disabled={isSubmitting}
+                        className="text-[#e5a93c] hover:underline font-medium cursor-pointer"
+                      >
+                        Resend Code
+                      </button>
                     </div>
                   </div>
                 )}
@@ -536,7 +630,8 @@ export default function WholesaleLoginModal({
                         <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
                       ) : (
                         <>
-                          <span>Send Phone OTP</span>
+                          <Mail className="w-4 h-4" />
+                          <span>Send Code to Email</span>
                           <ArrowRight className="w-4 h-4" />
                         </>
                       )}
@@ -544,7 +639,7 @@ export default function WholesaleLoginModal({
                   ) : (
                     <button
                       type="submit"
-                      disabled={isSubmitting || regOtp.join("").length < 4}
+                      disabled={isSubmitting || regOtp.join("").length < 6}
                       className="flex-1 h-[46px] rounded-xl bg-gradient-to-r from-[#d4992e] to-[#f5c767] hover:from-[#e5a93c] text-black font-semibold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all disabled:opacity-50 cursor-pointer shadow-lg"
                     >
                       {isSubmitting ? (
@@ -552,7 +647,7 @@ export default function WholesaleLoginModal({
                       ) : (
                         <>
                           <CheckCircle className="w-4 h-4" />
-                          <span>Submit for Admin Approval</span>
+                          <span>Verify & Submit Application</span>
                         </>
                       )}
                     </button>
@@ -689,7 +784,13 @@ export default function WholesaleLoginModal({
             {loginStep === "otp" && (
               <form onSubmit={handleVerifyLoginOtp} className="space-y-4 animate-fade-in">
                 <div className="p-3 rounded-xl bg-emerald-950/40 border border-emerald-500/40 text-xs text-center text-emerald-300">
-                  Account Approved! Enter 6-digit OTP to unlock wholesale pricing.
+                  Account Approved! Enter 6-digit OTP sent to{" "}
+                  {appStatusData?.email ? (
+                    <strong className="text-white">{appStatusData.email}</strong>
+                  ) : (
+                    "your registered email"
+                  )}{" "}
+                  to unlock wholesale pricing.
                 </div>
 
                 <div className="flex justify-center gap-2 sm:gap-2.5">

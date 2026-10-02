@@ -5,7 +5,6 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   Search,
-  MapPin,
   LogIn,
   User,
   Heart,
@@ -14,9 +13,6 @@ import {
   ArrowRight,
   Menu,
   X,
-  Building2,
-  Lock,
-  MessageCircle,
 } from "lucide-react";
 import type { Category } from "@/lib/db";
 
@@ -26,6 +22,7 @@ interface HeaderProps {
   isWholesaleLoggedIn: boolean;
   onOpenWholesaleLogin?: () => void;
   onOpenRetailLogin?: () => void;
+  onOpenRetailRegister?: () => void;
   cartCount: number;
   wishlistCount?: number;
   onNavigateHome: () => void;
@@ -64,6 +61,7 @@ export default function Header({
   isWholesaleLoggedIn,
   onOpenWholesaleLogin,
   onOpenRetailLogin,
+  onOpenRetailRegister,
   cartCount = 0,
   wishlistCount = 0,
   onNavigateHome,
@@ -81,26 +79,17 @@ export default function Header({
   currentTab = "home",
 }: HeaderProps) {
   const [logoSrc, setLogoSrc] = useState(LOGO_R2_URL);
-  const [deliveryPincode, setDeliveryPincode] = useState<string>("");
-  const [isPincodeModalOpen, setIsPincodeModalOpen] = useState(false);
-  const [pincodeInput, setPincodeInput] = useState("");
-  const [pincodeMessage, setPincodeMessage] = useState<string | null>(null);
-
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userName, setUserName] = useState<string>("");
 
-  // Load saved pincode & user login status
+  // Check verified user login status
   useEffect(() => {
     try {
-      const savedPin = localStorage.getItem("fc_delivery_pincode");
-      if (savedPin) setDeliveryPincode(savedPin);
-
       const checkAuth = () => {
         const wholesaleAuth =
           localStorage.getItem("fc_wholesale_logged_in") === "true";
         const retailAuth =
-          localStorage.getItem("fc_retail_logged_in") === "true" ||
-          localStorage.getItem("fc_user_logged_in") === "true";
+          localStorage.getItem("fc_retail_logged_in") === "true";
 
         const logged = storeMode === "wholesale" ? wholesaleAuth : retailAuth;
         setIsLoggedIn(logged);
@@ -108,17 +97,19 @@ export default function Header({
         const name =
           localStorage.getItem("fc_user_name") ||
           (storeMode === "wholesale"
-            ? localStorage.getItem("fc_wholesale_company") || "Partner"
-            : "Customer");
-        setUserName(name);
+            ? localStorage.getItem("fc_wholesale_company") || ""
+            : "");
+        setUserName(name && name !== "Customer" ? name : "");
       };
 
       checkAuth();
       window.addEventListener("storage", checkAuth);
       window.addEventListener("wholesale_auth_changed", checkAuth);
+      window.addEventListener("retail_auth_changed", checkAuth);
       return () => {
         window.removeEventListener("storage", checkAuth);
         window.removeEventListener("wholesale_auth_changed", checkAuth);
+        window.removeEventListener("retail_auth_changed", checkAuth);
       };
     } catch {}
   }, [storeMode]);
@@ -141,23 +132,6 @@ export default function Header({
     return list;
   }, [categories]);
 
-  const handleApplyPincode = (pin: string) => {
-    const clean = pin.trim().replace(/\D/g, "");
-    if (clean.length === 6) {
-      setDeliveryPincode(clean);
-      try {
-        localStorage.setItem("fc_delivery_pincode", clean);
-      } catch {}
-      setPincodeMessage(`Delivery available for PIN ${clean} (Est. 2-4 days)`);
-      setTimeout(() => {
-        setIsPincodeModalOpen(false);
-        setPincodeMessage(null);
-      }, 1200);
-    } else {
-      setPincodeMessage("Please enter a valid 6-digit PIN code");
-    }
-  };
-
   const handleLoginClick = () => {
     if (isLoggedIn) {
       onNavigateAccount();
@@ -174,22 +148,14 @@ export default function Header({
     } else if (storeMode === "wholesale") {
       onOpenWholesaleLogin?.();
     } else {
-      onOpenRetailLogin?.();
+      if (onOpenRetailRegister) {
+        onOpenRetailRegister();
+      } else {
+        onOpenRetailLogin?.();
+      }
     }
   };
 
-  const handleWholesaleToggle = () => {
-    if (storeMode === "wholesale") {
-      onSwitchStoreMode("retail");
-      onNavigateHome();
-    } else {
-      onSwitchStoreMode("wholesale");
-      if (!isWholesaleLoggedIn && onOpenWholesaleLogin) {
-        onOpenWholesaleLogin();
-      }
-      onNavigateShop(null);
-    }
-  };
 
   const handleSearchKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
@@ -300,35 +266,15 @@ export default function Header({
 
           {/* Right Action Icons & Buttons */}
           <div className="flex items-center gap-3 xl:gap-4 shrink-0">
-            {/* DELIVER TO / Enter Pincode in Dark Luxury Theme */}
-            <button
-              type="button"
-              onClick={() => setIsPincodeModalOpen(true)}
-              className="flex items-center gap-2 text-left hover:opacity-90 transition-opacity cursor-pointer group"
-              title="Set Delivery Pincode"
-            >
-              <div className="w-9 h-9 rounded-xl bg-[#18140a] border border-[#e5a93c]/50 flex items-center justify-center text-[#e5a93c] shrink-0 shadow-sm group-hover:border-[#e5a93c] group-hover:scale-105 transition-all">
-                <MapPin className="w-4 h-4 fill-[#e5a93c]" />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-[9.5px] font-semibold text-[#8e8e93] uppercase tracking-wider leading-none">
-                  DELIVER TO
-                </span>
-                <span className="text-[12.5px] font-bold text-white group-hover:text-[#f5c767] leading-tight mt-0.5 transition-colors">
-                  {deliveryPincode ? `Pin ${deliveryPincode}` : "Enter Pincode"}
-                </span>
-              </div>
-            </button>
-
             {/* Login */}
             <button
               type="button"
               onClick={handleLoginClick}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold text-[#c5c5c5] hover:text-[#e5a93c] transition-colors cursor-pointer"
-              title={isLoggedIn ? "View Account" : "Login"}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[#c5c5c5] hover:text-[#e5a93c] transition-colors cursor-pointer"
+              title={isLoggedIn && userName ? `Logged in as ${userName}` : "Login"}
             >
               <LogIn className="w-4 h-4 text-[#e5a93c]" />
-              <span>{isLoggedIn ? userName || "Account" : "Login"}</span>
+              <span>{isLoggedIn && userName ? userName : "Login"}</span>
             </button>
 
             {/* Register Pill Button in Gold Theme */}
@@ -336,9 +282,10 @@ export default function Header({
               type="button"
               onClick={handleRegisterClick}
               className="h-9 px-4 rounded-full bg-gradient-to-r from-[#e5a93c] to-[#f5c767] hover:brightness-110 text-black text-xs font-bold flex items-center gap-1.5 shadow-[0_2px_12px_rgba(229,169,60,0.25)] transition-all active:scale-95 cursor-pointer"
+              title={isLoggedIn ? "My Account" : "Register"}
             >
               <User className="w-3.5 h-3.5" />
-              <span>{isLoggedIn ? "Profile" : "Register"}</span>
+              <span>{isLoggedIn ? "Account" : "Register"}</span>
             </button>
 
             {/* Subtle Divider */}
@@ -383,11 +330,11 @@ export default function Header({
       </div>
 
       {/* ======================================================== */}
-      {/* 3. DESKTOP CATEGORIES & HAMBURGER LINKS ROW (lg:flex)    */}
+      {/* 3. DESKTOP CATEGORIES ROW (lg:flex)                      */}
       {/* Dark Luxury Gold Theme                                   */}
       {/* ======================================================== */}
       <div className="hidden lg:block bg-[#090909] border-b border-[#1a1a1a]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center">
           {/* Categories Bar */}
           <nav className="flex items-center space-x-1 py-1 overflow-x-auto no-scrollbar">
             {/* Home Tab */}
@@ -429,64 +376,6 @@ export default function Header({
               );
             })}
           </nav>
-
-          {/* Desktop Links transferred from hamburger drawer */}
-          <div className="flex items-center gap-3 shrink-0 ml-4 py-1">
-            {/* Wholesale Portal (Desktop Only) */}
-            <button
-              type="button"
-              onClick={handleWholesaleToggle}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
-                storeMode === "wholesale"
-                  ? "bg-[#e5a93c] text-black shadow-md font-bold"
-                  : "bg-[#181308] border border-[#e5a93c]/50 text-[#e5a93c] hover:bg-[#e5a93c] hover:text-black"
-              }`}
-              title="Access B2B Wholesale Portal"
-            >
-              <Building2 className="w-3.5 h-3.5" />
-              <span>
-                {storeMode === "wholesale"
-                  ? "Wholesale Active"
-                  : "Wholesale Portal"}
-              </span>
-              <span className="text-[9px] px-1 py-0.2 rounded bg-black/20 font-bold uppercase">
-                B2B
-              </span>
-            </button>
-
-            {/* About Us */}
-            {onOpenAboutUs && (
-              <button
-                type="button"
-                onClick={onOpenAboutUs}
-                className="text-xs font-medium text-[#a0a0a0] hover:text-white transition-colors px-2 py-1 cursor-pointer"
-              >
-                About Us
-              </button>
-            )}
-
-            {/* WhatsApp Support */}
-            <a
-              href="https://wa.me/916289417338?text=Hello%20Fab%20Creations"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs font-medium text-emerald-400 hover:text-emerald-300 transition-colors flex items-center gap-1 px-2 py-1 cursor-pointer"
-              title="Chat on WhatsApp"
-            >
-              <MessageCircle className="w-3.5 h-3.5" />
-              <span className="hidden xl:inline">Support</span>
-            </a>
-
-            {/* Admin Panel */}
-            <Link
-              href="/admin"
-              className="text-xs font-medium text-[#777] hover:text-[#e5a93c] transition-colors flex items-center gap-1 px-1.5 py-1 cursor-pointer"
-              title="Admin Panel"
-            >
-              <Lock className="w-3.5 h-3.5" />
-              <span className="hidden xl:inline">Admin</span>
-            </Link>
-          </div>
         </div>
       </div>
 
@@ -533,19 +422,8 @@ export default function Header({
             </div>
           </div>
 
-          {/* Right: Deliver Pin + Account + Wishlist + Cart (NEVER HIDDEN!) */}
+          {/* Right: Account + Wishlist + Cart (NEVER HIDDEN!) */}
           <div className="flex items-center gap-1.5 shrink-0">
-            {/* Quick Pincode Icon Button */}
-            <button
-              type="button"
-              onClick={() => setIsPincodeModalOpen(true)}
-              aria-label="Delivery Pincode"
-              className="w-8 h-8 rounded-lg bg-[#14120a] border border-[#e5a93c]/40 text-[#e5a93c] flex items-center justify-center cursor-pointer shrink-0"
-              title={deliveryPincode ? `Pin ${deliveryPincode}` : "Set Pincode"}
-            >
-              <MapPin className="w-3.5 h-3.5 fill-[#e5a93c]" />
-            </button>
-
             {/* Account Button (FIXED: ALWAYS VISIBLE ON MOBILE!) */}
             <button
               type="button"
@@ -626,105 +504,6 @@ export default function Header({
         </div>
       </div>
 
-      {/* ======================================================== */}
-      {/* 5. INTERACTIVE PINCODE DELIVERY MODAL (Dark Gold Theme)   */}
-      {/* ======================================================== */}
-      {isPincodeModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="w-full max-w-sm bg-[#0e0e0e] rounded-2xl p-5 shadow-2xl border border-[#2a2a2a] relative animate-in fade-in zoom-in-95 duration-150">
-            <button
-              type="button"
-              onClick={() => {
-                setIsPincodeModalOpen(false);
-                setPincodeMessage(null);
-              }}
-              className="absolute top-4 right-4 w-7 h-7 rounded-full bg-[#181818] hover:bg-[#252525] border border-[#333] flex items-center justify-center text-[#8e8e93] hover:text-white cursor-pointer"
-            >
-              <X className="w-4 h-4" />
-            </button>
-
-            <div className="flex items-center gap-2.5 mb-3">
-              <div className="w-9 h-9 rounded-xl bg-[#1c1508] border border-[#e5a93c]/50 flex items-center justify-center text-[#e5a93c] shrink-0">
-                <MapPin className="w-5 h-5 fill-[#e5a93c]" />
-              </div>
-              <div>
-                <h3 className="text-sm font-bold text-white leading-tight">
-                  Delivery Location
-                </h3>
-                <p className="text-[11px] text-[#8e8e93]">
-                  Enter 6-digit PIN code to check shipping
-                </p>
-              </div>
-            </div>
-
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleApplyPincode(pincodeInput);
-              }}
-              className="space-y-3"
-            >
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  maxLength={6}
-                  value={pincodeInput}
-                  onChange={(e) => setPincodeInput(e.target.value)}
-                  placeholder="e.g. 226001"
-                  className="flex-1 px-3.5 py-2 rounded-xl bg-[#161616] border border-[#333] text-sm font-semibold tracking-wider text-white placeholder-[#777] focus:border-[#e5a93c] outline-none"
-                  autoFocus
-                />
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-gradient-to-r from-[#e5a93c] to-[#f5c767] hover:brightness-110 text-black text-xs font-bold rounded-xl transition-all cursor-pointer shrink-0 shadow-sm"
-                >
-                  Apply
-                </button>
-              </div>
-
-              {pincodeMessage && (
-                <p
-                  className={`text-xs ${
-                    pincodeMessage.includes("available")
-                      ? "text-emerald-400 font-medium"
-                      : "text-rose-400 font-medium"
-                  }`}
-                >
-                  {pincodeMessage}
-                </p>
-              )}
-
-              {/* Quick pincode chips */}
-              <div className="pt-2 border-t border-[#222]">
-                <span className="text-[10px] text-[#8e8e93] font-medium uppercase tracking-wider block mb-1.5">
-                  Popular Locations
-                </span>
-                <div className="flex flex-wrap gap-1.5">
-                  {[
-                    { city: "Lucknow", pin: "226001" },
-                    { city: "Delhi", pin: "110001" },
-                    { city: "Mumbai", pin: "400001" },
-                    { city: "Bengaluru", pin: "560001" },
-                    { city: "Kolkata", pin: "700001" },
-                  ].map((loc) => (
-                    <button
-                      key={loc.pin}
-                      type="button"
-                      onClick={() => {
-                        setPincodeInput(loc.pin);
-                        handleApplyPincode(loc.pin);
-                      }}
-                      className="px-2 py-1 rounded-lg bg-[#141414] hover:bg-[#1f190c] hover:border-[#e5a93c]/50 border border-[#262626] text-[11px] text-[#c5c5c5] hover:text-[#f5c767] transition-all cursor-pointer"
-                    >
-                      {loc.city} ({loc.pin})
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </header>
   );
 }

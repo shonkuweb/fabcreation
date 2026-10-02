@@ -65,7 +65,23 @@
   ],
   "orders": [],
   "users": [],
-  "carts": [],
+  "carts": [
+    {
+      "id": "cart-retail-1790944072530",
+      "accountType": "retail",
+      "userKey": "retail_customer",
+      "items": [
+        {
+          "id": "prod-1789891321908",
+          "name": "test",
+          "price": 800,
+          "quantity": 2,
+          "image": "https://pub-ce8688bc6c654bcfb99716f7c9373bcd.r2.dev/fab-creations/products/moon-necklace.jpg"
+        }
+      ],
+      "updatedAt": "2026-10-02T12:28:08.732Z"
+    }
+  ],
   "wishlists": [],
   "wholesaleApplications": []
 }

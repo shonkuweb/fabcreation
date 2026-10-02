@@ -283,9 +283,11 @@ export default function CartScreen({
             <span className="hidden sm:inline">Continue Shopping</span>
           </button>
           <div className="text-center">
-            <h1 className="text-lg sm:text-2xl font-serif font-medium text-white">Your Shopping Cart</h1>
+            <h1 className="text-lg sm:text-2xl font-serif font-medium text-white">
+              {activeCartMode === "wholesale" ? "Wholesale B2B Cart" : "Your Shopping Cart"}
+            </h1>
             <p className="text-[11px] sm:text-xs text-[#e5a93c] uppercase tracking-wider font-medium">
-              {activeCartMode === "wholesale" ? "B2B Wholesale Portal" : "Retail Store Channel"}
+              {activeCartMode === "wholesale" ? "B2B Wholesale Portal (Min. ₹3,000)" : "Retail Store Channel"}
             </p>
           </div>
           <button
@@ -296,81 +298,6 @@ export default function CartScreen({
             Clear Cart
           </button>
         </div>
-
-        {/* Separate Cart Switcher Tabs */}
-        <div className="w-full max-w-md mx-auto flex items-center justify-center p-1 bg-[#0e0e0e] border border-[#222222] rounded-2xl mb-6 gap-1">
-          <button
-            type="button"
-            onClick={() => setActiveCartMode("retail")}
-            className={`flex-1 py-2 px-3 rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer ${
-              activeCartMode === "retail"
-                ? "bg-[#e5a93c] text-black shadow-md font-bold"
-                : "text-[#8e8e93] hover:text-white"
-            }`}
-          >
-            <span>Retail Cart</span>
-            {retailCount > 0 && (
-              <span
-                className={`px-2 py-0.5 rounded-full text-[10px] ${
-                  activeCartMode === "retail"
-                    ? "bg-black/20 text-black font-bold"
-                    : "bg-[#222] text-[#e5a93c]"
-                }`}
-              >
-                {retailCount}
-              </span>
-            )}
-          </button>
-
-          <button
-            type="button"
-            onClick={() => setActiveCartMode("wholesale")}
-            className={`flex-1 py-2 px-3 rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 transition-all cursor-pointer ${
-              activeCartMode === "wholesale"
-                ? "bg-[#e5a93c] text-black shadow-md font-bold"
-                : "text-[#8e8e93] hover:text-white"
-            }`}
-          >
-            <span>Wholesale Cart</span>
-            {wholesaleCount > 0 && (
-              <span
-                className={`px-2 py-0.5 rounded-full text-[10px] ${
-                  activeCartMode === "wholesale"
-                    ? "bg-black/20 text-black font-bold"
-                    : "bg-[#222] text-[#e5a93c]"
-                }`}
-              >
-                {wholesaleCount}
-              </span>
-            )}
-          </button>
-        </div>
-
-        {/* Cross-cart informative notice */}
-        {activeCartMode === "retail" && wholesaleCount > 0 && (
-          <div className="max-w-2xl mx-auto mb-4 px-4 py-2.5 rounded-xl bg-[#14120a] border border-[#3d2e13] flex items-center justify-between text-xs sm:text-sm text-[#d1d5db]">
-            <span>You have {wholesaleCount} item(s) in your Wholesale Cart.</span>
-            <button
-              type="button"
-              onClick={() => setActiveCartMode("wholesale")}
-              className="text-[#e5a93c] font-semibold hover:underline cursor-pointer ml-2"
-            >
-              Switch to Wholesale Cart →
-            </button>
-          </div>
-        )}
-        {activeCartMode === "wholesale" && retailCount > 0 && (
-          <div className="max-w-2xl mx-auto mb-4 px-4 py-2.5 rounded-xl bg-[#14120a] border border-[#3d2e13] flex items-center justify-between text-xs sm:text-sm text-[#d1d5db]">
-            <span>You have {retailCount} item(s) in your Retail Cart.</span>
-            <button
-              type="button"
-              onClick={() => setActiveCartMode("retail")}
-              className="text-[#e5a93c] font-semibold hover:underline cursor-pointer ml-2"
-            >
-              Switch to Retail Cart →
-            </button>
-          </div>
-        )}
 
         {/* Order Success Banner */}
         {orderSuccess && (

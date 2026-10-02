@@ -164,6 +164,23 @@ export default function ProductDetailsScreen({
         .finally(() => setLoading(false));
     }
 
+    // Ensure allProducts is populated
+    if (initialAllProducts && initialAllProducts.length > 0) {
+      setAllProducts(initialAllProducts);
+    } else {
+      fetch("/api/products")
+        .then((r) => r.json())
+        .then((d) => {
+          if (d.success && Array.isArray(d.products)) {
+            setAllProducts(d.products);
+            try {
+              localStorage.setItem("fc_cached_products", JSON.stringify(d.products));
+            } catch {}
+          }
+        })
+        .catch(console.error);
+    }
+
     // Fetch categories if empty
     if (initialCategories && initialCategories.length > 0) {
       setCategories(initialCategories);
@@ -179,9 +196,9 @@ export default function ProductDetailsScreen({
     // Sync cart & wishlist from localStorage
     setCartCount(getCartCount(storeMode));
     setWishlist(getWishlistItems(storeMode));
-  }, [initialProduct, initialCategories, storeMode]);
+  }, [initialProduct, initialAllProducts, initialCategories, storeMode]);
 
-  // Wishlist handler
+  // Wishlist handler for current product
   const handleToggleWishlist = () => {
     if (!product) return;
     onToggleWishlist?.(product.id);
@@ -195,7 +212,7 @@ export default function ProductDetailsScreen({
     setTimeout(() => setNotification(null), 2500);
   };
 
-  // Add to cart handler
+  // Add to cart handler for current product
   const handleAddToCart = () => {
     if (!product) return;
     if (storeMode === "wholesale" && !isWholesaleLoggedIn) {
@@ -215,7 +232,37 @@ export default function ProductDetailsScreen({
     setTimeout(() => setNotification(null), 3000);
   };
 
-  // Select related product
+  // Quick Add to cart for recommended product
+  const handleAddToCartForRelated = (p: Product, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    if (storeMode === "wholesale" && !isWholesaleLoggedIn) {
+      if (onOpenWholesaleLogin) onOpenWholesaleLogin();
+      return;
+    }
+
+    const { items, effectivePrice } = addToCartByMode(p, storeMode, 1);
+    setCartCount(items.reduce((s, i) => s + i.quantity, 0));
+    onAddToCart?.({ ...p, price: effectivePrice }, 1);
+
+    const noticeText =
+      storeMode === "wholesale"
+        ? `Added ${p.name} to Wholesale Cart! (₹${effectivePrice})`
+        : `Added ${p.name} to Retail Cart! (₹${effectivePrice})`;
+    setNotification(noticeText);
+    setTimeout(() => setNotification(null), 2500);
+  };
+
+  // Toggle wishlist for recommended product
+  const handleToggleWishlistForRelated = (pId: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    onToggleWishlist?.(pId);
+    const { items, isAdded } = toggleWishlistByMode(storeMode, pId);
+    setWishlist(items);
+    setNotification(isAdded ? "Added to Wishlist" : "Removed from Wishlist");
+    setTimeout(() => setNotification(null), 2000);
+  };
+
+  // Select related product and scroll smoothly to top
   const handleSelectRelated = (p: Product) => {
     setProduct(p);
     try {
@@ -227,6 +274,8 @@ export default function ProductDetailsScreen({
       onSelectProduct(p);
     } else {
       router.push(`/product?id=${p.id}`);
+    }
+    if (typeof window !== "undefined") {
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
@@ -262,7 +311,19 @@ export default function ProductDetailsScreen({
   }
 
   const isWishlist = wishlist.includes(product.id);
-  const otherProducts = allProducts.filter((p) => p.id !== product.id).slice(0, 2);
+
+  // Recommendations: prioritize same category, then other items, up to 8 products
+  const otherProducts = React.useMemo(() => {
+    if (!product) return [];
+    const available = allProducts.filter((p) => p.id !== product.id);
+    const sameCat = available.filter(
+      (p) => p.category && product.category && p.category.toLowerCase() === product.category.toLowerCase()
+    );
+    const diffCat = available.filter(
+      (p) => !p.category || !product.category || p.category.toLowerCase() !== product.category.toLowerCase()
+    );
+    return [...sameCat, ...diffCat].slice(0, 8);
+  }, [allProducts, product]);
 
   return (
     <div className="relative min-h-screen w-full bg-[#050505] text-white flex flex-col items-center justify-start pb-28 select-none">
@@ -527,57 +588,152 @@ export default function ProductDetailsScreen({
 
         {/* You May Also Like Section (Responsive Grid) */}
         {otherProducts.length > 0 && (
-          <section className="pt-6 border-t border-[#181818]">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-white text-xl sm:text-2xl font-serif font-medium tracking-tight">
-                You May Also Like
-              </h3>
+          <section className="pt-8 pb-4 border-t border-[#1a1a1a]">
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-5 gap-2">
+              <div>
+                <div className="flex items-center gap-1.5 text-xs text-[#e5a93c] uppercase font-semibold tracking-wider mb-1">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Curated For You</span>
+                </div>
+                <h3 className="text-white text-xl sm:text-2xl font-serif font-medium tracking-tight">
+                  You May Also Like
+                </h3>
+              </div>
               <button
                 type="button"
-                onClick={navShop}
-                className="text-[#e5a93c] text-sm font-medium hover:text-[#f5c767] transition-colors cursor-pointer"
+                onClick={() => {
+                  if (onSelectCategory && product?.category) {
+                    onSelectCategory(product.category);
+                  }
+                  navShop();
+                }}
+                className="text-[#e5a93c] text-xs sm:text-sm font-medium hover:text-[#f5c767] transition-colors flex items-center gap-1 self-start sm:self-auto cursor-pointer"
               >
-                View Catalogue →
+                <span>View More in {product?.category || "Catalogue"}</span>
+                <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-5 gap-3.5 sm:gap-4 md:gap-6">
-              {otherProducts.map((p) => (
-                <div
-                  key={p.id}
-                  onClick={() => handleSelectRelated(p)}
-                  className="bg-[#0d0d0d] border border-[#202020] rounded-[18px] overflow-hidden p-3 flex flex-col justify-between cursor-pointer group hover:border-[#383838] transition-all"
-                >
-                  <div className="relative w-full aspect-[1.18] rounded-xl overflow-hidden mb-2 bg-[#141414]">
-                    <Image
-                      src={p.image}
-                      alt={p.name}
-                      fill
-                      sizes="(max-width: 640px) 50vw, 220px"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = "/images/products/moon-necklace.jpg";
-                      }}
-                      className="object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                  </div>
-                  <div>
-                    <h4 className="text-white text-sm font-medium truncate mb-0.5">
-                      {p.name}
-                    </h4>
-                    <p className="text-[#8e8e93] text-xs truncate mb-2">
-                      {p.subtitle || p.category}
-                    </p>
-                    <div className="flex items-center justify-between">
-                      <span className="text-[#e5a93c] text-base font-semibold">
-                        ₹{p.price}
-                      </span>
-                      <span className="text-xs text-[#8e8e93] group-hover:text-white transition-colors">
-                        View →
-                      </span>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-4 gap-3.5 sm:gap-4 md:gap-6">
+              {otherProducts.map((p) => {
+                const isItemInWishlist = wishlist.includes(p.id);
+                const displayPrice =
+                  storeMode === "wholesale"
+                    ? p.wholesalePrice ?? p.price
+                    : p.retailPrice ?? p.price;
+
+                return (
+                  <div
+                    key={p.id}
+                    onClick={() => handleSelectRelated(p)}
+                    className="bg-[#0d0d0d] border border-[#202020] rounded-[18px] overflow-hidden flex flex-col justify-between transition-all duration-300 hover:border-[#383838] cursor-pointer group shadow-sm"
+                  >
+                    {/* Image & Wishlist Button */}
+                    <div className="relative w-full aspect-[1.18] bg-[#141414] overflow-hidden">
+                      <Image
+                        src={p.image}
+                        alt={p.name}
+                        fill
+                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 250px"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = "/images/products/moon-necklace.jpg";
+                        }}
+                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+
+                      {/* Same Category Badge */}
+                      {p.category && product?.category && p.category.toLowerCase() === product.category.toLowerCase() && (
+                        <div className="absolute top-2 left-2 px-2 py-0.5 rounded-md bg-black/75 backdrop-blur-sm border border-[#e5a93c]/40 text-[#f5c767] text-[10px] font-semibold tracking-wide">
+                          {p.category}
+                        </div>
+                      )}
+
+                      {/* Wishlist Button */}
+                      <button
+                        type="button"
+                        onClick={(e) => handleToggleWishlistForRelated(p.id, e)}
+                        className="absolute top-2 right-2 w-7 h-7 rounded-full bg-black/60 backdrop-blur-sm flex items-center justify-center text-[#e5a93c] hover:scale-110 active:scale-95 transition-all z-10"
+                        title={isItemInWishlist ? "Remove from Wishlist" : "Add to Wishlist"}
+                      >
+                        <Heart
+                          className={`w-3.5 h-3.5 ${
+                            isItemInWishlist
+                              ? "fill-[#e5a93c] text-[#e5a93c]"
+                              : "text-[#e5a93c]"
+                          }`}
+                        />
+                      </button>
+                    </div>
+
+                    {/* Content */}
+                    <div className="p-3 sm:p-3.5 flex flex-col flex-1 justify-between">
+                      <div>
+                        {/* Rating */}
+                        <div className="flex items-center gap-1 mb-1">
+                          <div className="flex items-center text-[#e5a93c]">
+                            {[...Array(5)].map((_, i) => (
+                              <Star
+                                key={i}
+                                className={`w-3 h-3 ${
+                                  i < Math.floor(p.rating || 5)
+                                    ? "fill-[#e5a93c] text-[#e5a93c]"
+                                    : "text-[#555555]"
+                                }`}
+                              />
+                            ))}
+                          </div>
+                          <span className="text-[#8e8e93] text-[11px]">
+                            ({p.reviewsCount || 0})
+                          </span>
+                        </div>
+
+                        {/* Title */}
+                        <h4 className="text-white text-[14px] font-medium leading-snug tracking-tight mb-0.5 line-clamp-1 group-hover:text-[#e5a93c] transition-colors">
+                          {p.name}
+                        </h4>
+
+                        {/* Subtitle */}
+                        <p className="text-[#8e8e93] text-[11.5px] mb-2 font-normal line-clamp-1">
+                          {p.subtitle || p.category}
+                        </p>
+                      </div>
+
+                      {/* Price & Add to Cart */}
+                      <div className="flex items-center justify-between pt-1 border-t border-[#181818]/60">
+                        {storeMode === "wholesale" && !isWholesaleLoggedIn ? (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (onOpenWholesaleLogin) onOpenWholesaleLogin();
+                            }}
+                            className="px-2 py-1 rounded-lg bg-[#1a140a] border border-[#e5a93c]/50 text-[#e5a93c] text-[11px] font-medium hover:bg-[#e5a93c] hover:text-black transition-all flex items-center gap-1 cursor-pointer"
+                          >
+                            <Lock className="w-3 h-3" />
+                            <span>Login for Price</span>
+                          </button>
+                        ) : (
+                          <div className="flex flex-col">
+                            <span className="text-[#e5a93c] text-[15px] sm:text-[16px] font-semibold leading-tight">
+                              ₹{displayPrice}
+                            </span>
+                            {storeMode === "wholesale" && (
+                              <span className="text-[9px] text-[#8e8e93]">Wholesale</span>
+                            )}
+                          </div>
+                        )}
+                        <button
+                          type="button"
+                          onClick={(e) => handleAddToCartForRelated(p, e)}
+                          className="px-2.5 py-1 rounded-full bg-[#1c160c] border border-[#e5a93c] text-[#e5a93c] hover:bg-[#e5a93c] hover:text-black transition-all text-xs font-medium cursor-pointer"
+                        >
+                          Add
+                        </button>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </section>
         )}

@@ -231,7 +231,7 @@ export default function AccountScreen({
 
   const retailOrders = orders.filter((o) => (o.orderType || "retail") === "retail");
   const wholesaleOrders = orders.filter((o) => o.orderType === "wholesale");
-  const displayedOrders = orderChannelTab === "wholesale" ? wholesaleOrders : retailOrders;
+  const displayedOrders = storeMode === "wholesale" ? wholesaleOrders : retailOrders;
 
   const handleToggleWishlist = (productId: string) => {
     onToggleWishlist?.(productId);
@@ -364,10 +364,19 @@ export default function AccountScreen({
             </div>
           </div>
 
-          {/* B2B User Badge */}
+          {/* Dynamic User Badge based on storeMode */}
           <div className="flex items-center gap-1.5 px-3 py-1 rounded-full border border-[#e5a93c]/50 bg-[#171207] text-[#e5a93c] text-[12px] font-medium shadow-sm">
-            <Crown className="w-3.5 h-3.5 fill-[#e5a93c]" />
-            <span>B2B User</span>
+            {storeMode === "wholesale" ? (
+              <>
+                <Crown className="w-3.5 h-3.5 fill-[#e5a93c]" />
+                <span>B2B Wholesale Partner</span>
+              </>
+            ) : (
+              <>
+                <User className="w-3.5 h-3.5 text-[#e5a93c]" />
+                <span>Retail Customer</span>
+              </>
+            )}
           </div>
         </div>
 
@@ -449,7 +458,9 @@ export default function AccountScreen({
                 i
               </div>
               <p className="text-[#c2a373] text-[12px] leading-relaxed">
-                Your phone number is locked as your permanent B2B account ID. Other details can be updated below.
+                {storeMode === "wholesale"
+                  ? "Your phone number is locked as your permanent B2B account ID. Other details can be updated below."
+                  : "Your verified customer profile. Update your contact and shipping information below."}
               </p>
             </div>
 
@@ -552,10 +563,12 @@ export default function AccountScreen({
                 </div>
                 <div>
                   <h4 className="text-white text-[16px] font-serif font-medium leading-tight">
-                    My Orders
+                    {storeMode === "wholesale" ? "Wholesale Orders" : "My Orders"}
                   </h4>
                   <p className="text-[#8e8e93] text-[12px] pt-0.5">
-                    {retailOrders.length} Retail · {wholesaleOrders.length} Wholesale
+                    {storeMode === "wholesale"
+                      ? `${wholesaleOrders.length} B2B Wholesale Order${wholesaleOrders.length === 1 ? "" : "s"}`
+                      : `${retailOrders.length} Order${retailOrders.length === 1 ? "" : "s"}`}
                   </p>
                 </div>
               </div>
@@ -565,51 +578,6 @@ export default function AccountScreen({
                 className="px-3 py-1.5 rounded-full bg-[#1c160c] border border-[#e5a93c]/50 text-[#e5a93c] text-xs font-medium hover:bg-[#e5a93c] hover:text-black transition-all cursor-pointer"
               >
                 Shop More
-              </button>
-            </div>
-
-            {/* Wholesale vs Retail Order Filter Tabs */}
-            <div className="grid grid-cols-2 gap-2 p-1.5 bg-[#0d0d0d] border border-[#222222] rounded-xl">
-              <button
-                type="button"
-                onClick={() => setOrderChannelTab("retail")}
-                className={`py-2 px-3 text-xs font-medium rounded-lg transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                  orderChannelTab === "retail"
-                    ? "bg-[#e5a93c] text-black font-semibold shadow-sm"
-                    : "text-[#a0a0a0] hover:text-white"
-                }`}
-              >
-                <span>Retail Orders</span>
-                <span
-                  className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
-                    orderChannelTab === "retail"
-                      ? "bg-black/20 text-black"
-                      : "bg-[#1c1c1c] text-[#8e8e93]"
-                  }`}
-                >
-                  {retailOrders.length}
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setOrderChannelTab("wholesale")}
-                className={`py-2 px-3 text-xs font-medium rounded-lg transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                  orderChannelTab === "wholesale"
-                    ? "bg-[#e5a93c] text-black font-semibold shadow-sm"
-                    : "text-[#a0a0a0] hover:text-white"
-                }`}
-              >
-                <span>Wholesale Orders</span>
-                <span
-                  className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
-                    orderChannelTab === "wholesale"
-                      ? "bg-black/20 text-black"
-                      : "bg-[#1c1c1c] text-[#8e8e93]"
-                  }`}
-                >
-                  {wholesaleOrders.length}
-                </span>
               </button>
             </div>
 

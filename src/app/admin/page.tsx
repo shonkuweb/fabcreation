@@ -581,6 +581,25 @@ export default function AdminPage() {
     }
   };
 
+  // Delete Retail User
+  const handleDeleteRetailUser = async (userId: string, userName: string) => {
+    if (!confirm(`Are you sure you want to delete customer "${userName}"?`)) return;
+
+    try {
+      const res = await fetch(`/api/retail-users?id=${userId}`, { method: "DELETE" });
+      const data = await res.json();
+      if (data.success) {
+        showNotification(`Customer "${userName}" deleted`);
+        setRetailUsers((prev) => prev.filter((u) => u.id !== userId));
+        fetchData();
+      } else {
+        alert(data.message || "Failed to delete customer");
+      }
+    } catch {
+      alert("Failed to delete customer");
+    }
+  };
+
   // Total Revenue Calculation
   const totalRevenue = orders.reduce((sum, o) => sum + o.total, 0);
 
@@ -1479,9 +1498,20 @@ export default function AdminPage() {
                                 <span>+91 {u.mobile}</span>
                               </p>
                             )}
-                            <p className="text-[11px] text-[#666] pt-1">
-                              Registered: {new Date(u.createdAt).toLocaleDateString()}
-                            </p>
+                            <div className="pt-2 border-t border-[#1c1c1c] flex items-center justify-between">
+                              <p className="text-[11px] text-[#666]">
+                                Registered: {new Date(u.createdAt).toLocaleDateString()}
+                              </p>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteRetailUser(u.id, u.name)}
+                                className="text-xs text-rose-400 hover:text-rose-300 flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 transition-all border border-rose-500/20 cursor-pointer"
+                                title="Delete customer"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                <span>Delete</span>
+                              </button>
+                            </div>
                           </div>
                         </div>
                       ))}

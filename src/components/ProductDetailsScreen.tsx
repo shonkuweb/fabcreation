@@ -22,8 +22,6 @@ import {
   ChevronRight,
   Play,
   Pause,
-  Volume2,
-  VolumeX,
   Video,
   Image as ImageIcon,
   Home,
@@ -103,7 +101,6 @@ export default function ProductDetailsScreen({
   // 1:1 Media Showcase (Image & 5s Video Slider)
   const [activeMediaIndex, setActiveMediaIndex] = useState<0 | 1>(0);
   const [isPlayingVideo, setIsPlayingVideo] = useState(true);
-  const [isMuted, setIsMuted] = useState(true);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const touchStartXRef = useRef<number | null>(null);
 
@@ -113,10 +110,12 @@ export default function ProductDetailsScreen({
     setIsPlayingVideo(true);
   }, [product?.id]);
 
-  // Autoplay/pause video when active slide toggles
+  // Autoplay/pause video when active slide toggles (guarantee completely silent playback)
   useEffect(() => {
     if (activeMediaIndex === 1 && videoRef.current) {
       videoRef.current.currentTime = 0;
+      videoRef.current.muted = true;
+      videoRef.current.volume = 0;
       videoRef.current.play().catch(() => {});
       setIsPlayingVideo(true);
     } else if (activeMediaIndex === 0 && videoRef.current) {
@@ -126,6 +125,8 @@ export default function ProductDetailsScreen({
 
   const toggleVideoPlay = () => {
     if (!videoRef.current) return;
+    videoRef.current.muted = true;
+    videoRef.current.volume = 0;
     if (videoRef.current.paused) {
       videoRef.current.play().catch(() => {});
       setIsPlayingVideo(true);
@@ -491,7 +492,7 @@ export default function ProductDetailsScreen({
                       src={product.video}
                       poster={product.image}
                       autoPlay
-                      muted={isMuted}
+                      muted
                       loop
                       playsInline
                       className="w-full h-full object-cover cursor-pointer"
@@ -510,20 +511,9 @@ export default function ProductDetailsScreen({
                       </div>
                     )}
 
-                    {/* Audio & Status Control Pill */}
-                    <div className="absolute bottom-12 right-3 z-20 flex items-center gap-1.5 bg-black/70 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/10 text-white text-[11px] shadow-md">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setIsMuted(!isMuted);
-                        }}
-                        className="text-[#e5a93c] hover:text-white transition-colors cursor-pointer"
-                        title={isMuted ? "Unmute video" : "Mute video"}
-                      >
-                        {isMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
-                      </button>
-                      <span className="text-[10px] text-[#aaa]">· 5s Loop</span>
+                    {/* Silent 5s Loop indicator badge */}
+                    <div className="absolute bottom-12 right-3 z-20 flex items-center bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/10 text-[#aaa] text-[10px] shadow-md pointer-events-none">
+                      <span>5s Loop</span>
                     </div>
                   </div>
                 )}

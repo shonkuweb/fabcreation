@@ -121,12 +121,31 @@ export default function AdminPage() {
     setTimeout(() => setNotification(null), 3500);
   };
 
+  const switchTab = (tab: "overview" | "products" | "categories" | "orders" | "requests" | "settings") => {
+    setActiveTab(tab);
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.searchParams.set("tab", tab);
+      window.history.replaceState(null, "", url.toString());
+    }
+  };
+
   // Check login on load
   useEffect(() => {
     const savedAuth = sessionStorage.getItem("fc_admin_auth");
     if (savedAuth === "true") {
       setIsAuthenticated(true);
       fetchData();
+    }
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get("tab") || window.location.hash.replace("#", "");
+      if (
+        tabParam &&
+        ["overview", "products", "categories", "orders", "requests", "settings"].includes(tabParam)
+      ) {
+        setActiveTab(tabParam as any);
+      }
     }
   }, []);
 
@@ -147,6 +166,16 @@ export default function AdminPage() {
         setIsAuthenticated(true);
         sessionStorage.setItem("fc_admin_auth", "true");
         fetchData();
+        if (typeof window !== "undefined") {
+          const params = new URLSearchParams(window.location.search);
+          const tabParam = params.get("tab") || window.location.hash.replace("#", "");
+          if (
+            tabParam &&
+            ["overview", "products", "categories", "orders", "requests", "settings"].includes(tabParam)
+          ) {
+            setActiveTab(tabParam as any);
+          }
+        }
       } else {
         setAuthError("Incorrect password. Please try again.");
       }
@@ -823,7 +852,22 @@ export default function AdminPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <button
+            type="button"
+            onClick={() => switchTab("settings")}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all cursor-pointer ${
+              activeTab === "settings"
+                ? "bg-[#1f1606] border-[#e5a93c] text-[#f5c767] shadow-sm shadow-[#e5a93c]/20 ring-1 ring-[#e5a93c]/30"
+                : "bg-[#111111] border-[#2a2a2a] hover:border-[#e5a93c] text-[#d4af37] hover:text-[#f5c767]"
+            }`}
+            title="Edit Hero Banner, About Us story, and Offer announcements"
+          >
+            <Sliders className="w-3.5 h-3.5 text-[#e5a93c]" />
+            <span className="hidden xs:inline sm:inline">Store Settings</span>
+            <span className="xs:hidden sm:hidden">Settings</span>
+          </button>
+
           <a
             href="/home"
             target="_blank"
@@ -847,19 +891,24 @@ export default function AdminPage() {
       {/* Main Content Layout */}
       <div className="max-w-6xl mx-auto px-4 sm:px-8 py-6">
         {/* Navigation Tabs */}
-        <div className="flex items-center gap-2 border-b border-[#1c1c1c] pb-3 mb-6 overflow-x-auto">
+        <div className="flex flex-wrap items-center gap-2 border-b border-[#1c1c1c] pb-3 mb-6">
           {[
             { id: "products", label: "Products", icon: <Package className="w-4 h-4" /> },
             { id: "categories", label: "Categories", icon: <Layers className="w-4 h-4" /> },
             { id: "orders", label: "Orders", icon: <ShoppingBag className="w-4 h-4" /> },
+            {
+              id: "settings",
+              label: "Store Settings",
+              badge: "Hero • Offers • About",
+              icon: <Sliders className="w-4 h-4" />,
+            },
             { id: "requests", label: "Account Requests", icon: <Users className="w-4 h-4" /> },
-            { id: "settings", label: "Settings", icon: <Sliders className="w-4 h-4" /> },
             { id: "overview", label: "Overview", icon: <TrendingUp className="w-4 h-4" /> },
           ].map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[13px] font-medium transition-all cursor-pointer whitespace-nowrap ${
+              onClick={() => switchTab(tab.id as any)}
+              className={`flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl text-[13px] font-medium transition-all cursor-pointer whitespace-nowrap ${
                 activeTab === tab.id
                   ? "bg-[#171207] border border-[#e5a93c] text-[#e5a93c] shadow-sm"
                   : "bg-[#0f0f0f] border border-[#222222] text-[#8e8e93] hover:text-white"
@@ -875,6 +924,11 @@ export default function AdminPage() {
               {tab.id === "orders" && (
                 <span className="text-[11px] px-1.5 py-0.2 rounded-full bg-[#222] text-[#aaa]">
                   {orders.length}
+                </span>
+              )}
+              {tab.id === "settings" && (
+                <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-[#261907] border border-[#e5a93c]/50 text-[#f5c767]">
+                  Hero • Offers • About
                 </span>
               )}
               {tab.id === "requests" && (
@@ -899,6 +953,31 @@ export default function AdminPage() {
         {/* ============================================================= */}
         {activeTab === "products" && (
           <div className="space-y-4">
+            {/* Quick Banner to Storefront Settings */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-[#171207] via-[#0f0f0f] to-[#171207] border border-[#3d2c12] shadow-md">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-[#241a08] border border-[#e5a93c]/40 flex items-center justify-center text-[#e5a93c] shrink-0">
+                  <Sliders className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-[#f5c767]">
+                    Storefront Customizer Available
+                  </p>
+                  <p className="text-[11px] text-[#999]">
+                    Change your Hero Banner image &amp; text, About Us modal content, and Navbar offer announcements.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => switchTab("settings")}
+                className="px-3.5 py-1.5 rounded-xl bg-[#e5a93c] hover:bg-[#f5c767] text-[#111] text-xs font-bold transition-all cursor-pointer shrink-0 self-start sm:self-auto flex items-center gap-1.5 shadow-sm"
+              >
+                <span>Open Store Settings</span>
+                <span>→</span>
+              </button>
+            </div>
+
             {/* Header with Search and Add Product Button */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
               <div className="relative flex-1 max-w-sm">
@@ -1469,9 +1548,10 @@ export default function AdminPage() {
             <div className="p-5 rounded-[20px] bg-[#0d0d0d] border border-[#222] space-y-3">
               <h4 className="text-white text-sm font-semibold">Quick Guide</h4>
               <p className="text-xs text-[#a0a0a0] leading-relaxed">
-                • <strong>Products</strong>: Add new jewellery items or edit prices and stock. Uploaded photos are pushed directly to your Cloudflare R2 bucket (`chf-media`).<br />
+                • <strong>Products</strong>: Add new jewellery items or edit prices and stock. Uploaded photos are pushed directly to your Cloudflare R2 bucket.<br />
                 • <strong>Categories</strong>: Create new sections (e.g. Rings, Bracelets) that immediately appear in the store's category pop-up.<br />
                 • <strong>Orders</strong>: View incoming buyer orders with phone numbers and mark them as Confirmed, Dispatched, or Delivered.<br />
+                • <strong>Store Settings</strong>: Change Hero Banner image &amp; title, edit the About Us story and modal, and update Navbar announcement offer tags.<br />
                 • <strong>Account Requests</strong>: Review wholesale buyer applications with shop name, contact email, and Instagram profile. Approve to grant instant wholesale pricing access.
               </p>
             </div>

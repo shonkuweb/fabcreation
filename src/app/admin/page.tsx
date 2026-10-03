@@ -958,84 +958,147 @@ export default function AdminPage() {
       )}
 
       {/* Top Navbar */}
-      <header className="sticky top-0 z-40 bg-[#080808]/95 backdrop-blur-md border-b border-[#1f1f1f] px-4 sm:px-8 py-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5 sm:gap-3">
-            {/* Mobile Hamburger Menu Button */}
-            <button
-              type="button"
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="md:hidden p-2 rounded-xl bg-[#141414] border border-[#2a2a2a] text-[#e5a93c] hover:bg-[#1f170b] transition-all cursor-pointer shadow-sm active:scale-95"
-              aria-label="Toggle navigation menu"
-            >
-              {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </button>
+      <header className="sticky top-0 z-40 bg-[#080808]/95 backdrop-blur-md border-b border-[#1f1f1f] px-4 sm:px-8 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          {/* Mobile Hamburger Menu Button */}
+          <button
+            type="button"
+            onClick={() => setIsMobileMenuOpen(true)}
+            className="md:hidden p-2 rounded-xl bg-[#141414] border border-[#2a2a2a] text-[#e5a93c] hover:bg-[#1f170b] transition-all cursor-pointer shadow-sm active:scale-95"
+            aria-label="Open navigation menu"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
 
-            <div className="w-9 h-9 relative rounded-full overflow-hidden shrink-0">
-              <Image
-                src={LOGO_R2_URL}
-                alt="Fab Creations"
-                width={40}
-                height={40}
-                unoptimized
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.src = "/images/logo.png";
-                }}
-                className="object-contain w-full h-full"
-              />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-white text-[15px] font-serif font-medium leading-tight">
-                  Fab Creations Admin
-                </h2>
-                {/* Active Tab indicator badge for mobile */}
-                <span className="md:hidden text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#1c160c] border border-[#e5a93c]/50 text-[#e5a93c] capitalize">
-                  {activeTab}
-                </span>
-              </div>
-              <div className="flex items-center gap-1.5 text-[11px] text-[#22c55e]">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#22c55e] animate-pulse" />
-                <span>Store Database Synced</span>
-              </div>
-            </div>
+          <div className="w-9 h-9 relative rounded-full overflow-hidden shrink-0">
+            <Image
+              src={LOGO_R2_URL}
+              alt="Fab Creations"
+              width={40}
+              height={40}
+              unoptimized
+              onError={(e) => {
+                const target = e.target as HTMLImageElement;
+                target.src = "/images/logo.png";
+              }}
+              className="object-contain w-full h-full"
+            />
           </div>
-
-          <div className="flex items-center gap-2 sm:gap-3">
-            <a
-              href="/home"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#333333] hover:border-[#e5a93c] text-xs text-[#a0a0a0] hover:text-[#e5a93c] transition-colors"
-            >
-              <span>View Live Store</span>
-              <span>↗</span>
-            </a>
-
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#141414] border border-[#2e2e2e] hover:border-rose-800 text-xs text-rose-400 hover:text-rose-300 transition-colors cursor-pointer"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Logout</span>
-            </button>
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-white text-[15px] font-serif font-medium leading-tight">
+                Fab Creations Admin
+              </h2>
+              {/* Active Tab indicator badge for mobile */}
+              <span className="md:hidden text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#1c160c] border border-[#e5a93c]/50 text-[#e5a93c] capitalize">
+                {activeTab}
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5 text-[11px] text-[#22c55e]">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#22c55e] animate-pulse" />
+              <span>Store Database Synced</span>
+            </div>
           </div>
         </div>
 
-        {/* Mobile Navigation Drawer / Dropdown */}
-        {isMobileMenuOpen && (
-          <div className="md:hidden mt-3 pt-3 border-t border-[#1f1f1f] animate-fade-in space-y-3 pb-1">
-            <div className="flex items-center justify-between px-1">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-[#888]">
-                Admin Navigation Menu
-              </span>
-              <span className="text-[11px] text-[#e5a93c]">
-                Current Tab: <strong className="capitalize">{activeTab}</strong>
+        <div className="flex items-center gap-2 sm:gap-3">
+          <a
+            href="/home"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#333333] hover:border-[#e5a93c] text-xs text-[#a0a0a0] hover:text-[#e5a93c] transition-colors"
+          >
+            <span>View Live Store</span>
+            <span>↗</span>
+          </a>
+
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#141414] border border-[#2e2e2e] hover:border-rose-800 text-xs text-rose-400 hover:text-rose-300 transition-colors cursor-pointer"
+          >
+            <LogOut className="w-3.5 h-3.5" />
+            <span className="hidden sm:inline">Logout</span>
+          </button>
+        </div>
+      </header>
+
+      {/* Mobile Navigation Side Drawer (Slides in from Left, covers full screen on mobile) */}
+      <div
+        className={`fixed inset-0 z-50 md:hidden transition-opacity duration-300 ${
+          isMobileMenuOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        }`}
+      >
+        {/* Backdrop Overlay */}
+        <div
+          onClick={() => setIsMobileMenuOpen(false)}
+          className="absolute inset-0 bg-black/85 backdrop-blur-sm"
+        />
+
+        {/* Drawer Panel Sliding in from Left */}
+        <div
+          className={`relative w-full sm:max-w-md h-full bg-[#0a0a0a] border-r border-[#262626] flex flex-col justify-between p-5 shadow-2xl transition-transform duration-300 ease-out overflow-y-auto ${
+            isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+          }`}
+        >
+          {/* Top of Drawer */}
+          <div>
+            <div className="flex items-center justify-between pb-4 border-b border-[#1c1c1c]">
+              <div className="flex items-center gap-3">
+                {/* Close button in top-left matching hamburger position */}
+                <button
+                  type="button"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="p-2 rounded-xl bg-[#171207] border border-[#e5a93c] text-[#e5a93c] hover:bg-[#e5a93c] hover:text-black transition-all cursor-pointer shadow-md active:scale-95"
+                  aria-label="Close navigation menu"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 relative rounded-full overflow-hidden shrink-0">
+                    <Image
+                      src={LOGO_R2_URL}
+                      alt="Fab Creations"
+                      width={32}
+                      height={32}
+                      unoptimized
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = "/images/logo.png";
+                      }}
+                      className="object-contain w-full h-full"
+                    />
+                  </div>
+                  <div>
+                    <h3 className="text-white text-sm font-serif font-medium leading-tight">
+                      Fab Creations Admin
+                    </h3>
+                    <span className="text-[10px] text-[#22c55e] flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#22c55e] animate-pulse" />
+                      Synced
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="text-xs text-[#888] hover:text-white px-2.5 py-1 rounded-lg border border-[#222] bg-[#111] cursor-pointer"
+              >
+                Close ✕
+              </button>
+            </div>
+
+            {/* Current Active Tab Info Banner */}
+            <div className="my-4 px-3.5 py-2 rounded-xl bg-[#141414] border border-[#222] flex items-center justify-between text-xs">
+              <span className="text-[#888]">Current Active Tab:</span>
+              <span className="font-semibold text-[#e5a93c] capitalize px-2.5 py-0.5 rounded-full bg-[#1c160c] border border-[#e5a93c]/40">
+                {activeTab}
               </span>
             </div>
 
-            <div className="grid grid-cols-1 gap-1.5">
+            {/* Navigation Tabs List */}
+            <div className="space-y-2">
               {[
                 { id: "products", label: "Products", icon: <Package className="w-4 h-4" /> },
                 { id: "categories", label: "Categories", icon: <Layers className="w-4 h-4" /> },
@@ -1052,44 +1115,44 @@ export default function AdminPage() {
                       switchTab(tab.id as any);
                       setIsMobileMenuOpen(false);
                     }}
-                    className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer ${
+                    className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-sm font-medium transition-all cursor-pointer ${
                       isActive
-                        ? "bg-[#1f1608] border border-[#e5a93c] text-[#e5a93c] shadow-lg shadow-[#e5a93c]/15"
-                        : "bg-[#111111] border border-[#222222] text-[#9e9e9e] hover:bg-[#181818] hover:text-white"
+                        ? "bg-[#1f1608] border border-[#e5a93c] text-[#e5a93c] shadow-lg shadow-[#e5a93c]/15 scale-[1.01]"
+                        : "bg-[#111111] border border-[#222222] text-[#a0a0a0] hover:bg-[#181818] hover:text-white"
                     }`}
                   >
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3.5">
                       <div
-                        className={`p-1.5 rounded-lg ${
+                        className={`p-2 rounded-xl transition-colors ${
                           isActive
-                            ? "bg-[#e5a93c] text-black"
+                            ? "bg-[#e5a93c] text-black shadow-md"
                             : "bg-[#1c1c1c] text-[#8e8e93]"
                         }`}
                       >
                         {tab.icon}
                       </div>
-                      <span className={isActive ? "font-bold text-[#e5a93c]" : ""}>
+                      <span className={`text-[14px] ${isActive ? "font-bold text-[#e5a93c]" : ""}`}>
                         {tab.label}
                       </span>
                     </div>
 
                     <div className="flex items-center gap-2">
                       {tab.id === "products" && (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-[#1f1f1f] text-[#aaa]">
+                        <span className="text-xs px-2.5 py-0.5 rounded-full bg-[#1c1c1c] text-[#aaa]">
                           {products.length}
                         </span>
                       )}
                       {tab.id === "orders" && (
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-[#1f1f1f] text-[#aaa]">
+                        <span className="text-xs px-2.5 py-0.5 rounded-full bg-[#1c1c1c] text-[#aaa]">
                           {orders.length}
                         </span>
                       )}
                       {tab.id === "requests" && (
                         <span
-                          className={`text-xs px-2 py-0.5 rounded-full font-bold ${
+                          className={`text-xs px-2.5 py-0.5 rounded-full font-bold ${
                             accountRequests.filter((r) => r.status === "pending").length > 0
                               ? "bg-amber-500/25 border border-amber-500/50 text-amber-300 animate-pulse"
-                              : "bg-[#1f1f1f] text-[#aaa]"
+                              : "bg-[#1c1c1c] text-[#aaa]"
                           }`}
                         >
                           {accountRequests.filter((r) => r.status === "pending").length > 0
@@ -1098,7 +1161,7 @@ export default function AdminPage() {
                         </span>
                       )}
                       {isActive && (
-                        <span className="flex items-center gap-1 text-[11px] text-[#e5a93c] font-semibold bg-[#e5a93c]/15 px-2 py-0.5 rounded-full border border-[#e5a93c]/30">
+                        <span className="flex items-center gap-1 text-[11px] text-[#e5a93c] font-semibold bg-[#e5a93c]/15 px-2.5 py-0.5 rounded-full border border-[#e5a93c]/40">
                           Active
                         </span>
                       )}
@@ -1107,34 +1170,40 @@ export default function AdminPage() {
                 );
               })}
             </div>
-
-            {/* Quick Actions in Mobile Menu */}
-            <div className="pt-2 border-t border-[#1f1f1f] flex items-center gap-2">
-              <a
-                href="/home"
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => setIsMobileMenuOpen(false)}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-[#141414] border border-[#262626] text-xs text-[#a0a0a0] hover:text-[#e5a93c]"
-              >
-                <span>Live Store</span>
-                <span>↗</span>
-              </a>
-
-              <button
-                onClick={() => {
-                  setIsMobileMenuOpen(false);
-                  handleLogout();
-                }}
-                className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-red-950/20 border border-red-900/40 text-xs text-rose-400 hover:bg-red-950/40 cursor-pointer"
-              >
-                <LogOut className="w-3.5 h-3.5" />
-                <span>Logout</span>
-              </button>
-            </div>
           </div>
-        )}
-      </header>
+
+          {/* Drawer Footer Actions */}
+          <div className="pt-4 border-t border-[#1c1c1c] space-y-2 mt-6">
+            <a
+              href="/home"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="w-full flex items-center justify-between px-4 py-3 rounded-xl bg-[#141414] border border-[#282828] text-xs text-[#a0a0a0] hover:text-[#e5a93c] transition-colors"
+            >
+              <span className="flex items-center gap-2">
+                <span>🏪 View Live Storefront</span>
+              </span>
+              <span>↗</span>
+            </a>
+
+            <button
+              onClick={() => {
+                setIsMobileMenuOpen(false);
+                handleLogout();
+              }}
+              className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-red-950/20 border border-red-900/40 text-xs text-rose-400 hover:bg-red-950/40 transition-colors cursor-pointer"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Logout from Admin</span>
+            </button>
+
+            <p className="text-center text-[10px] text-[#555] pt-1">
+              Fab Creations Admin Panel
+            </p>
+          </div>
+        </div>
+      </div>
 
       {/* Main Content Layout */}
       <div className="max-w-6xl mx-auto px-4 sm:px-8 py-6">

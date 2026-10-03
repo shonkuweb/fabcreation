@@ -148,13 +148,27 @@ export default function AdminPage() {
     }
   };
 
-  // Check login on load
+  // Verify admin session with server on page load
   useEffect(() => {
-    const savedAuth = sessionStorage.getItem("fc_admin_auth");
-    if (savedAuth === "true") {
-      setIsAuthenticated(true);
-      fetchData();
-    }
+    const verifyAuth = async () => {
+      try {
+        const res = await fetch("/api/admin/auth", { cache: "no-store" });
+        const data = await res.json();
+        if (data.authenticated) {
+          setIsAuthenticated(true);
+          sessionStorage.setItem("fc_admin_auth", "true");
+          fetchData();
+        } else {
+          setIsAuthenticated(false);
+          sessionStorage.removeItem("fc_admin_auth");
+        }
+      } catch {
+        setIsAuthenticated(false);
+        sessionStorage.removeItem("fc_admin_auth");
+      }
+    };
+    verifyAuth();
+
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       const tabParam = params.get("tab") || window.location.hash.replace("#", "");

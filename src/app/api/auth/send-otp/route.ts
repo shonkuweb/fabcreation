@@ -56,7 +56,9 @@ export async function POST(req: NextRequest) {
     }
 
     const code = generateOtp(normalizedEmail);
-    console.log(`[AUTH] Generated OTP for ${normalizedEmail}: ${code}`);
+    if (process.env.NODE_ENV !== "production") {
+      console.log(`[AUTH-DEV] OTP generated for email: ${normalizedEmail.replace(/(?<=^.).(?=.*@)/g, "*")}`);
+    }
 
     // Send the email via Resend
     const result = await sendOtpEmail(normalizedEmail, code, purpose || "retail");

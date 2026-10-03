@@ -219,15 +219,17 @@ export default function AccountScreen({
 
   // Fetch real orders from API
   const fetchOrders = async () => {
+    const customerIdentifier = (userMobile || email || "").trim();
+    if (!customerIdentifier) {
+      setOrders([]);
+      return;
+    }
     setLoadingOrders(true);
     try {
-      const res = await fetch("/api/orders", { cache: "no-store" });
+      const res = await fetch(`/api/orders?customer=${encodeURIComponent(customerIdentifier)}`, { cache: "no-store" });
       const data = await res.json();
       if (data.success && Array.isArray(data.orders)) {
-        const userOrders = data.orders.filter(
-          (o: Order) => !userMobile || o.customerMobile === userMobile
-        );
-        setOrders(userOrders);
+        setOrders(data.orders);
       }
     } catch (err) {
       console.error("Failed to fetch user orders:", err);

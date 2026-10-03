@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getUserAccount, upsertUserAccount, getUserAccounts } from "@/lib/db";
+import { isAdminAuthenticated } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -13,6 +14,14 @@ export async function GET(req: Request) {
     if (mobile && type) {
       const user = getUserAccount(type, mobile);
       return NextResponse.json({ success: true, user });
+    }
+
+    // Listing all accounts requires admin authentication
+    if (!isAdminAuthenticated(req)) {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized. Admin session required." },
+        { status: 401 }
+      );
     }
 
     const users = getUserAccounts(type || undefined);

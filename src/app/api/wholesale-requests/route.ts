@@ -4,6 +4,7 @@ import {
   getWholesaleApplicationByMobile,
   createWholesaleApplication,
 } from "@/lib/db";
+import { isAdminAuthenticated } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
 
@@ -17,11 +18,24 @@ export async function GET(request: NextRequest) {
       const app = getWholesaleApplicationByMobile(mobile);
       return NextResponse.json({
         success: true,
-        request: app,
+        request: app ? {
+          id: app.id,
+          businessName: app.businessName,
+          status: app.status,
+          rejectionReason: app.rejectionReason,
+        } : null,
         isApproved: app?.status === "approved",
         isPending: app?.status === "pending",
         isRejected: app?.status === "rejected",
       });
+    }
+
+    // Listing all wholesale requests requires admin authentication
+    if (!isAdminAuthenticated(request)) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized. Admin session required." },
+        { status: 401 }
+      );
     }
 
     const requests = getWholesaleApplications(status || undefined);

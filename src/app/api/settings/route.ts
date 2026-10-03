@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSettings, updateSettings } from "@/lib/db";
+import { isAdminAuthenticated } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -27,6 +28,13 @@ export async function GET() {
 
 export async function PUT(req: Request) {
   try {
+    if (!isAdminAuthenticated(req)) {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized. Admin session required." },
+        { status: 401 }
+      );
+    }
+
     const body = await req.json();
     if (!body || typeof body !== "object") {
       return NextResponse.json(
@@ -35,10 +43,15 @@ export async function PUT(req: Request) {
       );
     }
 
-    const updated = updateSettings(body);
+    // Never allow updating adminPassword through general settings endpoint
+    const { adminPassword: _disallowed, ...safeUpdates } = body;
+
+    const updated = updateSettings(safeUpdates);
+    const { adminPassword: _pw, ...safeResponse } = updated as any;
+
     return NextResponse.json({
       success: true,
-      settings: updated,
+      settings: safeResponse,
       message: "Store settings saved successfully",
     });
   } catch (err) {

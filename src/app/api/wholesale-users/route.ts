@@ -8,6 +8,7 @@ import {
   updateWholesaleUser,
   deleteWholesaleUser,
 } from "@/lib/db";
+import { isAdminAuthenticated } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -21,12 +22,46 @@ export async function GET(req: NextRequest) {
 
     if (mobile) {
       const user = getWholesaleUserByMobile(mobile);
-      return NextResponse.json({ success: true, user });
+      return NextResponse.json({
+        success: true,
+        user: user
+          ? {
+              id: user.id,
+              name: user.name,
+              businessName: user.businessName,
+              email: user.email,
+              mobile: user.mobile,
+              status: user.status,
+              rejectionReason: user.rejectionReason,
+            }
+          : null,
+      });
     }
 
     if (email) {
       const user = getWholesaleUserByEmail(email);
-      return NextResponse.json({ success: true, user });
+      return NextResponse.json({
+        success: true,
+        user: user
+          ? {
+              id: user.id,
+              name: user.name,
+              businessName: user.businessName,
+              email: user.email,
+              mobile: user.mobile,
+              status: user.status,
+              rejectionReason: user.rejectionReason,
+            }
+          : null,
+      });
+    }
+
+    // Listing all wholesale users requires admin authentication
+    if (!isAdminAuthenticated(req)) {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized. Admin session required." },
+        { status: 401 }
+      );
     }
 
     const users = getWholesaleUsers(status || undefined);
@@ -83,7 +118,14 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      user,
+      user: {
+        id: user.id,
+        name: user.name,
+        businessName: user.businessName,
+        email: user.email,
+        mobile: user.mobile,
+        status: user.status,
+      },
       message:
         "Wholesale account created successfully! It is pending administrator review.",
     });
@@ -98,6 +140,13 @@ export async function POST(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   try {
+    if (!isAdminAuthenticated(req)) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized. Admin session required." },
+        { status: 401 }
+      );
+    }
+
     const body = await req.json();
     const { id, status, rejectionReason, ...rest } = body;
 
@@ -127,6 +176,13 @@ export async function PATCH(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
+    if (!isAdminAuthenticated(req)) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized. Admin session required." },
+        { status: 401 }
+      );
+    }
+
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
     if (!id) {

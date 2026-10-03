@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getProducts, createProduct, getCategories } from "@/lib/db";
+import { isAdminAuthenticated } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -25,6 +26,13 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
+    if (!isAdminAuthenticated(req)) {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized. Admin session required to create products." },
+        { status: 401 }
+      );
+    }
+
     const body = await req.json();
     const {
       name,

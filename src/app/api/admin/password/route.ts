@@ -1,10 +1,19 @@
 import { NextResponse } from "next/server";
 import { getAdminPassword, setAdminPassword } from "@/lib/db";
+import { verifyPassword, hashPassword } from "@/lib/crypto";
+import { isAdminAuthenticated, createAdminSessionToken } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
 
 export async function PUT(req: Request) {
   try {
+    if (!isAdminAuthenticated(req)) {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized. Admin session required." },
+        { status: 401 }
+      );
+    }
+
     const { currentPassword, newPassword, confirmPassword } = await req.json();
 
     if (!currentPassword || !newPassword || !confirmPassword) {
@@ -15,7 +24,7 @@ export async function PUT(req: Request) {
     }
 
     const currentActual = getAdminPassword();
-    if (currentPassword !== currentActual) {
+    if (!verifyPassword(currentPassword, currentActual)) {
       return NextResponse.json(
         { success: false, message: "Current password is incorrect" },
         { status: 400 }
@@ -36,12 +45,25 @@ export async function PUT(req: Request) {
       );
     }
 
-    setAdminPassword(newPassword.trim());
+    const hashedPassword = hashPassword(newPassword.trim());
+    setAdminPassword(hashedPassword);
 
-    return NextResponse.json({
+    // Refresh admin session cookie with newly generated token
+    const token = createAdminSessionToken();
+    const response = NextResponse.json({
       success: true,
       message: "Admin password successfully changed! Use your new password next time you log in.",
     });
+
+    response.cookies.set("admin_session", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 7,
+      sameSite: "lax",
+    });
+
+    return response;
   } catch (err) {
     console.error("PUT /api/admin/password error:", err);
     return NextResponse.json(

@@ -92,8 +92,12 @@ export function verifyOtp(email: string, inputCode: string): { success: boolean;
   const normalizedEmail = email.trim().toLowerCase();
   const cleanCode = inputCode.trim();
 
-  // Master demo code for ease of testing
-  if (cleanCode === "123456") {
+  // Master demo code strictly allowed ONLY in development when explicitly enabled
+  const isDemoOtpAllowed =
+    process.env.ALLOW_DEMO_OTP === "true" ||
+    (process.env.NODE_ENV !== "production" && !process.env.RESEND_API_KEY);
+
+  if (isDemoOtpAllowed && cleanCode === "123456") {
     otpMemoryStore.delete(normalizedEmail);
     saveOtpsToDisk();
     return { success: true };

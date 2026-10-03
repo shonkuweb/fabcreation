@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { updateOrderStatus, deleteOrder } from "@/lib/db";
+import { isAdminAuthenticated } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -9,6 +10,13 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
+    if (!isAdminAuthenticated(req)) {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized. Admin session required." },
+        { status: 401 }
+      );
+    }
+
     const { status } = await req.json();
     if (
       !["Pending", "Confirmed", "Dispatched", "Delivered"].includes(status)
@@ -38,10 +46,17 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _req: Request,
+  req: Request,
   { params }: { params: { id: string } }
 ) {
   try {
+    if (!isAdminAuthenticated(req)) {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized. Admin session required." },
+        { status: 401 }
+      );
+    }
+
     const deleted = deleteOrder(params.id);
     if (!deleted) {
       return NextResponse.json(

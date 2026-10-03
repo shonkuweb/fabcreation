@@ -1,9 +1,17 @@
 import { NextResponse } from "next/server";
 import { uploadToR2 } from "@/lib/r2";
 import sharp from "sharp";
+import { isAdminAuthenticated } from "@/lib/adminAuth";
 
 export async function POST(req: Request) {
   try {
+    if (!isAdminAuthenticated(req)) {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized. Admin session required to upload media." },
+        { status: 401 }
+      );
+    }
+
     const formData = await req.formData();
     const file = formData.get("file") as File | null;
 

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCategories, createCategory } from "@/lib/db";
+import { isAdminAuthenticated } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -26,6 +27,13 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
+    if (!isAdminAuthenticated(req)) {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized. Admin session required to create categories." },
+        { status: 401 }
+      );
+    }
+
     const body = await req.json();
     const name = body?.name;
     const image = body?.image ? String(body.image).trim() : undefined;

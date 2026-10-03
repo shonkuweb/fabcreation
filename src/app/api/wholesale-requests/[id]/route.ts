@@ -3,6 +3,7 @@ import {
   updateWholesaleApplicationStatus,
   deleteWholesaleApplication,
 } from "@/lib/db";
+import { isAdminAuthenticated } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
 
@@ -11,6 +12,13 @@ export async function PATCH(
   { params }: { params: { id: string } }
 ) {
   try {
+    if (!isAdminAuthenticated(request)) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized. Admin session required." },
+        { status: 401 }
+      );
+    }
+
     const { id } = params;
     const body = await request.json();
     const { status, reason } = body;
@@ -49,6 +57,13 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
+    if (!isAdminAuthenticated(request)) {
+      return NextResponse.json(
+        { success: false, error: "Unauthorized. Admin session required." },
+        { status: 401 }
+      );
+    }
+
     const { id } = params;
     const deleted = deleteWholesaleApplication(id);
     if (!deleted) {

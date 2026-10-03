@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getProductById, updateProduct, deleteProduct } from "@/lib/db";
+import { isAdminAuthenticated } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -30,6 +31,13 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
+    if (!isAdminAuthenticated(req)) {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized. Admin session required to update products." },
+        { status: 401 }
+      );
+    }
+
     const updates = await req.json();
     if (updates.retailPrice !== undefined) updates.retailPrice = Number(updates.retailPrice);
     if (updates.wholesalePrice !== undefined) updates.wholesalePrice = Number(updates.wholesalePrice);
@@ -53,10 +61,17 @@ export async function PUT(
 }
 
 export async function DELETE(
-  _req: Request,
+  req: Request,
   { params }: { params: { id: string } }
 ) {
   try {
+    if (!isAdminAuthenticated(req)) {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized. Admin session required to delete products." },
+        { status: 401 }
+      );
+    }
+
     const deleted = deleteProduct(params.id);
     if (!deleted) {
       return NextResponse.json(

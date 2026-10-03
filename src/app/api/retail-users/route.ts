@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getRetailUsers, getRetailUserByEmail, upsertRetailUser, deleteRetailUser } from "@/lib/db";
+import { isAdminAuthenticated } from "@/lib/adminAuth";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -12,6 +13,14 @@ export async function GET(req: NextRequest) {
     if (email) {
       const user = getRetailUserByEmail(email);
       return NextResponse.json({ success: true, user });
+    }
+
+    // Listing all retail customers requires admin authentication
+    if (!isAdminAuthenticated(req)) {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized. Admin session required." },
+        { status: 401 }
+      );
     }
 
     const users = getRetailUsers();
@@ -56,6 +65,13 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
+    if (!isAdminAuthenticated(req)) {
+      return NextResponse.json(
+        { success: false, message: "Unauthorized. Admin session required." },
+        { status: 401 }
+      );
+    }
+
     const { searchParams } = new URL(req.url);
     const id = searchParams.get("id");
     if (!id) {

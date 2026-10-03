@@ -852,22 +852,7 @@ export default function AdminPage() {
           </div>
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-3">
-          <button
-            type="button"
-            onClick={() => switchTab("settings")}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs font-semibold transition-all cursor-pointer ${
-              activeTab === "settings"
-                ? "bg-[#1f1606] border-[#e5a93c] text-[#f5c767] shadow-sm shadow-[#e5a93c]/20 ring-1 ring-[#e5a93c]/30"
-                : "bg-[#111111] border-[#2a2a2a] hover:border-[#e5a93c] text-[#d4af37] hover:text-[#f5c767]"
-            }`}
-            title="Edit Hero Banner, About Us story, and Offer announcements"
-          >
-            <Sliders className="w-3.5 h-3.5 text-[#e5a93c]" />
-            <span className="hidden xs:inline sm:inline">Store Settings</span>
-            <span className="xs:hidden sm:hidden">Settings</span>
-          </button>
-
+        <div className="flex items-center gap-3">
           <a
             href="/home"
             target="_blank"
@@ -896,19 +881,14 @@ export default function AdminPage() {
             { id: "products", label: "Products", icon: <Package className="w-4 h-4" /> },
             { id: "categories", label: "Categories", icon: <Layers className="w-4 h-4" /> },
             { id: "orders", label: "Orders", icon: <ShoppingBag className="w-4 h-4" /> },
-            {
-              id: "settings",
-              label: "Store Settings",
-              badge: "Hero • Offers • About",
-              icon: <Sliders className="w-4 h-4" />,
-            },
+            { id: "settings", label: "Settings", icon: <Sliders className="w-4 h-4" /> },
             { id: "requests", label: "Account Requests", icon: <Users className="w-4 h-4" /> },
             { id: "overview", label: "Overview", icon: <TrendingUp className="w-4 h-4" /> },
           ].map((tab) => (
             <button
               key={tab.id}
               onClick={() => switchTab(tab.id as any)}
-              className={`flex items-center gap-2 px-3.5 sm:px-4 py-2 rounded-xl text-[13px] font-medium transition-all cursor-pointer whitespace-nowrap ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-[13px] font-medium transition-all cursor-pointer whitespace-nowrap ${
                 activeTab === tab.id
                   ? "bg-[#171207] border border-[#e5a93c] text-[#e5a93c] shadow-sm"
                   : "bg-[#0f0f0f] border border-[#222222] text-[#8e8e93] hover:text-white"
@@ -924,11 +904,6 @@ export default function AdminPage() {
               {tab.id === "orders" && (
                 <span className="text-[11px] px-1.5 py-0.2 rounded-full bg-[#222] text-[#aaa]">
                   {orders.length}
-                </span>
-              )}
-              {tab.id === "settings" && (
-                <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-[#261907] border border-[#e5a93c]/50 text-[#f5c767]">
-                  Hero • Offers • About
                 </span>
               )}
               {tab.id === "requests" && (
@@ -953,31 +928,6 @@ export default function AdminPage() {
         {/* ============================================================= */}
         {activeTab === "products" && (
           <div className="space-y-4">
-            {/* Quick Banner to Storefront Settings */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 sm:p-4 rounded-2xl bg-gradient-to-r from-[#171207] via-[#0f0f0f] to-[#171207] border border-[#3d2c12] shadow-md">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-[#241a08] border border-[#e5a93c]/40 flex items-center justify-center text-[#e5a93c] shrink-0">
-                  <Sliders className="w-4 h-4" />
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-[#f5c767]">
-                    Storefront Customizer Available
-                  </p>
-                  <p className="text-[11px] text-[#999]">
-                    Change your Hero Banner image &amp; text, About Us modal content, and Navbar offer announcements.
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => switchTab("settings")}
-                className="px-3.5 py-1.5 rounded-xl bg-[#e5a93c] hover:bg-[#f5c767] text-[#111] text-xs font-bold transition-all cursor-pointer shrink-0 self-start sm:self-auto flex items-center gap-1.5 shadow-sm"
-              >
-                <span>Open Store Settings</span>
-                <span>→</span>
-              </button>
-            </div>
-
             {/* Header with Search and Add Product Button */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
               <div className="relative flex-1 max-w-sm">
@@ -1903,32 +1853,24 @@ export default function AdminPage() {
         )}
 
         {/* ============================================================= */}
-        {/* TAB 6: STOREFRONT SETTINGS (ABOUT US, HERO, OFFER TAGS)       */}
+        {/* TAB 4: SETTINGS (HERO BANNER, ABOUT US, OFFER TAGS)           */}
         {/* ============================================================= */}
         {activeTab === "settings" && (
-          <div className="space-y-6 animate-fade-in pb-12">
-            {/* Top Header & Save Bar */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-[22px] bg-gradient-to-r from-[#120e06] via-[#0d0d0d] to-[#120e06] border border-[#3d2c12] shadow-xl">
+          <div className="space-y-6 max-w-4xl pb-12">
+            {/* Header with Save Button */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[#1f1f1f]">
               <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="px-2.5 py-0.5 rounded-full bg-[#1e1507] border border-[#e5a93c]/50 text-[#e5a93c] text-[10.5px] font-bold tracking-wider uppercase">
-                    Storefront Customizer
-                  </span>
-                  <span className="text-xs text-[#8e8e93]">• Live Sync</span>
-                </div>
-                <h3 className="text-white text-lg sm:text-xl font-serif font-medium">
-                  Website Settings & Content
-                </h3>
-                <p className="text-xs text-[#a0a0a0]">
-                  Edit your About Us story, Hero banner, and Navbar announcements across mobile and desktop.
+                <h3 className="text-white text-lg font-serif font-medium">Store Settings</h3>
+                <p className="text-xs text-[#8e8e93]">
+                  Change offer text above the navbar, hero banner image &amp; text, and About Us content.
                 </p>
               </div>
 
-              <div className="flex items-center gap-2.5 shrink-0">
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setIsAboutUsPreviewOpen(true)}
-                  className="px-3.5 py-2.5 rounded-xl bg-[#181818] hover:bg-[#222] border border-[#333] text-xs font-semibold text-[#f5c767] flex items-center gap-1.5 transition-all cursor-pointer shadow-sm"
+                  className="px-3.5 py-2 rounded-xl bg-[#141414] hover:bg-[#1f1f1f] border border-[#2a2a2a] text-xs font-medium text-[#ccc] hover:text-white flex items-center gap-1.5 transition-colors cursor-pointer"
                 >
                   <Eye className="w-3.5 h-3.5" />
                   <span>Preview About Us</span>
@@ -1938,520 +1880,7 @@ export default function AdminPage() {
                   type="button"
                   onClick={() => handleSaveSettings()}
                   disabled={isSavingSettings}
-                  className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#e5a93c] to-[#f5c767] hover:brightness-105 active:scale-95 text-[#111] text-xs font-bold flex items-center gap-2 transition-all cursor-pointer shadow-lg disabled:opacity-75"
-                >
-                  {isSavingSettings ? (
-                    <>
-                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                      <span>Saving Changes...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Save className="w-3.5 h-3.5" />
-                      <span>Save All Changes</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-
-            {/* Hidden File Input for Hero Banner */}
-            <input
-              ref={heroFileInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleHeroImageUpload}
-            />
-
-            {/* Section 1: Top Announcement Bar / Offer Tags */}
-            <div className="p-5 sm:p-6 rounded-[22px] bg-[#0d0d0d] border border-[#222222] shadow-lg space-y-4">
-              <div className="flex items-center justify-between border-b border-[#1c1c1c] pb-3">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-[#181207] border border-[#e5a93c]/40 flex items-center justify-center text-[#e5a93c]">
-                    <Megaphone className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h4 className="text-white text-sm font-semibold">
-                      Navbar Offer Tag Announcements
-                    </h4>
-                    <p className="text-[11.5px] text-[#8e8e93]">
-                      The prominent top announcement ticker displayed across both mobile & desktop navigation.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Live Preview Box */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-[#8e8e93] font-medium text-[11px] uppercase tracking-wider">
-                    Live Navbar Preview
-                  </span>
-                  <div className="flex items-center gap-1 bg-[#141414] p-1 rounded-lg border border-[#262626]">
-                    <button
-                      type="button"
-                      onClick={() => setSettingsPreviewMode("retail")}
-                      className={`px-2.5 py-0.5 rounded text-[11px] font-semibold transition-all ${
-                        settingsPreviewMode === "retail"
-                          ? "bg-[#e5a93c] text-black"
-                          : "text-[#888] hover:text-white"
-                      }`}
-                    >
-                      Retail Store
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setSettingsPreviewMode("wholesale")}
-                      className={`px-2.5 py-0.5 rounded text-[11px] font-semibold transition-all ${
-                        settingsPreviewMode === "wholesale"
-                          ? "bg-[#e5a93c] text-black"
-                          : "text-[#888] hover:text-white"
-                      }`}
-                    >
-                      B2B Wholesale
-                    </button>
-                  </div>
-                </div>
-
-                <div className="w-full py-2 px-4 rounded-xl bg-gradient-to-r from-[#0a0804] via-[#161006] to-[#0a0804] border border-[#33250e] text-center shadow-inner">
-                  <p className="flex items-center gap-1.5 justify-center text-[#e5a93c] text-xs font-medium tracking-wide">
-                    <span className="text-[#f5c767]">★</span>
-                    <span className="text-[#f5c767]">
-                      {settingsPreviewMode === "wholesale"
-                        ? settings.navbarWholesaleOffer || "B2B Wholesale Portal Active • Minimum Order: ₹3,000 across cart"
-                        : settings.navbarRetailOffer || "New customers enjoy 15% off on their first order • Code: FAB15"}
-                    </span>
-                    <span className="text-[#f5c767]">★</span>
-                  </p>
-                </div>
-              </div>
-
-              {/* Form Inputs Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-white flex items-center justify-between">
-                    <span>Retail Store Announcement Tag</span>
-                    <span className="text-[10px] text-[#e5a93c] font-semibold">Standard Store</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={settings.navbarRetailOffer}
-                    onChange={(e) =>
-                      setSettings((prev) => ({ ...prev, navbarRetailOffer: e.target.value }))
-                    }
-                    placeholder="New customers enjoy 15% off on their first order • Code: FAB15"
-                    className="w-full h-10 rounded-xl bg-[#141414] border border-[#262626] px-3.5 text-xs text-white placeholder-[#555] outline-none focus:border-[#e5a93c] transition-colors"
-                  />
-                  <p className="text-[11px] text-[#666]">
-                    Shown to all retail customers (discount codes, free shipping offers).
-                  </p>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-white flex items-center justify-between">
-                    <span>B2B Wholesale Announcement Tag</span>
-                    <span className="text-[10px] text-[#e5a93c] font-semibold">B2B Portal</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={settings.navbarWholesaleOffer}
-                    onChange={(e) =>
-                      setSettings((prev) => ({ ...prev, navbarWholesaleOffer: e.target.value }))
-                    }
-                    placeholder="B2B Wholesale Portal Active • Minimum Order: ₹3,000 across cart"
-                    className="w-full h-10 rounded-xl bg-[#141414] border border-[#262626] px-3.5 text-xs text-white placeholder-[#555] outline-none focus:border-[#e5a93c] transition-colors"
-                  />
-                  <p className="text-[11px] text-[#666]">
-                    Shown when wholesale partners view the store (order thresholds, B2B perks).
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Section 2: Hero Banner Image & Showcase */}
-            <div className="p-5 sm:p-6 rounded-[22px] bg-[#0d0d0d] border border-[#222222] shadow-lg space-y-5">
-              <div className="flex items-center justify-between border-b border-[#1c1c1c] pb-3">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-[#181207] border border-[#e5a93c]/40 flex items-center justify-center text-[#e5a93c]">
-                    <ImageIcon className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h4 className="text-white text-sm font-semibold">
-                      Hero Banner Image & Typography
-                    </h4>
-                    <p className="text-[11.5px] text-[#8e8e93]">
-                      The hero showcase at the top of the Home and Shop screens.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Live Banner Preview */}
-              <div className="space-y-1.5">
-                <span className="text-[#8e8e93] font-medium text-[11px] uppercase tracking-wider">
-                  Live Hero Showcase Preview
-                </span>
-                <div className="relative w-full h-[190px] sm:h-[260px] rounded-[20px] overflow-hidden border border-[#2b2b2b] shadow-2xl">
-                  {settings.heroBannerImage ? (
-                    <Image
-                      src={settings.heroBannerImage}
-                      alt="Hero Banner Preview"
-                      fill
-                      unoptimized
-                      className="object-cover object-right sm:object-center"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-[#181818] flex items-center justify-center text-xs text-[#666]">
-                      No hero image set
-                    </div>
-                  )}
-
-                  {/* Gradient Overlay */}
-                  <div
-                    className="absolute inset-0 bg-gradient-to-r from-black/95 via-black/75 to-transparent"
-                    style={{ width: "85%" }}
-                  />
-
-                  {/* Content Overlay */}
-                  <div className="absolute inset-0 p-4 sm:p-6 md:p-8 flex flex-col justify-between z-10">
-                    <div className="space-y-1 max-w-[260px] sm:max-w-sm">
-                      <p className="text-[#e5a93c] text-[10px] sm:text-[11px] font-semibold tracking-[0.2em] uppercase">
-                        {settings.heroSubtitle || "TIMELESS JEWELRY"}
-                      </p>
-                      <h3 className="text-white text-[19px] sm:text-[24px] font-serif font-normal leading-tight whitespace-pre-line">
-                        {settings.heroTitle || "Designed\nfor Every You"}
-                      </h3>
-                      <p className="text-[#a8a8a8] text-[9px] sm:text-[10px] tracking-[0.14em] uppercase pt-0.5">
-                        {settings.heroTagline || "ANTI TARNISH | PREMIUM QUALITY"}
-                      </p>
-                    </div>
-
-                    <div>
-                      <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full border border-[#e5a93c] bg-black/40 text-[#e5a93c] text-[10px] font-semibold tracking-wide">
-                        <span>{settings.heroButtonText || "SHOP NOW"}</span>
-                        <span>→</span>
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Upload to Cloudflare R2 Box */}
-              <div className="space-y-2">
-                <label className="text-xs font-medium text-white">
-                  Hero Banner Image File (Cloudflare R2 Bucket)
-                </label>
-                <div
-                  onDragOver={(e) => {
-                    e.preventDefault();
-                    setIsDraggingHero(true);
-                  }}
-                  onDragLeave={() => setIsDraggingHero(false)}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    setIsDraggingHero(false);
-                    const files = e.dataTransfer.files;
-                    if (files && files.length > 0) {
-                      processHeroImageFile(files[0]);
-                    }
-                  }}
-                  onClick={() => heroFileInputRef.current?.click()}
-                  className={`w-full p-5 rounded-2xl border-2 border-dashed flex flex-col items-center justify-center gap-2 cursor-pointer transition-all ${
-                    isDraggingHero
-                      ? "border-[#e5a93c] bg-[#1a1408]"
-                      : "border-[#2c2c2c] hover:border-[#e5a93c]/60 bg-[#121212]/50 hover:bg-[#141414]"
-                  }`}
-                >
-                  <div className="w-10 h-10 rounded-full bg-[#1c180f] border border-[#e5a93c]/30 flex items-center justify-center text-[#e5a93c]">
-                    {isUploadingHero ? (
-                      <RefreshCw className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Upload className="w-4 h-4" />
-                    )}
-                  </div>
-                  <div className="text-center">
-                    <p className="text-xs font-semibold text-white">
-                      {isUploadingHero
-                        ? "Uploading & optimizing image to Cloudflare R2..."
-                        : "Click to browse or drop new hero banner image here"}
-                    </p>
-                    <p className="text-[11px] text-[#777] mt-0.5">
-                      Supports high-resolution PNG, JPG, or WebP. Automatically hosted and CDN-cached.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Direct Image URL input + Grid of text options */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1.5 md:col-span-2">
-                  <label className="text-xs font-medium text-white flex items-center justify-between">
-                    <span>Banner Image URL / CDN Link</span>
-                    <span className="text-[10.5px] text-[#8e8e93]">Auto-updated after upload</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={settings.heroBannerImage}
-                    onChange={(e) =>
-                      setSettings((prev) => ({ ...prev, heroBannerImage: e.target.value }))
-                    }
-                    placeholder="https://pub-ce8688bc6c654bcfb99716f7c9373bcd.r2.dev/fab-creations/hero-banner.jpg"
-                    className="w-full h-10 rounded-xl bg-[#141414] border border-[#262626] px-3.5 text-xs text-white placeholder-[#555] outline-none focus:border-[#e5a93c] font-mono transition-colors"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-white">Hero Badge / Subtitle</label>
-                  <input
-                    type="text"
-                    value={settings.heroSubtitle}
-                    onChange={(e) =>
-                      setSettings((prev) => ({ ...prev, heroSubtitle: e.target.value }))
-                    }
-                    placeholder="TIMELESS JEWELRY"
-                    className="w-full h-10 rounded-xl bg-[#141414] border border-[#262626] px-3.5 text-xs text-white placeholder-[#555] outline-none focus:border-[#e5a93c] transition-colors"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-white">CTA Button Text</label>
-                  <input
-                    type="text"
-                    value={settings.heroButtonText}
-                    onChange={(e) =>
-                      setSettings((prev) => ({ ...prev, heroButtonText: e.target.value }))
-                    }
-                    placeholder="SHOP NOW"
-                    className="w-full h-10 rounded-xl bg-[#141414] border border-[#262626] px-3.5 text-xs text-white placeholder-[#555] outline-none focus:border-[#e5a93c] transition-colors"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-white">
-                    Main Banner Title (Use new lines for line breaks)
-                  </label>
-                  <textarea
-                    rows={2}
-                    value={settings.heroTitle}
-                    onChange={(e) =>
-                      setSettings((prev) => ({ ...prev, heroTitle: e.target.value }))
-                    }
-                    placeholder="Designed&#10;for Every You"
-                    className="w-full rounded-xl bg-[#141414] border border-[#262626] p-3 text-xs text-white placeholder-[#555] outline-none focus:border-[#e5a93c] transition-colors resize-none"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-white">Quality Tagline</label>
-                  <textarea
-                    rows={2}
-                    value={settings.heroTagline}
-                    onChange={(e) =>
-                      setSettings((prev) => ({ ...prev, heroTagline: e.target.value }))
-                    }
-                    placeholder="ANTI TARNISH | PREMIUM QUALITY"
-                    className="w-full rounded-xl bg-[#141414] border border-[#262626] p-3 text-xs text-white placeholder-[#555] outline-none focus:border-[#e5a93c] transition-colors resize-none"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Section 3: About Us Section / Modal Content */}
-            <div className="p-5 sm:p-6 rounded-[22px] bg-[#0d0d0d] border border-[#222222] shadow-lg space-y-4">
-              <div className="flex items-center justify-between border-b border-[#1c1c1c] pb-3">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg bg-[#181207] border border-[#e5a93c]/40 flex items-center justify-center text-[#e5a93c]">
-                    <FileText className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h4 className="text-white text-sm font-semibold">
-                      About Us Modal & Story Content
-                    </h4>
-                    <p className="text-[11.5px] text-[#8e8e93]">
-                      The brand story, background, and business philosophy shown when customers click "About Us".
-                    </p>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setIsAboutUsPreviewOpen(true)}
-                  className="px-3 py-1.5 rounded-lg bg-[#141414] border border-[#2a2a2a] hover:border-[#e5a93c] text-xs font-medium text-[#e5a93c] flex items-center gap-1.5 transition-colors cursor-pointer"
-                >
-                  <Eye className="w-3.5 h-3.5" />
-                  <span>Preview Modal</span>
-                </button>
-              </div>
-
-              <div className="space-y-4 pt-1">
-                {/* Badge & Headline */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="space-y-1.5 md:col-span-1">
-                    <label className="text-xs font-medium text-white">Badge Text</label>
-                    <input
-                      type="text"
-                      value={settings.aboutBadge}
-                      onChange={(e) =>
-                        setSettings((prev) => ({ ...prev, aboutBadge: e.target.value }))
-                      }
-                      placeholder="About Us"
-                      className="w-full h-10 rounded-xl bg-[#141414] border border-[#262626] px-3.5 text-xs text-white placeholder-[#555] outline-none focus:border-[#e5a93c] transition-colors"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5 md:col-span-2">
-                    <label className="text-xs font-medium text-white">
-                      Modal Tagline / Headline (Line 1 is white, Line 2 is highlighted in gold)
-                    </label>
-                    <textarea
-                      rows={2}
-                      value={settings.aboutHeadline}
-                      onChange={(e) =>
-                        setSettings((prev) => ({ ...prev, aboutHeadline: e.target.value }))
-                      }
-                      placeholder="Jewellery that completes the look.&#10;A collection that creates the impression."
-                      className="w-full rounded-xl bg-[#141414] border border-[#262626] p-3 text-xs text-white placeholder-[#555] outline-none focus:border-[#e5a93c] transition-colors resize-none"
-                    />
-                  </div>
-                </div>
-
-                {/* Paragraph 1 */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-white">
-                    Paragraph 1: Brand Introduction & Philosophy
-                  </label>
-                  <textarea
-                    rows={2}
-                    value={settings.aboutParagraph1}
-                    onChange={(e) =>
-                      setSettings((prev) => ({ ...prev, aboutParagraph1: e.target.value }))
-                    }
-                    placeholder="At Fab Creation, we believe jewellery is more than an accessory—it’s the detail that makes an outfit unforgettable."
-                    className="w-full rounded-xl bg-[#141414] border border-[#262626] p-3 text-xs text-white placeholder-[#555] outline-none focus:border-[#e5a93c] transition-colors"
-                  />
-                </div>
-
-                {/* Paragraph 2 */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-white">
-                    Paragraph 2: Heritage (Lucknow) & Collection Categories
-                  </label>
-                  <textarea
-                    rows={2}
-                    value={settings.aboutParagraph2}
-                    onChange={(e) =>
-                      setSettings((prev) => ({ ...prev, aboutParagraph2: e.target.value }))
-                    }
-                    placeholder="Based in Lucknow, we bring together a carefully selected range of chains, anklets, earrings, bangles, fancy kadas, necklaces, bridal jewellery and AD jewellery, serving both wholesale and retail customers."
-                    className="w-full rounded-xl bg-[#141414] border border-[#262626] p-3 text-xs text-white placeholder-[#555] outline-none focus:border-[#e5a93c] transition-colors"
-                  />
-                </div>
-
-                {/* Paragraph 3 */}
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-white">
-                    Paragraph 3: Occasions, Value & Bridal Collection
-                  </label>
-                  <textarea
-                    rows={2}
-                    value={settings.aboutParagraph3}
-                    onChange={(e) =>
-                      setSettings((prev) => ({ ...prev, aboutParagraph3: e.target.value }))
-                    }
-                    placeholder="Whether you’re looking for everyday elegance, statement pieces for a special occasion, or exquisite bridal jewellery, our collection is curated to offer style, variety and value under one roof."
-                    className="w-full rounded-xl bg-[#141414] border border-[#262626] p-3 text-xs text-white placeholder-[#555] outline-none focus:border-[#e5a93c] transition-colors"
-                  />
-                </div>
-
-                {/* Business Highlight Box */}
-                <div className="p-4 rounded-xl bg-[#120f08] border border-[#38280f] space-y-3">
-                  <div className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-[#e5a93c]" />
-                    <span className="text-xs font-semibold text-white">
-                      Special Callout Box: Digital & E-Commerce Services
-                    </span>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-[11.5px] font-medium text-[#ccc]">Box Title</label>
-                    <input
-                      type="text"
-                      value={settings.aboutHighlightTitle}
-                      onChange={(e) =>
-                        setSettings((prev) => ({ ...prev, aboutHighlightTitle: e.target.value }))
-                      }
-                      placeholder="Built for Modern Jewellery Businesses"
-                      className="w-full h-9 rounded-lg bg-[#181818] border border-[#2c2c2c] px-3 text-xs text-white outline-none focus:border-[#e5a93c]"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-[11.5px] font-medium text-[#ccc]">Box Description</label>
-                    <textarea
-                      rows={2}
-                      value={settings.aboutHighlightDesc}
-                      onChange={(e) =>
-                        setSettings((prev) => ({ ...prev, aboutHighlightDesc: e.target.value }))
-                      }
-                      placeholder="Fab Creation goes beyond jewellery. We also provide E-commerce services, helping jewellery businesses take their collections online and reach customers beyond their physical store."
-                      className="w-full rounded-lg bg-[#181818] border border-[#2c2c2c] p-2.5 text-xs text-white outline-none focus:border-[#e5a93c] resize-none"
-                    />
-                  </div>
-                </div>
-
-                {/* Footer Brand Manifesto */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-white">Footer Subtitle</label>
-                    <input
-                      type="text"
-                      value={settings.aboutFooterSubtitle}
-                      onChange={(e) =>
-                        setSettings((prev) => ({ ...prev, aboutFooterSubtitle: e.target.value }))
-                      }
-                      placeholder="Wholesale or retail. Traditional or contemporary. Jewellery or digital."
-                      className="w-full h-10 rounded-xl bg-[#141414] border border-[#262626] px-3.5 text-xs text-white outline-none focus:border-[#e5a93c]"
-                    />
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-white">
-                      Footer Gold Punchline
-                    </label>
-                    <input
-                      type="text"
-                      value={settings.aboutFooterHighlight}
-                      onChange={(e) =>
-                        setSettings((prev) => ({ ...prev, aboutFooterHighlight: e.target.value }))
-                      }
-                      placeholder="Fab Creation is where craftsmanship meets modern commerce."
-                      className="w-full h-10 rounded-xl bg-[#141414] border border-[#262626] px-3.5 text-xs text-white outline-none focus:border-[#e5a93c]"
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Bottom Floating/Sticky Save Button Bar */}
-            <div className="sticky bottom-4 z-20 flex items-center justify-between p-4 rounded-2xl bg-[#0d0d0d]/95 backdrop-blur-md border border-[#e5a93c]/50 shadow-2xl">
-              <div className="hidden sm:flex items-center gap-2 text-xs text-[#a0a0a0]">
-                <Sparkles className="w-4 h-4 text-[#e5a93c]" />
-                <span>Changes will be instantly applied across the live storefront.</span>
-              </div>
-              <div className="flex items-center gap-3 w-full sm:w-auto justify-end">
-                <button
-                  type="button"
-                  onClick={() => setIsAboutUsPreviewOpen(true)}
-                  className="px-4 py-2.5 rounded-xl bg-[#181818] hover:bg-[#222] border border-[#333] text-xs font-semibold text-white transition-all cursor-pointer"
-                >
-                  Preview Modal
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleSaveSettings()}
-                  disabled={isSavingSettings}
-                  className="flex-1 sm:flex-none px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#e5a93c] to-[#f5c767] hover:brightness-105 active:scale-95 text-[#111] text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg disabled:opacity-75"
+                  className="px-4 py-2 rounded-xl bg-[#e5a93c] hover:bg-[#f5c767] text-[#111] text-xs font-semibold flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer shadow-md disabled:opacity-50"
                 >
                   {isSavingSettings ? (
                     <>
@@ -2461,11 +1890,279 @@ export default function AdminPage() {
                   ) : (
                     <>
                       <Save className="w-3.5 h-3.5" />
-                      <span>Save All Changes</span>
+                      <span>Save Changes</span>
                     </>
                   )}
                 </button>
               </div>
+            </div>
+
+            {/* Hidden Hero Image Upload Input */}
+            <input
+              ref={heroFileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleHeroImageUpload}
+            />
+
+            {/* 1. Navbar Offer Ticker */}
+            <div className="p-5 rounded-2xl bg-[#0d0d0d] border border-[#222222] space-y-4">
+              <div className="flex items-center gap-2.5">
+                <Megaphone className="w-4 h-4 text-[#e5a93c]" />
+                <h4 className="text-white text-sm font-semibold">Offer Text Above Navbar</h4>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs text-[#aaa]">Retail Offer Text</label>
+                  <input
+                    type="text"
+                    value={settings.navbarRetailOffer}
+                    onChange={(e) =>
+                      setSettings((prev) => ({ ...prev, navbarRetailOffer: e.target.value }))
+                    }
+                    placeholder="e.g. New customers enjoy 15% off on first order • Code: FAB15"
+                    className="w-full h-10 rounded-xl bg-[#141414] border border-[#262626] px-3.5 text-xs text-white placeholder-[#555] outline-none focus:border-[#e5a93c]"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs text-[#aaa]">Wholesale Offer Text</label>
+                  <input
+                    type="text"
+                    value={settings.navbarWholesaleOffer}
+                    onChange={(e) =>
+                      setSettings((prev) => ({ ...prev, navbarWholesaleOffer: e.target.value }))
+                    }
+                    placeholder="e.g. B2B Wholesale Portal Active • Minimum Order: ₹3,000 across cart"
+                    className="w-full h-10 rounded-xl bg-[#141414] border border-[#262626] px-3.5 text-xs text-white placeholder-[#555] outline-none focus:border-[#e5a93c]"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* 2. Hero Banner */}
+            <div className="p-5 rounded-2xl bg-[#0d0d0d] border border-[#222222] space-y-4">
+              <div className="flex items-center gap-2.5">
+                <ImageIcon className="w-4 h-4 text-[#e5a93c]" />
+                <h4 className="text-white text-sm font-semibold">Hero Banner</h4>
+              </div>
+
+              {/* Banner Image Preview & Upload */}
+              <div className="flex flex-col sm:flex-row items-center gap-4 p-3.5 rounded-xl bg-[#141414] border border-[#242424]">
+                <div className="relative w-full sm:w-44 h-24 rounded-lg overflow-hidden border border-[#333] bg-[#0a0a0a] shrink-0">
+                  {settings.heroBannerImage ? (
+                    <Image
+                      src={settings.heroBannerImage}
+                      alt="Banner"
+                      fill
+                      unoptimized
+                      className="object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-[11px] text-[#666]">
+                      No image
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex-1 w-full space-y-2">
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => heroFileInputRef.current?.click()}
+                      disabled={isUploadingHero}
+                      className="px-3 py-1.5 rounded-lg bg-[#222] hover:bg-[#2c2c2c] border border-[#3a3a3a] text-xs font-medium text-white flex items-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      {isUploadingHero ? (
+                        <>
+                          <RefreshCw className="w-3.5 h-3.5 animate-spin text-[#e5a93c]" />
+                          <span>Uploading...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="w-3.5 h-3.5 text-[#e5a93c]" />
+                          <span>Upload Banner Image</span>
+                        </>
+                      )}
+                    </button>
+                    <span className="text-[11px] text-[#777]">PNG, JPG, or WebP</span>
+                  </div>
+
+                  <input
+                    type="text"
+                    value={settings.heroBannerImage}
+                    onChange={(e) =>
+                      setSettings((prev) => ({ ...prev, heroBannerImage: e.target.value }))
+                    }
+                    placeholder="Or enter image URL directly..."
+                    className="w-full h-8 rounded-lg bg-[#0e0e0e] border border-[#262626] px-3 text-xs text-[#aaa] font-mono outline-none focus:border-[#e5a93c]"
+                  />
+                </div>
+              </div>
+
+              {/* Banner Text Fields */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-xs text-[#aaa]">Banner Title</label>
+                  <input
+                    type="text"
+                    value={settings.heroTitle}
+                    onChange={(e) =>
+                      setSettings((prev) => ({ ...prev, heroTitle: e.target.value }))
+                    }
+                    placeholder="Designed for Every You"
+                    className="w-full h-10 rounded-xl bg-[#141414] border border-[#262626] px-3.5 text-xs text-white placeholder-[#555] outline-none focus:border-[#e5a93c]"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs text-[#aaa]">Subtitle / Badge</label>
+                  <input
+                    type="text"
+                    value={settings.heroSubtitle}
+                    onChange={(e) =>
+                      setSettings((prev) => ({ ...prev, heroSubtitle: e.target.value }))
+                    }
+                    placeholder="TIMELESS JEWELRY"
+                    className="w-full h-10 rounded-xl bg-[#141414] border border-[#262626] px-3.5 text-xs text-white placeholder-[#555] outline-none focus:border-[#e5a93c]"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs text-[#aaa]">Tagline</label>
+                  <input
+                    type="text"
+                    value={settings.heroTagline}
+                    onChange={(e) =>
+                      setSettings((prev) => ({ ...prev, heroTagline: e.target.value }))
+                    }
+                    placeholder="ANTI TARNISH | PREMIUM QUALITY"
+                    className="w-full h-10 rounded-xl bg-[#141414] border border-[#262626] px-3.5 text-xs text-white placeholder-[#555] outline-none focus:border-[#e5a93c]"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs text-[#aaa]">Button Text</label>
+                  <input
+                    type="text"
+                    value={settings.heroButtonText}
+                    onChange={(e) =>
+                      setSettings((prev) => ({ ...prev, heroButtonText: e.target.value }))
+                    }
+                    placeholder="SHOP NOW"
+                    className="w-full h-10 rounded-xl bg-[#141414] border border-[#262626] px-3.5 text-xs text-white placeholder-[#555] outline-none focus:border-[#e5a93c]"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* 3. About Us Story */}
+            <div className="p-5 rounded-2xl bg-[#0d0d0d] border border-[#222222] space-y-4">
+              <div className="flex items-center gap-2.5">
+                <FileText className="w-4 h-4 text-[#e5a93c]" />
+                <h4 className="text-white text-sm font-semibold">About Us Content</h4>
+              </div>
+
+              <div className="space-y-3">
+                <div className="space-y-1.5">
+                  <label className="text-xs text-[#aaa]">Headline</label>
+                  <input
+                    type="text"
+                    value={settings.aboutHeadline}
+                    onChange={(e) =>
+                      setSettings((prev) => ({ ...prev, aboutHeadline: e.target.value }))
+                    }
+                    placeholder="Jewellery that completes the look."
+                    className="w-full h-10 rounded-xl bg-[#141414] border border-[#262626] px-3.5 text-xs text-white placeholder-[#555] outline-none focus:border-[#e5a93c]"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs text-[#aaa]">Story Introduction (Paragraph 1)</label>
+                  <textarea
+                    rows={2}
+                    value={settings.aboutParagraph1}
+                    onChange={(e) =>
+                      setSettings((prev) => ({ ...prev, aboutParagraph1: e.target.value }))
+                    }
+                    className="w-full rounded-xl bg-[#141414] border border-[#262626] p-3 text-xs text-white placeholder-[#555] outline-none focus:border-[#e5a93c] resize-none"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs text-[#aaa]">Brand Background (Paragraph 2)</label>
+                  <textarea
+                    rows={2}
+                    value={settings.aboutParagraph2}
+                    onChange={(e) =>
+                      setSettings((prev) => ({ ...prev, aboutParagraph2: e.target.value }))
+                    }
+                    className="w-full rounded-xl bg-[#141414] border border-[#262626] p-3 text-xs text-white placeholder-[#555] outline-none focus:border-[#e5a93c] resize-none"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-xs text-[#aaa]">Collection Details (Paragraph 3)</label>
+                  <textarea
+                    rows={2}
+                    value={settings.aboutParagraph3}
+                    onChange={(e) =>
+                      setSettings((prev) => ({ ...prev, aboutParagraph3: e.target.value }))
+                    }
+                    className="w-full rounded-xl bg-[#141414] border border-[#262626] p-3 text-xs text-white placeholder-[#555] outline-none focus:border-[#e5a93c] resize-none"
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  <div className="space-y-1.5">
+                    <label className="text-xs text-[#aaa]">B2B Highlight Title</label>
+                    <input
+                      type="text"
+                      value={settings.aboutHighlightTitle}
+                      onChange={(e) =>
+                        setSettings((prev) => ({ ...prev, aboutHighlightTitle: e.target.value }))
+                      }
+                      className="w-full h-10 rounded-xl bg-[#141414] border border-[#262626] px-3.5 text-xs text-white placeholder-[#555] outline-none focus:border-[#e5a93c]"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="text-xs text-[#aaa]">Footer Tagline</label>
+                    <input
+                      type="text"
+                      value={settings.aboutFooterHighlight}
+                      onChange={(e) =>
+                        setSettings((prev) => ({ ...prev, aboutFooterHighlight: e.target.value }))
+                      }
+                      className="w-full h-10 rounded-xl bg-[#141414] border border-[#262626] px-3.5 text-xs text-white placeholder-[#555] outline-none focus:border-[#e5a93c]"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Save Button */}
+            <div className="flex justify-end pt-2">
+              <button
+                type="button"
+                onClick={() => handleSaveSettings()}
+                disabled={isSavingSettings}
+                className="px-6 py-2.5 rounded-xl bg-[#e5a93c] hover:bg-[#f5c767] text-[#111] text-xs font-semibold flex items-center gap-2 transition-all active:scale-95 cursor-pointer shadow-md disabled:opacity-50"
+              >
+                {isSavingSettings ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Saving Changes...</span>
+                  </>
+                ) : (
+                  <>
+                    <Save className="w-3.5 h-3.5" />
+                    <span>Save Changes</span>
+                  </>
+                )}
+              </button>
             </div>
           </div>
         )}

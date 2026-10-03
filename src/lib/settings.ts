@@ -18,6 +18,7 @@ export interface StoreSettings {
   aboutHighlightDesc: string;
   aboutFooterSubtitle: string;
   aboutFooterHighlight: string;
+  adminPassword?: string;
   updatedAt?: string;
 }
 

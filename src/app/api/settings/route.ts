@@ -6,9 +6,10 @@ export const revalidate = 0;
 
 export async function GET() {
   try {
-    const settings = getSettings();
+    const rawSettings = getSettings();
+    const { adminPassword: _pw, ...safeSettings } = rawSettings as any;
     return NextResponse.json(
-      { success: true, settings },
+      { success: true, settings: safeSettings },
       {
         headers: {
           "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",

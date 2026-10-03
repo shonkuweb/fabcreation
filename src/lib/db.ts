@@ -1036,3 +1036,12 @@ export function updateSettings(updates: Partial<StoreSettings>): StoreSettings {
   return updated;
 }
 
+export function getAdminPassword(): string {
+  const settings = getSettings();
+  return settings.adminPassword || process.env.ADMIN_PASSWORD || "admin@fab2026";
+}
+
+export function setAdminPassword(newPassword: string): void {
+  updateSettings({ adminPassword: newPassword.trim() });
+}
+

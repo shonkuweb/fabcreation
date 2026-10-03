@@ -123,7 +123,16 @@ export default function AdminPage() {
   const [isUploadingCategoryImage, setIsUploadingCategoryImage] = useState(false);
   const categoryFileInputRef = useRef<HTMLInputElement | null>(null);
   const [updatingCatId, setUpdatingCatId] = useState<string | null>(null);
-  const [isCustomCategory, setIsCustomCategory] = useState(false);
+  // Password change state
+  const [passwordChange, setPasswordChange] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const showNotification = (msg: string) => {
     setNotification(msg);
@@ -564,6 +573,47 @@ export default function AdminPage() {
     }
   };
 
+  // Change Admin Master Password
+  const handleChangeAdminPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!passwordChange.currentPassword || !passwordChange.newPassword || !passwordChange.confirmPassword) {
+      alert("Please fill in all password fields.");
+      return;
+    }
+    if (passwordChange.newPassword.length < 6) {
+      alert("New password must be at least 6 characters long.");
+      return;
+    }
+    if (passwordChange.newPassword !== passwordChange.confirmPassword) {
+      alert("New password and confirm password do not match.");
+      return;
+    }
+
+    setIsChangingPassword(true);
+    try {
+      const res = await fetch("/api/admin/password", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(passwordChange),
+      });
+      const data = await res.json();
+      if (data.success) {
+        showNotification(data.message || "Admin password changed successfully!");
+        setPasswordChange({
+          currentPassword: "",
+          newPassword: "",
+          confirmPassword: "",
+        });
+      } else {
+        alert(data.message || "Failed to update password.");
+      }
+    } catch {
+      alert("Network error updating admin password. Please try again.");
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
+
   // Save Product (Add or Edit)
   const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -653,7 +703,6 @@ export default function AdminPage() {
       occasion: p.occasion,
       featured: p.featured,
     });
-    setIsCustomCategory(!categories.some((c) => c.name.toLowerCase() === p.category?.toLowerCase()));
     setIsProductModalOpen(true);
   };
 
@@ -677,7 +726,6 @@ export default function AdminPage() {
       occasion: "Daily Wear",
       featured: true,
     });
-    setIsCustomCategory(categories.length === 0);
     setIsProductModalOpen(true);
   };
 
@@ -2483,6 +2531,125 @@ export default function AdminPage() {
               </div>
             </div>
 
+            {/* 4. Admin Panel Password & Security */}
+            <div className="p-5 rounded-2xl bg-[#0d0d0d] border border-[#222222] space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-[#1c160c] border border-[#e5a93c]/30 text-[#e5a93c]">
+                    <Lock className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-white text-sm font-semibold">Admin Panel Password & Security</h4>
+                    <p className="text-xs text-[#8e8e93]">
+                      Change the master password used to log into this admin panel.
+                    </p>
+                  </div>
+                </div>
+                <span className="text-[11px] text-[#e5a93c] px-2.5 py-0.5 rounded-full bg-[#1c160c] border border-[#e5a93c]/30 hidden sm:inline font-medium">
+                  Security Settings
+                </span>
+              </div>
+
+              <form onSubmit={handleChangeAdminPassword} className="space-y-4 pt-1">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {/* Current Password */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs text-[#aaa]">Current Password *</label>
+                    <div className="relative">
+                      <input
+                        type={showCurrentPassword ? "text" : "password"}
+                        required
+                        value={passwordChange.currentPassword}
+                        onChange={(e) =>
+                          setPasswordChange((prev) => ({ ...prev, currentPassword: e.target.value }))
+                        }
+                        placeholder="Current password"
+                        className="w-full h-10 rounded-xl bg-[#141414] border border-[#262626] px-3.5 pr-9 text-xs text-white placeholder-[#555] outline-none focus:border-[#e5a93c]"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#666] hover:text-white"
+                      >
+                        {showCurrentPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* New Password */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs text-[#aaa]">New Password (min 6 chars) *</label>
+                    <div className="relative">
+                      <input
+                        type={showNewPassword ? "text" : "password"}
+                        required
+                        value={passwordChange.newPassword}
+                        onChange={(e) =>
+                          setPasswordChange((prev) => ({ ...prev, newPassword: e.target.value }))
+                        }
+                        placeholder="New strong password"
+                        className="w-full h-10 rounded-xl bg-[#141414] border border-[#262626] px-3.5 pr-9 text-xs text-white placeholder-[#555] outline-none focus:border-[#e5a93c]"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowNewPassword(!showNewPassword)}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#666] hover:text-white"
+                      >
+                        {showNewPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Confirm Password */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs text-[#aaa]">Confirm New Password *</label>
+                    <div className="relative">
+                      <input
+                        type={showConfirmPassword ? "text" : "password"}
+                        required
+                        value={passwordChange.confirmPassword}
+                        onChange={(e) =>
+                          setPasswordChange((prev) => ({ ...prev, confirmPassword: e.target.value }))
+                        }
+                        placeholder="Re-type new password"
+                        className="w-full h-10 rounded-xl bg-[#141414] border border-[#262626] px-3.5 pr-9 text-xs text-white placeholder-[#555] outline-none focus:border-[#e5a93c]"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[#666] hover:text-white"
+                      >
+                        {showConfirmPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+                  <p className="text-[11px] text-[#777]">
+                    Once updated, you will use this new password on your next admin login.
+                  </p>
+                  <button
+                    type="submit"
+                    disabled={isChangingPassword}
+                    className="px-4 py-2 rounded-xl bg-[#1c160c] border border-[#e5a93c] text-[#e5a93c] hover:bg-[#e5a93c] hover:text-black text-xs font-semibold flex items-center justify-center gap-1.5 transition-all cursor-pointer disabled:opacity-50 shadow-sm"
+                  >
+                    {isChangingPassword ? (
+                      <>
+                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                        <span>Updating Password...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Lock className="w-3.5 h-3.5" />
+                        <span>Update Admin Password</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+
             {/* Bottom Save Button */}
             <div className="flex justify-end pt-2">
               <button
@@ -2849,33 +3016,21 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              {/* Category */}
+              {/* Category (Strict dropdown of existing categories only) */}
               <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="text-[#a0a0a0] font-medium">Category *</label>
-                  <button
-                    type="button"
-                    onClick={() => setIsCustomCategory(!isCustomCategory)}
-                    className="text-[11px] text-[#e5a93c] hover:underline cursor-pointer"
-                  >
-                    {isCustomCategory ? "Select existing" : "+ New category"}
-                  </button>
-                </div>
-                {isCustomCategory || categories.length === 0 ? (
-                  <input
-                    type="text"
-                    required
-                    value={productForm.category}
-                    onChange={(e) => setProductForm({ ...productForm, category: e.target.value })}
-                    placeholder="Type category (e.g. Chains, Rings)"
-                    className="w-full h-10 rounded-xl bg-[#141414] border border-[#262626] px-3 text-white outline-none focus:border-[#e5a93c]"
-                  />
+                <label className="block text-[#a0a0a0] mb-1 font-medium">Category *</label>
+                {categories.length === 0 ? (
+                  <div className="p-3 rounded-xl bg-amber-950/30 border border-amber-900/50 text-amber-300 text-xs">
+                    No categories found. Please add categories first in the <strong>Categories</strong> tab.
+                  </div>
                 ) : (
                   <select
+                    required
                     value={productForm.category}
                     onChange={(e) => setProductForm({ ...productForm, category: e.target.value })}
                     className="w-full h-10 rounded-xl bg-[#141414] border border-[#262626] px-3 text-white outline-none focus:border-[#e5a93c] cursor-pointer"
                   >
+                    <option value="" disabled>-- Select an Existing Category --</option>
                     {categories.map((c) => (
                       <option key={c.id} value={c.name}>
                         {c.name}
@@ -2883,6 +3038,9 @@ export default function AdminPage() {
                     ))}
                   </select>
                 )}
+                <p className="text-[10.5px] text-[#666] mt-1">
+                  Products can only be assigned to existing categories. To create a new category, use the dedicated Categories tab.
+                </p>
               </div>
 
               {/* Stock & Subtitle */}

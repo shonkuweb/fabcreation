@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getProducts, createProduct, createCategory } from "@/lib/db";
+import { getProducts, createProduct, getCategories } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -54,9 +54,8 @@ export async function POST(req: Request) {
       );
     }
 
-    const assignedCategory = category?.trim() || "Chains";
-    // Automatically ensure the category exists in the categories collection
-    createCategory(assignedCategory);
+    const categories = getCategories();
+    const assignedCategory = category?.trim() || (categories[0]?.name || "Uncategorized");
 
     const newProduct = createProduct({
       name: name.trim(),

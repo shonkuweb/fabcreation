@@ -12,6 +12,7 @@ import {
   Trash2,
   Edit2,
   X,
+  Menu,
   Upload,
   CheckCircle,
   Clock,
@@ -83,6 +84,7 @@ export default function AdminPage() {
   const [requestSearch, setRequestSearch] = useState("");
   const [loading, setLoading] = useState(false);
   const [notification, setNotification] = useState<string | null>(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Search filter
   const [searchQuery, setSearchQuery] = useState("");
@@ -956,58 +958,188 @@ export default function AdminPage() {
       )}
 
       {/* Top Navbar */}
-      <header className="sticky top-0 z-40 bg-[#080808]/95 backdrop-blur-md border-b border-[#1f1f1f] px-4 sm:px-8 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 relative rounded-full overflow-hidden">
-            <Image
-              src={LOGO_R2_URL}
-              alt="Fab Creations"
-              width={40}
-              height={40}
-              unoptimized
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.src = "/images/logo.png";
-              }}
-              className="object-contain w-full h-full"
-            />
-          </div>
-          <div>
-            <h2 className="text-white text-[15px] font-serif font-medium leading-tight">
-              Fab Creations Admin
-            </h2>
-            <div className="flex items-center gap-1.5 text-[11px] text-[#22c55e]">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#22c55e] animate-pulse" />
-              <span>Store Database Synced</span>
+      <header className="sticky top-0 z-40 bg-[#080808]/95 backdrop-blur-md border-b border-[#1f1f1f] px-4 sm:px-8 py-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            {/* Mobile Hamburger Menu Button */}
+            <button
+              type="button"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="md:hidden p-2 rounded-xl bg-[#141414] border border-[#2a2a2a] text-[#e5a93c] hover:bg-[#1f170b] transition-all cursor-pointer shadow-sm active:scale-95"
+              aria-label="Toggle navigation menu"
+            >
+              {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+
+            <div className="w-9 h-9 relative rounded-full overflow-hidden shrink-0">
+              <Image
+                src={LOGO_R2_URL}
+                alt="Fab Creations"
+                width={40}
+                height={40}
+                unoptimized
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.src = "/images/logo.png";
+                }}
+                className="object-contain w-full h-full"
+              />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-white text-[15px] font-serif font-medium leading-tight">
+                  Fab Creations Admin
+                </h2>
+                {/* Active Tab indicator badge for mobile */}
+                <span className="md:hidden text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#1c160c] border border-[#e5a93c]/50 text-[#e5a93c] capitalize">
+                  {activeTab}
+                </span>
+              </div>
+              <div className="flex items-center gap-1.5 text-[11px] text-[#22c55e]">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#22c55e] animate-pulse" />
+                <span>Store Database Synced</span>
+              </div>
             </div>
           </div>
+
+          <div className="flex items-center gap-2 sm:gap-3">
+            <a
+              href="/home"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#333333] hover:border-[#e5a93c] text-xs text-[#a0a0a0] hover:text-[#e5a93c] transition-colors"
+            >
+              <span>View Live Store</span>
+              <span>↗</span>
+            </a>
+
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#141414] border border-[#2e2e2e] hover:border-rose-800 text-xs text-rose-400 hover:text-rose-300 transition-colors cursor-pointer"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Logout</span>
+            </button>
+          </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <a
-            href="/home"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[#333333] hover:border-[#e5a93c] text-xs text-[#a0a0a0] hover:text-[#e5a93c] transition-colors"
-          >
-            <span>View Live Store</span>
-            <span>↗</span>
-          </a>
+        {/* Mobile Navigation Drawer / Dropdown */}
+        {isMobileMenuOpen && (
+          <div className="md:hidden mt-3 pt-3 border-t border-[#1f1f1f] animate-fade-in space-y-3 pb-1">
+            <div className="flex items-center justify-between px-1">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-[#888]">
+                Admin Navigation Menu
+              </span>
+              <span className="text-[11px] text-[#e5a93c]">
+                Current Tab: <strong className="capitalize">{activeTab}</strong>
+              </span>
+            </div>
 
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#141414] border border-[#2e2e2e] hover:border-rose-800 text-xs text-rose-400 hover:text-rose-300 transition-colors cursor-pointer"
-          >
-            <LogOut className="w-3.5 h-3.5" />
-            <span>Logout</span>
-          </button>
-        </div>
+            <div className="grid grid-cols-1 gap-1.5">
+              {[
+                { id: "products", label: "Products", icon: <Package className="w-4 h-4" /> },
+                { id: "categories", label: "Categories", icon: <Layers className="w-4 h-4" /> },
+                { id: "orders", label: "Orders", icon: <ShoppingBag className="w-4 h-4" /> },
+                { id: "settings", label: "Store Settings", icon: <Sliders className="w-4 h-4" /> },
+                { id: "requests", label: "Account Requests", icon: <Users className="w-4 h-4" /> },
+                { id: "overview", label: "Store Overview", icon: <TrendingUp className="w-4 h-4" /> },
+              ].map((tab) => {
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => {
+                      switchTab(tab.id as any);
+                      setIsMobileMenuOpen(false);
+                    }}
+                    className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all cursor-pointer ${
+                      isActive
+                        ? "bg-[#1f1608] border border-[#e5a93c] text-[#e5a93c] shadow-lg shadow-[#e5a93c]/15"
+                        : "bg-[#111111] border border-[#222222] text-[#9e9e9e] hover:bg-[#181818] hover:text-white"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`p-1.5 rounded-lg ${
+                          isActive
+                            ? "bg-[#e5a93c] text-black"
+                            : "bg-[#1c1c1c] text-[#8e8e93]"
+                        }`}
+                      >
+                        {tab.icon}
+                      </div>
+                      <span className={isActive ? "font-bold text-[#e5a93c]" : ""}>
+                        {tab.label}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {tab.id === "products" && (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-[#1f1f1f] text-[#aaa]">
+                          {products.length}
+                        </span>
+                      )}
+                      {tab.id === "orders" && (
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-[#1f1f1f] text-[#aaa]">
+                          {orders.length}
+                        </span>
+                      )}
+                      {tab.id === "requests" && (
+                        <span
+                          className={`text-xs px-2 py-0.5 rounded-full font-bold ${
+                            accountRequests.filter((r) => r.status === "pending").length > 0
+                              ? "bg-amber-500/25 border border-amber-500/50 text-amber-300 animate-pulse"
+                              : "bg-[#1f1f1f] text-[#aaa]"
+                          }`}
+                        >
+                          {accountRequests.filter((r) => r.status === "pending").length > 0
+                            ? `${accountRequests.filter((r) => r.status === "pending").length} new`
+                            : accountRequests.length}
+                        </span>
+                      )}
+                      {isActive && (
+                        <span className="flex items-center gap-1 text-[11px] text-[#e5a93c] font-semibold bg-[#e5a93c]/15 px-2 py-0.5 rounded-full border border-[#e5a93c]/30">
+                          Active
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Quick Actions in Mobile Menu */}
+            <div className="pt-2 border-t border-[#1f1f1f] flex items-center gap-2">
+              <a
+                href="/home"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setIsMobileMenuOpen(false)}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-[#141414] border border-[#262626] text-xs text-[#a0a0a0] hover:text-[#e5a93c]"
+              >
+                <span>Live Store</span>
+                <span>↗</span>
+              </a>
+
+              <button
+                onClick={() => {
+                  setIsMobileMenuOpen(false);
+                  handleLogout();
+                }}
+                className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-red-950/20 border border-red-900/40 text-xs text-rose-400 hover:bg-red-950/40 cursor-pointer"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span>Logout</span>
+              </button>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* Main Content Layout */}
       <div className="max-w-6xl mx-auto px-4 sm:px-8 py-6">
-        {/* Navigation Tabs */}
-        <div className="flex flex-wrap items-center gap-2 border-b border-[#1c1c1c] pb-3 mb-6">
+        {/* Navigation Tabs (Horizontal for desktop/tablet, smooth scroll on mobile) */}
+        <div className="flex overflow-x-auto scrollbar-none items-center gap-2 border-b border-[#1c1c1c] pb-3 mb-6">
           {[
             { id: "products", label: "Products", icon: <Package className="w-4 h-4" /> },
             { id: "categories", label: "Categories", icon: <Layers className="w-4 h-4" /> },

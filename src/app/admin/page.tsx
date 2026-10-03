@@ -1138,8 +1138,8 @@ export default function AdminPage() {
 
       {/* Main Content Layout */}
       <div className="max-w-6xl mx-auto px-4 sm:px-8 py-6">
-        {/* Navigation Tabs (Horizontal for desktop/tablet, smooth scroll on mobile) */}
-        <div className="flex overflow-x-auto scrollbar-none items-center gap-2 border-b border-[#1c1c1c] pb-3 mb-6">
+        {/* Navigation Tabs (Visible on desktop/tablet, hidden on mobile since hamburger menu is used) */}
+        <div className="hidden md:flex flex-wrap items-center gap-2 border-b border-[#1c1c1c] pb-3 mb-6">
           {[
             { id: "products", label: "Products", icon: <Package className="w-4 h-4" /> },
             { id: "categories", label: "Categories", icon: <Layers className="w-4 h-4" /> },

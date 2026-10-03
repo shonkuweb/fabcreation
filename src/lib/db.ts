@@ -11,6 +11,7 @@ export interface Product {
   channel?: "both" | "wholesale" | "retail";
   category: string;
   image: string;
+  video?: string;
   stock: number;
   metal: string;
   target: string;

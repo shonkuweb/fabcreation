@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -18,6 +18,14 @@ import {
   ChevronUp,
   ArrowRight,
   ArrowLeft,
+  ChevronLeft,
+  ChevronRight,
+  Play,
+  Pause,
+  Volume2,
+  VolumeX,
+  Video,
+  Image as ImageIcon,
   Home,
   ShoppingBag,
   Grid,
@@ -91,6 +99,58 @@ export default function ProductDetailsScreen({
   const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
   const [notification, setNotification] = useState<string | null>(null);
   const [loading, setLoading] = useState(!initialProduct);
+
+  // 1:1 Media Showcase (Image & 5s Video Slider)
+  const [activeMediaIndex, setActiveMediaIndex] = useState<0 | 1>(0);
+  const [isPlayingVideo, setIsPlayingVideo] = useState(true);
+  const [isMuted, setIsMuted] = useState(true);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const touchStartXRef = useRef<number | null>(null);
+
+  // Reset to photo slide when product changes
+  useEffect(() => {
+    setActiveMediaIndex(0);
+    setIsPlayingVideo(true);
+  }, [product?.id]);
+
+  // Autoplay/pause video when active slide toggles
+  useEffect(() => {
+    if (activeMediaIndex === 1 && videoRef.current) {
+      videoRef.current.currentTime = 0;
+      videoRef.current.play().catch(() => {});
+      setIsPlayingVideo(true);
+    } else if (activeMediaIndex === 0 && videoRef.current) {
+      videoRef.current.pause();
+    }
+  }, [activeMediaIndex]);
+
+  const toggleVideoPlay = () => {
+    if (!videoRef.current) return;
+    if (videoRef.current.paused) {
+      videoRef.current.play().catch(() => {});
+      setIsPlayingVideo(true);
+    } else {
+      videoRef.current.pause();
+      setIsPlayingVideo(false);
+    }
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartXRef.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartXRef.current === null) return;
+    const diff = touchStartXRef.current - e.changedTouches[0].clientX;
+    touchStartXRef.current = null;
+    if (diff > 40 && activeMediaIndex === 0 && product?.video) {
+      // Swiped left -> show video
+      setActiveMediaIndex(1);
+    } else if (diff < -40 && activeMediaIndex === 1) {
+      // Swiped right -> show image
+      setActiveMediaIndex(0);
+    }
+  };
 
   // Navigation helpers with fallbacks
   const navHome = () => (onNavigateHome ? onNavigateHome() : router.push("/home"));
@@ -397,23 +457,83 @@ export default function ProductDetailsScreen({
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8 lg:gap-12 items-start">
           {/* Left Column: Image Showcase + Trust Badges (md:col-span-6 lg:col-span-5 md:sticky md:top-6 space-y-4) */}
           <div className="md:col-span-6 lg:col-span-5 space-y-4 md:sticky md:top-6">
-            <div className="relative w-full aspect-[1.08] rounded-[24px] overflow-hidden border border-[#3a2c16] bg-[#0e0e0e] shadow-2xl">
-              <Image
-                src={product.image}
-                alt={product.name}
-                fill
-                priority
-                sizes="(max-width: 768px) 100vw, 500px"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src = "/images/products/moon-necklace.jpg";
+            {/* 1:1 Media Container (Photo + 5s Video Slider) */}
+            <div className="relative w-full aspect-square rounded-[24px] overflow-hidden border border-[#3a2c16] bg-[#0e0e0e] shadow-2xl select-none group">
+              {/* Media Slide Track */}
+              <div
+                className="w-full h-full flex transition-transform duration-500 ease-out"
+                style={{
+                  transform: product.video ? `translateX(-${activeMediaIndex * 100}%)` : "none",
                 }}
-                className="object-cover hover:scale-105 transition-transform duration-500"
-              />
+                onTouchStart={product.video ? handleTouchStart : undefined}
+                onTouchEnd={product.video ? handleTouchEnd : undefined}
+              >
+                {/* Slide 0: Primary Product Photo (1:1) */}
+                <div className="w-full h-full shrink-0 relative bg-[#0e0e0e]">
+                  <Image
+                    src={product.image}
+                    alt={product.name}
+                    fill
+                    priority
+                    sizes="(max-width: 768px) 100vw, 500px"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = "/images/products/moon-necklace.jpg";
+                    }}
+                    className="object-cover"
+                  />
+                </div>
+
+                {/* Slide 1: 5-Second Looping Video (1:1) */}
+                {product.video && (
+                  <div className="w-full h-full shrink-0 relative bg-black flex items-center justify-center">
+                    <video
+                      ref={videoRef}
+                      src={product.video}
+                      poster={product.image}
+                      autoPlay
+                      muted={isMuted}
+                      loop
+                      playsInline
+                      className="w-full h-full object-cover cursor-pointer"
+                      onClick={toggleVideoPlay}
+                    />
+
+                    {/* Play/Pause Overlay on tap */}
+                    {!isPlayingVideo && (
+                      <div
+                        onClick={toggleVideoPlay}
+                        className="absolute inset-0 bg-black/40 flex items-center justify-center cursor-pointer z-10"
+                      >
+                        <div className="w-14 h-14 rounded-full bg-black/80 border border-[#e5a93c] text-[#e5a93c] flex items-center justify-center shadow-2xl transition-transform hover:scale-110">
+                          <Play className="w-6 h-6 ml-1 fill-[#e5a93c]" />
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Audio & Status Control Pill */}
+                    <div className="absolute bottom-12 right-3 z-20 flex items-center gap-1.5 bg-black/70 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/10 text-white text-[11px] shadow-md">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setIsMuted(!isMuted);
+                        }}
+                        className="text-[#e5a93c] hover:text-white transition-colors cursor-pointer"
+                        title={isMuted ? "Unmute video" : "Mute video"}
+                      >
+                        {isMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
+                      </button>
+                      <span className="text-[10px] text-[#aaa]">· 5s Loop</span>
+                    </div>
+                  </div>
+                )}
+              </div>
 
               {/* Heart Wishlist Button */}
               <button
                 onClick={handleToggleWishlist}
-                className="absolute top-3.5 right-3.5 w-9 h-9 rounded-full bg-black/60 backdrop-blur-sm border border-neutral-800 flex items-center justify-center text-[#e5a93c] hover:scale-110 active:scale-95 transition-all cursor-pointer shadow-md"
+                className="absolute top-3.5 right-3.5 z-20 w-9 h-9 rounded-full bg-black/60 backdrop-blur-sm border border-neutral-800 flex items-center justify-center text-[#e5a93c] hover:scale-110 active:scale-95 transition-all cursor-pointer shadow-md"
+                title="Save to Wishlist"
               >
                 <Heart
                   className={`w-4 h-4 ${
@@ -421,6 +541,74 @@ export default function ProductDetailsScreen({
                   }`}
                 />
               </button>
+
+              {/* Slide Navigation Arrows (Desktop / Hover) */}
+              {product.video && (
+                <>
+                  {activeMediaIndex === 1 && (
+                    <button
+                      type="button"
+                      onClick={() => setActiveMediaIndex(0)}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-black/70 backdrop-blur-sm border border-neutral-700 text-white hover:text-[#e5a93c] hover:border-[#e5a93c] flex items-center justify-center transition-all cursor-pointer shadow-lg"
+                      title="Slide to Photo"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+                  )}
+                  {activeMediaIndex === 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setActiveMediaIndex(1)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-black/70 backdrop-blur-sm border border-neutral-700 text-white hover:text-[#e5a93c] hover:border-[#e5a93c] flex items-center justify-center transition-all cursor-pointer shadow-lg"
+                      title="Slide to 5s Video"
+                    >
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
+                  )}
+                </>
+              )}
+
+              {/* Slide Indicator Pills (Photo | Video) */}
+              {product.video && (
+                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1 bg-black/75 backdrop-blur-md p-1 rounded-full border border-neutral-800 shadow-xl">
+                  <button
+                    type="button"
+                    onClick={() => setActiveMediaIndex(0)}
+                    className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium transition-all cursor-pointer ${
+                      activeMediaIndex === 0
+                        ? "bg-[#e5a93c] text-black font-semibold shadow"
+                        : "text-[#a0a0a0] hover:text-white"
+                    }`}
+                  >
+                    <ImageIcon className="w-3 h-3" />
+                    <span>Photo</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveMediaIndex(1)}
+                    className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium transition-all cursor-pointer ${
+                      activeMediaIndex === 1
+                        ? "bg-[#e5a93c] text-black font-semibold shadow"
+                        : "text-[#a0a0a0] hover:text-white"
+                    }`}
+                  >
+                    <Video className="w-3 h-3" />
+                    <span>Video (5s)</span>
+                  </button>
+                </div>
+              )}
+
+              {/* Hint badge on Photo when video is available */}
+              {product.video && activeMediaIndex === 0 && (
+                <button
+                  type="button"
+                  onClick={() => setActiveMediaIndex(1)}
+                  className="absolute top-3.5 left-3.5 z-20 flex items-center gap-1.5 bg-black/70 backdrop-blur-md px-2.5 py-1 rounded-full border border-[#e5a93c]/40 text-[#e5a93c] text-[10.5px] font-medium hover:bg-black/90 transition-all cursor-pointer shadow-md"
+                >
+                  <Video className="w-3 h-3 animate-pulse" />
+                  <span>Slide to view video →</span>
+                </button>
+              )}
             </div>
 
             {/* Trust Badges */}

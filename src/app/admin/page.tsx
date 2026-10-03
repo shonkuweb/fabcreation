@@ -39,6 +39,8 @@ import {
   Save,
   FileText,
   RefreshCw,
+  Video,
+  Film,
 } from "lucide-react";
 import type { Product, Category, Order, WholesaleApplication, RetailUser } from "@/lib/db";
 import { type StoreSettings, defaultSettings } from "@/lib/settings";
@@ -97,6 +99,7 @@ export default function AdminPage() {
     channel: "both" as "both" | "wholesale" | "retail",
     category: "",
     image: "",
+    video: "",
     stock: "10",
     subtitle: "Anti tarnish",
     metal: "Stainless Steel",
@@ -107,6 +110,10 @@ export default function AdminPage() {
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [isDraggingImage, setIsDraggingImage] = useState(false);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const [isUploadingVideo, setIsUploadingVideo] = useState(false);
+  const [isDraggingVideo, setIsDraggingVideo] = useState(false);
+  const videoFileInputRef = useRef<HTMLInputElement | null>(null);
 
   // New Category input
   const [newCategoryName, setNewCategoryName] = useState("");
@@ -371,6 +378,128 @@ export default function AdminPage() {
     }
   };
 
+  // Helper to validate video duration and aspect ratio
+  const checkVideoDurationAndRatio = (
+    file: File
+  ): Promise<{ duration: number; isSquare: boolean; width: number; height: number }> => {
+    return new Promise((resolve, reject) => {
+      const video = document.createElement("video");
+      video.preload = "metadata";
+      video.onloadedmetadata = () => {
+        window.URL.revokeObjectURL(video.src);
+        const duration = video.duration;
+        const width = video.videoWidth;
+        const height = video.videoHeight;
+        const ratio = width / (height || 1);
+        const isSquare = Math.abs(ratio - 1) < 0.15; // roughly 1:1
+        resolve({ duration, isSquare, width, height });
+      };
+      video.onerror = () => {
+        window.URL.revokeObjectURL(video.src);
+        reject(new Error("Unable to read video file metadata."));
+      };
+      video.src = URL.createObjectURL(file);
+    });
+  };
+
+  // 1:1 Video Upload to R2 with duration & size checks
+  const processVideoFile = async (file: File) => {
+    if (!file) return;
+    if (!file.type.startsWith("video/") && !/\.(mp4|webm|mov|m4v)$/i.test(file.name)) {
+      alert("Please upload a video file (.mp4, .webm, or .mov)");
+      return;
+    }
+
+    if (file.size > 15 * 1024 * 1024) {
+      alert(`Video file is too large (${(file.size / (1024 * 1024)).toFixed(1)}MB). Please keep it under 15MB.`);
+      return;
+    }
+
+    try {
+      const { duration, isSquare, width, height } = await checkVideoDurationAndRatio(file);
+      if (duration > 6.0) {
+        alert(
+          `Video is ${Math.round(duration)} seconds long. Product videos must be 5 seconds or less for instant looping. Please trim your video to 5s or less.`
+        );
+        return;
+      }
+      if (!isSquare) {
+        showNotification(
+          `Note: Video is ${width}x${height}. A 1:1 square ratio is recommended for best presentation.`
+        );
+      }
+    } catch (metaErr) {
+      console.warn("Could not check metadata client-side, proceeding with upload:", metaErr);
+    }
+
+    setIsUploadingVideo(true);
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.success) {
+        setProductForm((prev) => ({ ...prev, video: data.url }));
+        showNotification("1:1 Video uploaded & linked to product!");
+      } else {
+        alert("Video upload failed: " + data.message);
+      }
+    } catch {
+      alert("Error uploading video to Cloudflare R2");
+    } finally {
+      setIsUploadingVideo(false);
+      setIsDraggingVideo(false);
+    }
+  };
+
+  const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      processVideoFile(file);
+    }
+  };
+
+  const handleVideoDragEnter = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingVideo(true);
+  };
+
+  const handleVideoDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = "copy";
+    if (!isDraggingVideo) setIsDraggingVideo(true);
+  };
+
+  const handleVideoDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+    setIsDraggingVideo(false);
+  };
+
+  const handleVideoDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDraggingVideo(false);
+
+    const files = e.dataTransfer.files;
+    if (files && files.length > 0) {
+      processVideoFile(files[0]);
+    }
+  };
+
+  const handleRemoveVideo = (e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setProductForm((prev) => ({ ...prev, video: "" }));
+    showNotification("Product video removed.");
+  };
+
   // Hero Banner Image Upload to R2
   const processHeroImageFile = async (file: File) => {
     if (!file) return;
@@ -514,6 +643,7 @@ export default function AdminPage() {
       channel: p.channel || "both",
       category: p.category,
       image: p.image,
+      video: p.video || "",
       stock: String(p.stock),
       subtitle: p.subtitle,
       metal: p.metal,
@@ -537,6 +667,7 @@ export default function AdminPage() {
       channel: "both",
       category: categories[0]?.name || "",
       image: "",
+      video: "",
       stock: "10",
       subtitle: "Anti tarnish",
       metal: "Stainless Steel",
@@ -978,9 +1109,24 @@ export default function AdminPage() {
                               unoptimized
                               className="object-cover"
                             />
+                            {p.video && (
+                              <div
+                                title="Has 1:1 Video"
+                                className="absolute bottom-0 right-0 bg-[#e5a93c] text-black p-0.5 rounded-tl-[4px] shadow-sm flex items-center justify-center"
+                              >
+                                <Video className="w-2.5 h-2.5" />
+                              </div>
+                            )}
                           </div>
                           <div>
-                            <p className="text-white font-medium text-[13px]">{p.name}</p>
+                            <div className="flex items-center gap-1.5">
+                              <p className="text-white font-medium text-[13px]">{p.name}</p>
+                              {p.video && (
+                                <span className="px-1.5 py-0.5 rounded bg-[#e5a93c]/15 text-[#e5a93c] border border-[#e5a93c]/30 text-[9px] font-semibold">
+                                  Video
+                                </span>
+                              )}
+                            </div>
                             <p className="text-[#8e8e93] text-[11px]">{p.subtitle}</p>
                           </div>
                         </td>
@@ -2289,6 +2435,126 @@ export default function AdminPage() {
                   >
                     {isUploadingImage ? "Uploading..." : productForm.image ? "Change Image" : "Select Image"}
                   </button>
+                </div>
+              </div>
+
+              {/* 1:1 Product Video (Optional, max 5s loop) */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-[#a0a0a0] font-medium flex items-center gap-1.5">
+                    <Video className="w-3.5 h-3.5 text-[#e5a93c]" />
+                    <span>1:1 Product Video (Optional · Max 5s Loop)</span>
+                  </label>
+                  <span className="text-[10px] text-[#888]">Plays when customer slides to video</span>
+                </div>
+
+                <input
+                  type="file"
+                  ref={videoFileInputRef}
+                  onChange={handleVideoUpload}
+                  accept="video/mp4,video/webm,video/quicktime,video/*"
+                  className="hidden"
+                />
+
+                <div
+                  onDragEnter={handleVideoDragEnter}
+                  onDragOver={handleVideoDragOver}
+                  onDragLeave={handleVideoDragLeave}
+                  onDrop={handleVideoDrop}
+                  onClick={() => videoFileInputRef.current?.click()}
+                  className={`relative w-full rounded-2xl p-4 border-2 border-dashed transition-all duration-200 cursor-pointer flex flex-col sm:flex-row items-center gap-4 select-none ${
+                    isDraggingVideo
+                      ? "border-[#e5a93c] bg-[#1c160c] shadow-[0_0_20px_rgba(229,169,60,0.35)] scale-[1.01]"
+                      : productForm.video
+                      ? "border-[#333] bg-[#0f0f0f] hover:border-[#e5a93c]/50 hover:bg-[#15120c]"
+                      : "border-[#2c2c2c] bg-[#111111] hover:border-[#e5a93c]/50 hover:bg-[#15120c]"
+                  }`}
+                >
+                  {/* Video Preview / Upload Icon Thumbnail */}
+                  <div className="w-20 h-20 rounded-xl bg-[#161616] border border-[#262626] overflow-hidden relative flex items-center justify-center shrink-0 shadow-inner">
+                    {productForm.video ? (
+                      <video
+                        src={productForm.video}
+                        autoPlay
+                        muted
+                        loop
+                        playsInline
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <Film className={`w-7 h-7 transition-colors ${isDraggingVideo ? "text-[#e5a93c] animate-bounce" : "text-[#555]"}`} />
+                    )}
+                    {isUploadingVideo && (
+                      <div className="absolute inset-0 bg-black/80 flex items-center justify-center">
+                        <div className="w-5 h-5 border-2 border-[#e5a93c]/30 border-t-[#e5a93c] rounded-full animate-spin" />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Drop zone helper text and status */}
+                  <div className="flex-1 text-center sm:text-left space-y-1">
+                    {isUploadingVideo ? (
+                      <div>
+                        <p className="text-[#e5a93c] font-semibold text-xs animate-pulse">
+                          Uploading 1:1 video to Cloudflare R2...
+                        </p>
+                        <p className="text-[#777] text-[11px]">Validating 5s duration & hosting on CDN</p>
+                      </div>
+                    ) : isDraggingVideo ? (
+                      <div>
+                        <p className="text-[#e5a93c] font-semibold text-xs">
+                          Drop square video here!
+                        </p>
+                        <p className="text-[#aaa] text-[11px]">Release to upload 5s loop</p>
+                      </div>
+                    ) : productForm.video ? (
+                      <div>
+                        <div className="flex items-center gap-2 justify-center sm:justify-start">
+                          <span className="text-emerald-400 font-semibold text-xs flex items-center gap-1">
+                            ✓ 1:1 Video Ready (5s loop)
+                          </span>
+                          <span className="text-[10px] text-[#777]">· Drag new video to replace</span>
+                        </div>
+                        <p className="text-[#888] text-[11px] truncate max-w-[260px]">
+                          {productForm.video}
+                        </p>
+                      </div>
+                    ) : (
+                      <div>
+                        <p className="text-white font-medium text-xs">
+                          <span className="text-[#e5a93c] font-semibold">Drag & drop</span> 5s video, or <span className="text-[#e5a93c] underline">browse files</span>
+                        </p>
+                        <p className="text-[#777] text-[11px]">
+                          Square 1:1 MP4 / WebM · Max 5 seconds · &lt; 15MB
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex items-center gap-2 shrink-0">
+                    {productForm.video && !isUploadingVideo && (
+                      <button
+                        type="button"
+                        onClick={handleRemoveVideo}
+                        className="px-2.5 py-2 rounded-xl bg-red-950/40 border border-red-800/60 text-red-400 hover:bg-red-900/60 text-xs font-semibold transition-all cursor-pointer shadow-sm"
+                        title="Remove video"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      disabled={isUploadingVideo}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        videoFileInputRef.current?.click();
+                      }}
+                      className="px-3.5 py-2 rounded-xl bg-[#1c160c] border border-[#e5a93c] text-[#e5a93c] hover:bg-[#e5a93c] hover:text-black font-semibold text-xs transition-all cursor-pointer shrink-0 disabled:opacity-50 shadow-sm"
+                    >
+                      {isUploadingVideo ? "Uploading..." : productForm.video ? "Change Video" : "Select Video"}
+                    </button>
+                  </div>
                 </div>
               </div>
 

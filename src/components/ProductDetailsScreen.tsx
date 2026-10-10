@@ -28,10 +28,12 @@ import {
   ShoppingBag,
   Grid,
   Lock,
+  FileText,
 } from "lucide-react";
 import Footer from "@/components/Footer";
 import CategoriesModal from "@/components/CategoriesModal";
 import { Product, Category } from "@/lib/db";
+import { type StoreSettings, defaultSettings } from "@/lib/settings";
 import {
   addToCartByMode,
   toggleWishlistByMode,
@@ -46,6 +48,7 @@ interface ProductDetailsScreenProps {
   cartCount?: number;
   wishlist?: string[];
   storeMode?: "retail" | "wholesale";
+  settings?: Partial<StoreSettings>;
   onSwitchStoreMode?: (mode: "retail" | "wholesale") => void;
   isWholesaleLoggedIn?: boolean;
   isRetailLoggedIn?: boolean;
@@ -70,6 +73,7 @@ export default function ProductDetailsScreen({
   cartCount: initialCartCount = 0,
   wishlist: initialWishlist = [],
   storeMode = "retail",
+  settings: propSettings,
   onSwitchStoreMode,
   isWholesaleLoggedIn = false,
   isRetailLoggedIn = false,
@@ -98,8 +102,58 @@ export default function ProductDetailsScreen({
   const [notification, setNotification] = useState<string | null>(null);
   const [loading, setLoading] = useState(!initialProduct);
 
-  // 1:1 Media Showcase (Image & 5s Video Slider)
-  const [activeMediaIndex, setActiveMediaIndex] = useState<0 | 1>(0);
+  const [storeSettings, setStoreSettings] = useState<StoreSettings>({
+    ...defaultSettings,
+    ...(propSettings || {}),
+  });
+
+  useEffect(() => {
+    if (propSettings) {
+      setStoreSettings((prev) => ({ ...prev, ...propSettings }));
+    }
+  }, [propSettings]);
+
+  useEffect(() => {
+    fetch("/api/settings", { cache: "no-store" })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.settings) {
+          setStoreSettings((prev) => ({ ...prev, ...data.settings }));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  // Media items: up to 4 photos + optional 5s video
+  const mediaList = React.useMemo(() => {
+    const list: Array<{ type: "image" | "video"; url: string; label: string }> = [];
+    const images: string[] = Array.isArray(product?.images) && product.images.length > 0
+      ? product.images.filter(Boolean)
+      : product?.image
+      ? [product.image]
+      : ["/images/products/moon-necklace.jpg"];
+
+    images.slice(0, 4).forEach((img, idx) => {
+      list.push({
+        type: "image",
+        url: img,
+        label: idx === 0 ? "Cover Photo" : `Photo ${idx + 1}`,
+      });
+    });
+
+    if (product?.video) {
+      list.push({
+        type: "video",
+        url: product.video,
+        label: "5s Video",
+      });
+    }
+
+    return list;
+  }, [product?.images, product?.image, product?.video]);
+
+  // Active slide index across photos and video
+  const [activeMediaIndex, setActiveMediaIndex] = useState<number>(0);
   const [isPlayingVideo, setIsPlayingVideo] = useState(true);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const touchStartXRef = useRef<number | null>(null);
@@ -110,18 +164,19 @@ export default function ProductDetailsScreen({
     setIsPlayingVideo(true);
   }, [product?.id]);
 
-  // Autoplay/pause video when active slide toggles (guarantee completely silent playback)
+  // Autoplay/pause video when active slide toggles
   useEffect(() => {
-    if (activeMediaIndex === 1 && videoRef.current) {
+    const currentMedia = mediaList[activeMediaIndex];
+    if (currentMedia?.type === "video" && videoRef.current) {
       videoRef.current.currentTime = 0;
       videoRef.current.muted = true;
       videoRef.current.volume = 0;
       videoRef.current.play().catch(() => {});
       setIsPlayingVideo(true);
-    } else if (activeMediaIndex === 0 && videoRef.current) {
+    } else if (videoRef.current) {
       videoRef.current.pause();
     }
-  }, [activeMediaIndex]);
+  }, [activeMediaIndex, mediaList]);
 
   const toggleVideoPlay = () => {
     if (!videoRef.current) return;
@@ -144,12 +199,12 @@ export default function ProductDetailsScreen({
     if (touchStartXRef.current === null) return;
     const diff = touchStartXRef.current - e.changedTouches[0].clientX;
     touchStartXRef.current = null;
-    if (diff > 40 && activeMediaIndex === 0 && product?.video) {
-      // Swiped left -> show video
-      setActiveMediaIndex(1);
-    } else if (diff < -40 && activeMediaIndex === 1) {
-      // Swiped right -> show image
-      setActiveMediaIndex(0);
+    if (diff > 40 && activeMediaIndex < mediaList.length - 1) {
+      // Swiped left -> next slide
+      setActiveMediaIndex((prev) => prev + 1);
+    } else if (diff < -40 && activeMediaIndex > 0) {
+      // Swiped right -> previous slide
+      setActiveMediaIndex((prev) => prev - 1);
     }
   };
 
@@ -458,65 +513,65 @@ export default function ProductDetailsScreen({
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8 lg:gap-12 items-start">
           {/* Left Column: Image Showcase + Trust Badges (md:col-span-6 lg:col-span-5 md:sticky md:top-6 space-y-4) */}
           <div className="md:col-span-6 lg:col-span-5 space-y-4 md:sticky md:top-6">
-            {/* 1:1 Media Container (Photo + 5s Video Slider) */}
+            {/* 1:1 Media Container (Multi-Photo & 5s Video Slider) */}
             <div className="relative w-full aspect-square rounded-[24px] overflow-hidden border border-[#3a2c16] bg-[#0e0e0e] shadow-2xl select-none group">
               {/* Media Slide Track */}
               <div
                 className="w-full h-full flex transition-transform duration-500 ease-out"
                 style={{
-                  transform: product.video ? `translateX(-${activeMediaIndex * 100}%)` : "none",
+                  transform: `translateX(-${activeMediaIndex * 100}%)`,
                 }}
-                onTouchStart={product.video ? handleTouchStart : undefined}
-                onTouchEnd={product.video ? handleTouchEnd : undefined}
+                onTouchStart={handleTouchStart}
+                onTouchEnd={handleTouchEnd}
               >
-                {/* Slide 0: Primary Product Photo (1:1) */}
-                <div className="w-full h-full shrink-0 relative bg-[#0e0e0e]">
-                  <Image
-                    src={product.image}
-                    alt={product.name}
-                    fill
-                    priority
-                    sizes="(max-width: 768px) 100vw, 500px"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = "/images/products/moon-necklace.jpg";
-                    }}
-                    className="object-cover"
-                  />
-                </div>
+                {mediaList.map((media, idx) => (
+                  <div key={idx} className="w-full h-full shrink-0 relative bg-[#0e0e0e] flex items-center justify-center">
+                    {media.type === "image" ? (
+                      <Image
+                        src={media.url}
+                        alt={`${product.name} - ${media.label}`}
+                        fill
+                        priority={idx === 0}
+                        sizes="(max-width: 768px) 100vw, 500px"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = "/images/products/moon-necklace.jpg";
+                        }}
+                        className="object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full relative bg-black flex items-center justify-center">
+                        <video
+                          ref={videoRef}
+                          src={media.url}
+                          poster={mediaList[0]?.url || product.image}
+                          autoPlay
+                          muted
+                          loop
+                          playsInline
+                          className="w-full h-full object-cover cursor-pointer"
+                          onClick={toggleVideoPlay}
+                        />
 
-                {/* Slide 1: 5-Second Looping Video (1:1) */}
-                {product.video && (
-                  <div className="w-full h-full shrink-0 relative bg-black flex items-center justify-center">
-                    <video
-                      ref={videoRef}
-                      src={product.video}
-                      poster={product.image}
-                      autoPlay
-                      muted
-                      loop
-                      playsInline
-                      className="w-full h-full object-cover cursor-pointer"
-                      onClick={toggleVideoPlay}
-                    />
+                        {/* Play/Pause Overlay on tap */}
+                        {!isPlayingVideo && (
+                          <div
+                            onClick={toggleVideoPlay}
+                            className="absolute inset-0 bg-black/40 flex items-center justify-center cursor-pointer z-10"
+                          >
+                            <div className="w-14 h-14 rounded-full bg-black/80 border border-[#e5a93c] text-[#e5a93c] flex items-center justify-center shadow-2xl transition-transform hover:scale-110">
+                              <Play className="w-6 h-6 ml-1 fill-[#e5a93c]" />
+                            </div>
+                          </div>
+                        )}
 
-                    {/* Play/Pause Overlay on tap */}
-                    {!isPlayingVideo && (
-                      <div
-                        onClick={toggleVideoPlay}
-                        className="absolute inset-0 bg-black/40 flex items-center justify-center cursor-pointer z-10"
-                      >
-                        <div className="w-14 h-14 rounded-full bg-black/80 border border-[#e5a93c] text-[#e5a93c] flex items-center justify-center shadow-2xl transition-transform hover:scale-110">
-                          <Play className="w-6 h-6 ml-1 fill-[#e5a93c]" />
+                        {/* Silent 5s Loop indicator badge */}
+                        <div className="absolute bottom-12 right-3 z-20 flex items-center bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/10 text-[#aaa] text-[10px] shadow-md pointer-events-none">
+                          <span>5s Loop</span>
                         </div>
                       </div>
                     )}
-
-                    {/* Silent 5s Loop indicator badge */}
-                    <div className="absolute bottom-12 right-3 z-20 flex items-center bg-black/60 backdrop-blur-md px-2.5 py-1 rounded-full border border-white/10 text-[#aaa] text-[10px] shadow-md pointer-events-none">
-                      <span>5s Loop</span>
-                    </div>
                   </div>
-                )}
+                ))}
               </div>
 
               {/* Heart Wishlist Button */}
@@ -532,25 +587,37 @@ export default function ProductDetailsScreen({
                 />
               </button>
 
+              {/* Slide Counter Pill */}
+              {mediaList.length > 1 && (
+                <div className="absolute top-3.5 left-3.5 z-20 flex items-center gap-1.5 bg-black/75 backdrop-blur-md px-2.5 py-1 rounded-full border border-neutral-800 text-[10.5px] font-medium text-[#ccc] shadow-md">
+                  <span>{activeMediaIndex + 1} / {mediaList.length}</span>
+                  {mediaList[activeMediaIndex]?.type === "video" && (
+                    <span className="text-[#e5a93c] font-semibold flex items-center gap-0.5">
+                      • Video
+                    </span>
+                  )}
+                </div>
+              )}
+
               {/* Slide Navigation Arrows (Desktop / Hover) */}
-              {product.video && (
+              {mediaList.length > 1 && (
                 <>
-                  {activeMediaIndex === 1 && (
+                  {activeMediaIndex > 0 && (
                     <button
                       type="button"
-                      onClick={() => setActiveMediaIndex(0)}
+                      onClick={() => setActiveMediaIndex((prev) => Math.max(0, prev - 1))}
                       className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-black/70 backdrop-blur-sm border border-neutral-700 text-white hover:text-[#e5a93c] hover:border-[#e5a93c] flex items-center justify-center transition-all cursor-pointer shadow-lg"
-                      title="Slide to Photo"
+                      title="Previous"
                     >
                       <ChevronLeft className="w-5 h-5" />
                     </button>
                   )}
-                  {activeMediaIndex === 0 && (
+                  {activeMediaIndex < mediaList.length - 1 && (
                     <button
                       type="button"
-                      onClick={() => setActiveMediaIndex(1)}
+                      onClick={() => setActiveMediaIndex((prev) => Math.min(mediaList.length - 1, prev + 1))}
                       className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-black/70 backdrop-blur-sm border border-neutral-700 text-white hover:text-[#e5a93c] hover:border-[#e5a93c] flex items-center justify-center transition-all cursor-pointer shadow-lg"
-                      title="Slide to 5s Video"
+                      title="Next"
                     >
                       <ChevronRight className="w-5 h-5" />
                     </button>
@@ -558,48 +625,73 @@ export default function ProductDetailsScreen({
                 </>
               )}
 
-              {/* Slide Indicator Pills (Photo | Video) */}
-              {product.video && (
-                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1 bg-black/75 backdrop-blur-md p-1 rounded-full border border-neutral-800 shadow-xl">
-                  <button
-                    type="button"
-                    onClick={() => setActiveMediaIndex(0)}
-                    className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium transition-all cursor-pointer ${
-                      activeMediaIndex === 0
-                        ? "bg-[#e5a93c] text-black font-semibold shadow"
-                        : "text-[#a0a0a0] hover:text-white"
-                    }`}
-                  >
-                    <ImageIcon className="w-3 h-3" />
-                    <span>Photo</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setActiveMediaIndex(1)}
-                    className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium transition-all cursor-pointer ${
-                      activeMediaIndex === 1
-                        ? "bg-[#e5a93c] text-black font-semibold shadow"
-                        : "text-[#a0a0a0] hover:text-white"
-                    }`}
-                  >
-                    <Video className="w-3 h-3" />
-                    <span>Video (5s)</span>
-                  </button>
+              {/* Slide Indicator Dots/Pills */}
+              {mediaList.length > 1 && (
+                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 bg-black/75 backdrop-blur-md px-3 py-1.5 rounded-full border border-neutral-800 shadow-xl max-w-[90%] overflow-x-auto">
+                  {mediaList.map((m, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setActiveMediaIndex(idx)}
+                      className={`h-2 rounded-full transition-all cursor-pointer ${
+                        activeMediaIndex === idx
+                          ? "w-6 bg-[#e5a93c]"
+                          : "w-2 bg-[#555] hover:bg-[#888]"
+                      }`}
+                      title={m.label}
+                    />
+                  ))}
                 </div>
               )}
-
-              {/* Hint badge on Photo when video is available */}
-              {product.video && activeMediaIndex === 0 && (
-                <button
-                  type="button"
-                  onClick={() => setActiveMediaIndex(1)}
-                  className="absolute top-3.5 left-3.5 z-20 flex items-center gap-1.5 bg-black/70 backdrop-blur-md px-2.5 py-1 rounded-full border border-[#e5a93c]/40 text-[#e5a93c] text-[10.5px] font-medium hover:bg-black/90 transition-all cursor-pointer shadow-md"
-                >
-                  <Video className="w-3 h-3 animate-pulse" />
-                  <span>Slide to view video →</span>
-                </button>
-              )}
             </div>
+
+            {/* Clickable Media Thumbnails Row (Up to 4 photos + Video) */}
+            {mediaList.length > 1 && (
+              <div className="flex items-center gap-2.5 overflow-x-auto py-1">
+                {mediaList.map((m, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => setActiveMediaIndex(idx)}
+                    className={`relative w-16 h-16 sm:w-18 sm:h-18 rounded-xl overflow-hidden shrink-0 border-2 transition-all cursor-pointer bg-[#141414] ${
+                      activeMediaIndex === idx
+                        ? "border-[#e5a93c] ring-2 ring-[#e5a93c]/50 scale-[1.02] shadow-lg"
+                        : "border-[#242424] hover:border-[#444] opacity-75 hover:opacity-100"
+                    }`}
+                    title={m.label}
+                  >
+                    {m.type === "image" ? (
+                      <Image
+                        src={m.url}
+                        alt={m.label}
+                        fill
+                        unoptimized
+                        className="object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full relative bg-[#181818] flex items-center justify-center">
+                        {m.url && (
+                          <video
+                            src={m.url}
+                            className="w-full h-full object-cover opacity-60"
+                            muted
+                            playsInline
+                          />
+                        )}
+                        <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                          <div className="w-6 h-6 rounded-full bg-[#e5a93c] text-black flex items-center justify-center shadow">
+                            <Play className="w-3 h-3 ml-0.5 fill-black" />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    <div className="absolute bottom-0 inset-x-0 bg-black/75 text-[9px] text-center text-white py-0.5 truncate px-1 font-medium">
+                      {m.type === "video" ? "5s Video" : `Photo ${idx + 1}`}
+                    </div>
+                  </button>
+                ))}
+              </div>
+            )}
 
             {/* Trust Badges */}
             <div className="grid grid-cols-3 gap-2.5 text-center">
@@ -757,9 +849,30 @@ export default function ProductDetailsScreen({
 
               <p className="text-[#8e8e93] text-xs text-center sm:text-left">
                 {storeMode === "wholesale"
-                  ? "B2B Wholesale Channel: Minimum order value is ₹3,000 across cart."
-                  : "Retail Store: No minimum order requirement. Free delivery on orders over ₹999."}
+                  ? `B2B Wholesale Channel: Minimum order value is ₹${(storeSettings.wholesaleMinCartValue ?? 3000).toLocaleString("en-IN")} across cart.${(storeSettings.wholesaleMinQuantity ?? 1) > 1 ? ` Min batch: ${storeSettings.wholesaleMinQuantity} pcs.` : ""}`
+                  : (storeSettings.retailMinCartValue ?? 0) > 0
+                  ? `Retail Store: Minimum order value is ₹${storeSettings.retailMinCartValue.toLocaleString("en-IN")}. Free delivery over ₹${(storeSettings.retailFreeShippingThreshold ?? 999).toLocaleString("en-IN")}.`
+                  : `Retail Store: No minimum order requirement. Free delivery on orders over ₹${(storeSettings.retailFreeShippingThreshold ?? 999).toLocaleString("en-IN")}.`}
               </p>
+            </div>
+
+            {/* Product Description Section */}
+            <div className="w-full bg-[#0d0d0d] border border-[#222222] rounded-[22px] p-5 shadow-sm space-y-2.5">
+              <div className="flex items-center gap-2 pb-2 border-b border-[#1c1c1c]">
+                <FileText className="w-4 h-4 text-[#e5a93c]" />
+                <h3 className="text-white text-xs sm:text-sm font-semibold tracking-wider uppercase font-serif">
+                  Product Description
+                </h3>
+              </div>
+              <div className="text-xs sm:text-[13px] text-[#ccc] leading-relaxed whitespace-pre-line">
+                {product.description?.trim() ? (
+                  product.description.trim()
+                ) : (
+                  <p className="text-[#888] italic">
+                    Crafted with premium hypoallergenic stainless steel and finished with high-polish 18K gold plating. Features our signature waterproof, anti-tarnish coating built to resist perfumes, moisture, and daily wear without losing brilliance.
+                  </p>
+                )}
+              </div>
             </div>
 
             {/* Product Specifications Table */}

@@ -101,7 +101,9 @@ export default function AdminPage() {
     channel: "both" as "both" | "wholesale" | "retail",
     category: "",
     image: "",
+    images: [] as string[],
     video: "",
+    description: "",
     stock: "10",
     subtitle: "Anti tarnish",
     metal: "Stainless Steel",
@@ -333,17 +335,30 @@ export default function AdminPage() {
     }
   };
 
-  // Image Upload to R2 (reusable for file selector and drag-and-drop)
-  const processImageFile = async (file: File) => {
-    if (!file) return;
-    if (!file.type.startsWith("image/")) {
-      alert("Please upload an image file (PNG, JPG, WebP, etc.)");
+  // Multi-Image Upload to R2 (up to 4 photos)
+  const processImageFiles = async (files: FileList | File[]) => {
+    const rawFiles = Array.from(files).filter((f) => f && f.type.startsWith("image/"));
+    if (rawFiles.length === 0) {
+      alert("Please upload valid image files (PNG, JPG, WebP, etc.)");
       return;
     }
 
+    const currentImages = productForm.images && productForm.images.length > 0
+      ? productForm.images
+      : (productForm.image ? [productForm.image] : []);
+
+    const availableSlots = 4 - currentImages.length;
+    if (availableSlots <= 0) {
+      alert("Maximum 4 product photos allowed. Please delete a photo before adding more.");
+      return;
+    }
+
+    const filesToUpload = rawFiles.slice(0, availableSlots);
     setIsUploadingImage(true);
     const formData = new FormData();
-    formData.append("file", file);
+    filesToUpload.forEach((f) => {
+      formData.append("files", f);
+    });
 
     try {
       const res = await fetch("/api/upload", {
@@ -351,14 +366,27 @@ export default function AdminPage() {
         body: formData,
       });
       const data = await res.json();
-      if (data.success) {
-        setProductForm((prev) => ({ ...prev, image: data.url }));
-        showNotification("Image uploaded & optimized to Cloudflare R2!");
+      if (data.success && Array.isArray(data.urls) && data.urls.length > 0) {
+        const nextImages = [...currentImages, ...data.urls].slice(0, 4);
+        setProductForm((prev) => ({
+          ...prev,
+          images: nextImages,
+          image: nextImages[0] || "",
+        }));
+        showNotification(`Uploaded ${data.urls.length} product photo(s) to Cloudflare R2!`);
+      } else if (data.success && data.url) {
+        const nextImages = [...currentImages, data.url].slice(0, 4);
+        setProductForm((prev) => ({
+          ...prev,
+          images: nextImages,
+          image: nextImages[0] || "",
+        }));
+        showNotification("Product photo uploaded & optimized!");
       } else {
-        alert("Image upload failed: " + data.message);
+        alert("Image upload failed: " + (data.message || "Unknown error"));
       }
     } catch {
-      alert("Error uploading image");
+      alert("Error uploading image(s)");
     } finally {
       setIsUploadingImage(false);
       setIsDraggingImage(false);
@@ -366,9 +394,36 @@ export default function AdminPage() {
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      processImageFile(file);
+    const files = e.target.files;
+    if (files && files.length > 0) {
+      processImageFiles(files);
+      e.target.value = "";
+    }
+  };
+
+  const handleRemovePhoto = (index: number) => {
+    const currentImages = productForm.images && productForm.images.length > 0
+      ? productForm.images
+      : (productForm.image ? [productForm.image] : []);
+    const nextImages = currentImages.filter((_, idx) => idx !== index);
+    setProductForm((prev) => ({
+      ...prev,
+      images: nextImages,
+      image: nextImages[0] || "",
+    }));
+  };
+
+  const handleSetCoverPhoto = (index: number) => {
+    const currentImages = [...(productForm.images || (productForm.image ? [productForm.image] : []))];
+    if (index > 0 && index < currentImages.length) {
+      const [chosen] = currentImages.splice(index, 1);
+      currentImages.unshift(chosen);
+      setProductForm((prev) => ({
+        ...prev,
+        images: currentImages,
+        image: currentImages[0] || "",
+      }));
+      showNotification("Set as primary cover photo!");
     }
   };
 
@@ -399,7 +454,7 @@ export default function AdminPage() {
 
     const files = e.dataTransfer.files;
     if (files && files.length > 0) {
-      processImageFile(files[0]);
+      processImageFiles(files);
     }
   };
 
@@ -639,8 +694,17 @@ export default function AdminPage() {
       return;
     }
 
+    const images = Array.isArray(productForm.images) ? productForm.images.filter(Boolean) : [];
+    if (images.length === 0 && productForm.image) {
+      images.push(productForm.image);
+    }
+    const primaryImage = images[0] || productForm.image || "";
+
     const payload = {
       ...productForm,
+      image: primaryImage,
+      images,
+      description: productForm.description ? productForm.description.trim() : "",
       retailPrice: finalRetail,
       wholesalePrice: finalWholesale,
       price: finalRetail || finalWholesale,
@@ -700,6 +764,10 @@ export default function AdminPage() {
     setEditingProduct(p);
     const rPrice = p.retailPrice ?? p.price ?? "";
     const wPrice = p.wholesalePrice ?? p.price ?? "";
+    const images = Array.isArray(p.images) && p.images.length > 0
+      ? p.images
+      : (p.image ? [p.image] : []);
+
     setProductForm({
       name: p.name,
       sku: p.sku,
@@ -708,8 +776,10 @@ export default function AdminPage() {
       wholesalePrice: String(wPrice),
       channel: p.channel || "both",
       category: p.category,
-      image: p.image,
+      image: p.image || images[0] || "",
+      images,
       video: p.video || "",
+      description: p.description || "",
       stock: String(p.stock),
       subtitle: p.subtitle,
       metal: p.metal,
@@ -732,7 +802,9 @@ export default function AdminPage() {
       channel: "both",
       category: categories[0]?.name || "",
       image: "",
+      images: [],
       video: "",
+      description: "",
       stock: "10",
       subtitle: "Anti tarnish",
       metal: "Stainless Steel",
@@ -2351,7 +2423,218 @@ export default function AdminPage() {
               </div>
             </div>
 
-            {/* 2. Hero Banner */}
+            {/* 2. Checkout & Shipping Rules (B2B & B2C) */}
+            <div className="p-5 sm:p-6 rounded-2xl bg-[#0d0d0d] border border-[#222222] space-y-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-[#1f1f1f]">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-[#1c160c] border border-[#e5a93c]/30 text-[#e5a93c]">
+                    <Truck className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-white text-sm font-semibold">Checkout Minimums &amp; Delivery Rules</h4>
+                    <p className="text-xs text-[#8e8e93]">
+                      Configure minimum cart value, minimum quantity, free delivery logic &amp; shipping charges separately for B2B and B2C channels.
+                    </p>
+                  </div>
+                </div>
+                <span className="text-[11px] text-[#e5a93c] px-2.5 py-0.5 rounded-full bg-[#1c160c] border border-[#e5a93c]/30 self-start sm:self-auto font-medium">
+                  Live Rules
+                </span>
+              </div>
+
+              {/* 2-Column Grid: B2B Wholesale Rules & B2C Retail Rules */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                {/* Column 1: B2B Wholesale Channel Configuration */}
+                <div className="p-4 rounded-xl bg-[#12100a] border border-[#3d2f16] space-y-3.5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-[#e5a93c] text-xs font-semibold">
+                      <Building2 className="w-3.5 h-3.5" />
+                      <span>B2B Wholesale Channel Rules</span>
+                    </div>
+                    <span className="px-2 py-0.5 rounded text-[10px] bg-[#e5a93c]/15 text-[#e5a93c] border border-[#e5a93c]/30 font-medium">
+                      Wholesale Mode
+                    </span>
+                  </div>
+
+                  {/* Wholesale Minimum Cart Value */}
+                  <div className="space-y-1">
+                    <label className="text-xs text-[#ccc] font-medium flex items-center justify-between">
+                      <span>Minimum Cart Value (₹) *</span>
+                      <span className="text-[11px] text-[#e5a93c] font-semibold">₹{(settings.wholesaleMinCartValue ?? 3000).toLocaleString("en-IN")}</span>
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      step={100}
+                      value={settings.wholesaleMinCartValue ?? 3000}
+                      onChange={(e) =>
+                        setSettings((prev) => ({
+                          ...prev,
+                          wholesaleMinCartValue: Math.max(0, Number(e.target.value) || 0),
+                        }))
+                      }
+                      className="w-full h-10 rounded-xl bg-[#181818] border border-[#2e2e2e] px-3.5 text-xs text-white placeholder-[#555] outline-none focus:border-[#e5a93c]"
+                      placeholder="e.g. 3000"
+                    />
+                    <p className="text-[10.5px] text-[#777]">
+                      Minimum subtotal across cart required to place a B2B wholesale order.
+                    </p>
+                  </div>
+
+                  {/* Wholesale Minimum Total Quantity */}
+                  <div className="space-y-1">
+                    <label className="text-xs text-[#ccc] font-medium flex items-center justify-between">
+                      <span>Minimum Order Quantity (Pieces across cart) *</span>
+                      <span className="text-[11px] text-[#e5a93c] font-semibold">{settings.wholesaleMinQuantity ?? 1} pcs</span>
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      step={1}
+                      value={settings.wholesaleMinQuantity ?? 1}
+                      onChange={(e) =>
+                        setSettings((prev) => ({
+                          ...prev,
+                          wholesaleMinQuantity: Math.max(1, Math.floor(Number(e.target.value) || 1)),
+                        }))
+                      }
+                      className="w-full h-10 rounded-xl bg-[#181818] border border-[#2e2e2e] px-3.5 text-xs text-white placeholder-[#555] outline-none focus:border-[#e5a93c]"
+                      placeholder="e.g. 1"
+                    />
+                    <p className="text-[10.5px] text-[#777]">
+                      Total items quantity required in wholesale cart (set 1 for no quantity threshold).
+                    </p>
+                  </div>
+
+                  {/* Wholesale Delivery Charges */}
+                  <div className="space-y-1">
+                    <label className="text-xs text-[#ccc] font-medium flex items-center justify-between">
+                      <span>Delivery Charge (₹) *</span>
+                      <span className="text-[11px] text-[#e5a93c] font-semibold">
+                        {(settings.wholesaleDeliveryCharge ?? 125) === 0 ? "FREE" : `₹${settings.wholesaleDeliveryCharge ?? 125}`}
+                      </span>
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      step={5}
+                      value={settings.wholesaleDeliveryCharge ?? 125}
+                      onChange={(e) =>
+                        setSettings((prev) => ({
+                          ...prev,
+                          wholesaleDeliveryCharge: Math.max(0, Number(e.target.value) || 0),
+                        }))
+                      }
+                      className="w-full h-10 rounded-xl bg-[#181818] border border-[#2e2e2e] px-3.5 text-xs text-white placeholder-[#555] outline-none focus:border-[#e5a93c]"
+                      placeholder="e.g. 125 (0 for Free)"
+                    />
+                    <p className="text-[10.5px] text-[#777]">
+                      Fixed courier / dispatch charge applied to wholesale orders (enter 0 for free delivery).
+                    </p>
+                  </div>
+
+                  <div className="p-2.5 rounded-lg bg-[#0e0c07] border border-[#2d220f] text-[11px] text-[#a89b80] leading-relaxed">
+                    💡 <strong>Active Rule:</strong> B2B checkout allows orders ≥ <strong>₹{(settings.wholesaleMinCartValue ?? 3000).toLocaleString("en-IN")}</strong> and ≥ <strong>{settings.wholesaleMinQuantity ?? 1} pcs</strong> with <strong>₹{settings.wholesaleDeliveryCharge ?? 125}</strong> delivery fee.
+                  </div>
+                </div>
+
+                {/* Column 2: B2C Retail Channel Configuration */}
+                <div className="p-4 rounded-xl bg-[#0c1310] border border-[#1b3d2b] space-y-3.5">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-emerald-400 text-xs font-semibold">
+                      <ShoppingBag className="w-3.5 h-3.5" />
+                      <span>B2C Retail Channel Rules</span>
+                    </div>
+                    <span className="px-2 py-0.5 rounded text-[10px] bg-emerald-950/60 text-emerald-300 border border-emerald-500/30 font-medium">
+                      Retail Mode
+                    </span>
+                  </div>
+
+                  {/* Retail Minimum Cart Value */}
+                  <div className="space-y-1">
+                    <label className="text-xs text-[#ccc] font-medium flex items-center justify-between">
+                      <span>Minimum Cart Value (₹)</span>
+                      <span className="text-[11px] text-emerald-400 font-semibold">
+                        {(settings.retailMinCartValue ?? 0) === 0 ? "No Minimum (₹0)" : `₹${(settings.retailMinCartValue ?? 0).toLocaleString("en-IN")}`}
+                      </span>
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      step={50}
+                      value={settings.retailMinCartValue ?? 0}
+                      onChange={(e) =>
+                        setSettings((prev) => ({
+                          ...prev,
+                          retailMinCartValue: Math.max(0, Number(e.target.value) || 0),
+                        }))
+                      }
+                      className="w-full h-10 rounded-xl bg-[#181818] border border-[#2e2e2e] px-3.5 text-xs text-white placeholder-[#555] outline-none focus:border-emerald-500"
+                      placeholder="e.g. 0 (leave 0 for no minimum)"
+                    />
+                    <p className="text-[10.5px] text-[#777]">
+                      Minimum cart subtotal to place a retail order (leave 0 for no minimum).
+                    </p>
+                  </div>
+
+                  {/* Retail Free Shipping Threshold */}
+                  <div className="space-y-1">
+                    <label className="text-xs text-[#ccc] font-medium flex items-center justify-between">
+                      <span>Free Shipping Above (₹) *</span>
+                      <span className="text-[11px] text-emerald-400 font-semibold">₹{(settings.retailFreeShippingThreshold ?? 999).toLocaleString("en-IN")}</span>
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      step={50}
+                      value={settings.retailFreeShippingThreshold ?? 999}
+                      onChange={(e) =>
+                        setSettings((prev) => ({
+                          ...prev,
+                          retailFreeShippingThreshold: Math.max(0, Number(e.target.value) || 0),
+                        }))
+                      }
+                      className="w-full h-10 rounded-xl bg-[#181818] border border-[#2e2e2e] px-3.5 text-xs text-white placeholder-[#555] outline-none focus:border-emerald-500"
+                      placeholder="e.g. 999"
+                    />
+                    <p className="text-[10.5px] text-[#777]">
+                      Retail orders with subtotal above this threshold automatically receive 100% FREE shipping!
+                    </p>
+                  </div>
+
+                  {/* Retail Delivery Charges */}
+                  <div className="space-y-1">
+                    <label className="text-xs text-[#ccc] font-medium flex items-center justify-between">
+                      <span>Standard Delivery Charge (₹) *</span>
+                      <span className="text-[11px] text-emerald-400 font-semibold">₹{settings.retailDeliveryCharge ?? 125}</span>
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      step={5}
+                      value={settings.retailDeliveryCharge ?? 125}
+                      onChange={(e) =>
+                        setSettings((prev) => ({
+                          ...prev,
+                          retailDeliveryCharge: Math.max(0, Number(e.target.value) || 0),
+                        }))
+                      }
+                      className="w-full h-10 rounded-xl bg-[#181818] border border-[#2e2e2e] px-3.5 text-xs text-white placeholder-[#555] outline-none focus:border-emerald-500"
+                      placeholder="e.g. 125"
+                    />
+                    <p className="text-[10.5px] text-[#777]">
+                      Charged when order subtotal is below the free shipping threshold (₹{(settings.retailFreeShippingThreshold ?? 999).toLocaleString("en-IN")}).
+                    </p>
+                  </div>
+
+                  <div className="p-2.5 rounded-lg bg-[#07140e] border border-[#143322] text-[11px] text-[#86a894] leading-relaxed">
+                    💡 <strong>Active Rule:</strong> B2C gets <strong>FREE delivery</strong> on orders ≥ <strong>₹{(settings.retailFreeShippingThreshold ?? 999).toLocaleString("en-IN")}</strong>; orders below pay <strong>₹{settings.retailDeliveryCharge ?? 125}</strong> delivery charge.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 3. Hero Banner */}
             <div className="p-5 rounded-2xl bg-[#0d0d0d] border border-[#222222] space-y-4">
               <div className="flex items-center gap-2.5">
                 <ImageIcon className="w-4 h-4 text-[#e5a93c]" />
@@ -2719,103 +3002,212 @@ export default function AdminPage() {
 
             {/* Modal Form */}
             <form onSubmit={handleSaveProduct} className="space-y-4 pt-4 text-xs">
-              {/* Image Upload Area with Drag & Drop */}
-              <div>
-                <label className="block text-[#a0a0a0] mb-2 font-medium">
-                  Product Image (Drag & Drop or Click to Browse)
-                </label>
-                
+              {/* Product Photos (Up to 4) with 4-Slot Grid & Batch Upload */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-[#a0a0a0] font-medium flex items-center gap-1.5">
+                    <ImageIcon className="w-3.5 h-3.5 text-[#e5a93c]" />
+                    <span>Product Photos (Up to 4 Photos · Cover & Gallery)</span>
+                  </label>
+                  <span className="text-[10.5px] text-[#888] font-mono">
+                    {((productForm.images && productForm.images.length > 0)
+                      ? productForm.images
+                      : productForm.image
+                      ? [productForm.image]
+                      : []
+                    ).length} / 4 photos
+                  </span>
+                </div>
+
                 <input
                   type="file"
                   ref={fileInputRef}
                   onChange={handleImageUpload}
                   accept="image/*"
+                  multiple
                   className="hidden"
                 />
 
+                {/* 4-Slot Photo Thumbnail Grid */}
+                {(() => {
+                  const currentPhotos = (productForm.images && productForm.images.length > 0)
+                    ? productForm.images
+                    : productForm.image
+                    ? [productForm.image]
+                    : [];
+
+                  return (
+                    <div className="grid grid-cols-4 gap-2.5">
+                      {[0, 1, 2, 3].map((slotIdx) => {
+                        const photoUrl = currentPhotos[slotIdx];
+                        if (photoUrl) {
+                          const isCover = slotIdx === 0;
+                          return (
+                            <div
+                              key={slotIdx}
+                              className={`relative aspect-square rounded-xl bg-[#141414] border overflow-hidden group shadow-md ${
+                                isCover ? "border-[#e5a93c] ring-1 ring-[#e5a93c]/50" : "border-[#2a2a2a]"
+                              }`}
+                            >
+                              <Image
+                                src={photoUrl}
+                                alt={`Product Photo ${slotIdx + 1}`}
+                                fill
+                                unoptimized
+                                className="object-cover"
+                              />
+
+                              {/* Cover Badge or Set As Cover button */}
+                              {isCover ? (
+                                <span className="absolute top-1 left-1 px-1.5 py-0.5 rounded-md bg-[#e5a93c] text-black font-bold text-[9px] uppercase tracking-wider shadow">
+                                  Cover
+                                </span>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleSetCoverPhoto(slotIdx);
+                                  }}
+                                  className="absolute bottom-1 left-1 right-1 py-0.5 rounded bg-black/80 hover:bg-[#e5a93c] text-[#e5a93c] hover:text-black text-[9px] font-semibold transition-colors opacity-90 group-hover:opacity-100 text-center backdrop-blur-sm cursor-pointer"
+                                  title="Set as primary cover photo"
+                                >
+                                  Make Cover
+                                </button>
+                              )}
+
+                              {/* Remove Button */}
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleRemovePhoto(slotIdx);
+                                }}
+                                className="absolute top-1 right-1 w-5 h-5 rounded-md bg-black/80 hover:bg-red-950 text-red-400 hover:text-red-300 border border-red-800/50 flex items-center justify-center transition-colors cursor-pointer shadow"
+                                title="Remove this photo"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            </div>
+                          );
+                        }
+
+                        // Empty slot
+                        const isNextAvailable = slotIdx === currentPhotos.length;
+                        return (
+                          <div
+                            key={slotIdx}
+                            onClick={() => {
+                              if (isNextAvailable && !isUploadingImage) {
+                                fileInputRef.current?.click();
+                              }
+                            }}
+                            className={`aspect-square rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-1 transition-all select-none ${
+                              isNextAvailable
+                                ? "border-[#3a3a3a] hover:border-[#e5a93c] bg-[#121212] hover:bg-[#1c160c] cursor-pointer group text-[#777] hover:text-[#e5a93c]"
+                                : "border-[#202020] bg-[#0d0d0d] text-[#333] cursor-not-allowed"
+                            }`}
+                          >
+                            {isNextAvailable ? (
+                              <>
+                                <Plus className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                                <span className="text-[10px] font-medium">Add #{slotIdx + 1}</span>
+                              </>
+                            ) : (
+                              <span className="text-[10px] font-mono">Slot {slotIdx + 1}</span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+
+                {/* Drag & Drop Upload Zone */}
                 <div
                   onDragEnter={handleDragEnter}
                   onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
-                  onClick={() => fileInputRef.current?.click()}
-                  className={`relative w-full rounded-2xl p-4 border-2 border-dashed transition-all duration-200 cursor-pointer flex flex-col sm:flex-row items-center gap-4 select-none ${
+                  onClick={() => {
+                    const currentPhotos = (productForm.images && productForm.images.length > 0)
+                      ? productForm.images
+                      : productForm.image
+                      ? [productForm.image]
+                      : [];
+                    if (currentPhotos.length < 4 && !isUploadingImage) {
+                      fileInputRef.current?.click();
+                    }
+                  }}
+                  className={`relative w-full rounded-2xl p-3.5 border-2 border-dashed transition-all duration-200 flex flex-col sm:flex-row items-center justify-between gap-3 select-none ${
                     isDraggingImage
                       ? "border-[#e5a93c] bg-[#1c160c] shadow-[0_0_20px_rgba(229,169,60,0.35)] scale-[1.01]"
                       : "border-[#2c2c2c] bg-[#111111] hover:border-[#e5a93c]/50 hover:bg-[#15120c]"
+                  } ${
+                    ((productForm.images?.length || (productForm.image ? 1 : 0)) >= 4)
+                      ? "opacity-60 cursor-default"
+                      : "cursor-pointer"
                   }`}
                 >
-                  {/* Image Preview / Upload Icon Thumbnail */}
-                  <div className="w-20 h-20 rounded-xl bg-[#161616] border border-[#262626] overflow-hidden relative flex items-center justify-center shrink-0 shadow-inner">
-                    {productForm.image ? (
-                      <Image
-                        src={productForm.image}
-                        alt="Product Preview"
-                        fill
-                        unoptimized
-                        className="object-cover"
-                      />
-                    ) : (
-                      <Upload className={`w-7 h-7 transition-colors ${isDraggingImage ? "text-[#e5a93c] animate-bounce" : "text-[#555]"}`} />
-                    )}
-                    {isUploadingImage && (
-                      <div className="absolute inset-0 bg-black/75 flex items-center justify-center">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-[#161616] border border-[#262626] flex items-center justify-center shrink-0">
+                      {isUploadingImage ? (
                         <div className="w-5 h-5 border-2 border-[#e5a93c]/30 border-t-[#e5a93c] rounded-full animate-spin" />
-                      </div>
-                    )}
+                      ) : (
+                        <Upload className={`w-5 h-5 ${isDraggingImage ? "text-[#e5a93c] animate-bounce" : "text-[#777]"}`} />
+                      )}
+                    </div>
+                    <div className="text-left space-y-0.5">
+                      {isUploadingImage ? (
+                        <>
+                          <p className="text-[#e5a93c] font-semibold text-xs animate-pulse">
+                            Uploading & converting to WebP on Cloudflare R2...
+                          </p>
+                          <p className="text-[#777] text-[11px]">Processing batch uploads</p>
+                        </>
+                      ) : isDraggingImage ? (
+                        <>
+                          <p className="text-[#e5a93c] font-semibold text-xs">
+                            Drop up to 4 photos here!
+                          </p>
+                          <p className="text-[#aaa] text-[11px]">Release to start upload immediately</p>
+                        </>
+                      ) : ((productForm.images?.length || (productForm.image ? 1 : 0)) >= 4) ? (
+                        <>
+                          <p className="text-emerald-400 font-medium text-xs">
+                            ✓ Maximum 4 photos uploaded
+                          </p>
+                          <p className="text-[#777] text-[11px]">
+                            Delete any photo above to upload new ones.
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <p className="text-white font-medium text-xs">
+                            <span className="text-[#e5a93c] font-semibold">Drag & drop</span> up to 4 photos, or <span className="text-[#e5a93c] underline">browse files</span>
+                          </p>
+                          <p className="text-[#777] text-[11px]">
+                            Upload up to 4 photos · Auto-compressed to WebP on R2
+                          </p>
+                        </>
+                      )}
+                    </div>
                   </div>
 
-                  {/* Drop zone helper text and status */}
-                  <div className="flex-1 text-center sm:text-left space-y-1">
-                    {isUploadingImage ? (
-                      <div>
-                        <p className="text-[#e5a93c] font-semibold text-xs animate-pulse">
-                          Uploading & optimizing image to Cloudflare R2...
-                        </p>
-                        <p className="text-[#777] text-[11px]">Converting to modern WebP</p>
-                      </div>
-                    ) : isDraggingImage ? (
-                      <div>
-                        <p className="text-[#e5a93c] font-semibold text-xs">
-                          Drop image file here to upload!
-                        </p>
-                        <p className="text-[#aaa] text-[11px]">Release to start upload immediately</p>
-                      </div>
-                    ) : productForm.image ? (
-                      <div>
-                        <div className="flex items-center gap-2 justify-center sm:justify-start">
-                          <span className="text-emerald-400 font-semibold text-xs flex items-center gap-1">
-                            ✓ Image Ready
-                          </span>
-                          <span className="text-[10px] text-[#777]">· Drag new photo to replace</span>
-                        </div>
-                        <p className="text-[#888] text-[11px] truncate max-w-[260px]">
-                          {productForm.image}
-                        </p>
-                      </div>
-                    ) : (
-                      <div>
-                        <p className="text-white font-medium text-xs">
-                          <span className="text-[#e5a93c] font-semibold">Drag & drop</span> image here, or <span className="text-[#e5a93c] underline">browse files</span>
-                        </p>
-                        <p className="text-[#777] text-[11px]">
-                          Supports JPEG, PNG, WebP (auto-compressed and hosted on R2 CDN)
-                        </p>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Action Button */}
                   <button
                     type="button"
-                    disabled={isUploadingImage}
+                    disabled={isUploadingImage || ((productForm.images?.length || (productForm.image ? 1 : 0)) >= 4)}
                     onClick={(e) => {
                       e.stopPropagation();
                       fileInputRef.current?.click();
                     }}
-                    className="px-3.5 py-2 rounded-xl bg-[#1c160c] border border-[#e5a93c] text-[#e5a93c] hover:bg-[#e5a93c] hover:text-black font-semibold text-xs transition-all cursor-pointer shrink-0 disabled:opacity-50 shadow-sm"
+                    className="px-3.5 py-1.5 rounded-xl bg-[#1c160c] border border-[#e5a93c] text-[#e5a93c] hover:bg-[#e5a93c] hover:text-black font-semibold text-xs transition-all cursor-pointer shrink-0 disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"
                   >
-                    {isUploadingImage ? "Uploading..." : productForm.image ? "Change Image" : "Select Image"}
+                    {isUploadingImage
+                      ? "Uploading..."
+                      : ((productForm.images?.length || (productForm.image ? 1 : 0)) >= 4)
+                      ? "Max Reached"
+                      : "Browse Photos"}
                   </button>
                 </div>
               </div>
@@ -3104,6 +3496,27 @@ export default function AdminPage() {
                     className="w-full h-10 rounded-xl bg-[#141414] border border-[#262626] px-3 text-white outline-none focus:border-[#e5a93c]"
                   />
                 </div>
+              </div>
+
+              {/* Product Description */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-[#a0a0a0] font-medium flex items-center gap-1.5">
+                    <FileText className="w-3.5 h-3.5 text-[#e5a93c]" />
+                    <span>Product Description</span>
+                  </label>
+                  <span className="text-[10px] text-[#777]">Displayed on customer Product Details page</span>
+                </div>
+                <textarea
+                  rows={4}
+                  value={productForm.description}
+                  onChange={(e) => setProductForm({ ...productForm, description: e.target.value })}
+                  placeholder="Enter detailed product description (e.g., handcrafted with anti-tarnish waterproof stainless steel, 18K gold polish, styling notes, dimensions, care instructions)..."
+                  className="w-full rounded-xl bg-[#141414] border border-[#262626] p-3 text-white text-xs outline-none focus:border-[#e5a93c] placeholder:text-[#555] resize-y leading-relaxed"
+                />
+                <p className="text-[10.5px] text-[#666] mt-1">
+                  This description is prominently shown on the product page in the dedicated Description card.
+                </p>
               </div>
 
               {/* Submit Button */}

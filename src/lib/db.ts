@@ -11,6 +11,7 @@ export interface Product {
   channel?: "both" | "wholesale" | "retail";
   category: string;
   image: string;
+  images?: string[];
   video?: string;
   stock: number;
   metal: string;
@@ -19,6 +20,7 @@ export interface Product {
   rating: number;
   reviewsCount: number;
   subtitle: string;
+  description?: string;
   featured: boolean;
   createdAt: string;
 }
@@ -324,8 +326,26 @@ export function createProduct(productData: Omit<Product, "id" | "createdAt">): P
   const db = getDb();
   const retailPrice = Number(productData.retailPrice ?? productData.price ?? 0);
   const wholesalePrice = Number(productData.wholesalePrice ?? productData.price ?? retailPrice ?? 0);
+
+  let images = Array.isArray(productData.images)
+    ? productData.images.filter(Boolean)
+    : [];
+  if (images.length === 0 && productData.image) {
+    images = [productData.image];
+  }
+  const primaryImage =
+    images[0] ||
+    productData.image ||
+    "https://pub-ce8688bc6c654bcfb99716f7c9373bcd.r2.dev/fab-creations/products/moon-necklace.jpg";
+  if (images.length === 0) {
+    images = [primaryImage];
+  }
+
   const newProduct: Product = {
     ...productData,
+    image: primaryImage,
+    images,
+    description: productData.description ? String(productData.description).trim() : undefined,
     retailPrice,
     wholesalePrice,
     channel: productData.channel || "both",
@@ -348,9 +368,28 @@ export function updateProduct(id: string, updates: Partial<Product>): Product | 
   const nextWholesale = updates.wholesalePrice !== undefined ? Number(updates.wholesalePrice) : current.wholesalePrice;
   const nextPrice = nextRetail ?? nextWholesale ?? updates.price ?? current.price;
 
+  let images = updates.images !== undefined ? updates.images : current.images;
+  if (Array.isArray(images)) {
+    images = images.filter(Boolean);
+  }
+  let primaryImage = updates.image ?? current.image;
+  if (images && images.length > 0) {
+    primaryImage = images[0];
+  } else if (primaryImage) {
+    images = [primaryImage];
+  }
+
   db.products[index] = {
     ...current,
     ...updates,
+    image: primaryImage,
+    images,
+    description:
+      updates.description !== undefined
+        ? updates.description
+          ? String(updates.description).trim()
+          : undefined
+        : current.description,
     retailPrice: nextRetail,
     wholesalePrice: nextWholesale,
     price: nextPrice,

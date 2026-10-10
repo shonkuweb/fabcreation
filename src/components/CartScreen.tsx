@@ -22,6 +22,7 @@ import CategoriesModal from "@/components/CategoriesModal";
 import StoreModeToggle from "@/components/StoreModeToggle";
 import RetailLoginModal from "@/components/RetailLoginModal";
 import type { OrderItem, Category, Product } from "@/lib/db";
+import { type StoreSettings, defaultSettings } from "@/lib/settings";
 import {
   getCartItems,
   getCartCount,
@@ -38,6 +39,7 @@ interface CartScreenProps {
   categories?: Category[];
   products?: Product[];
   storeMode?: "retail" | "wholesale";
+  settings?: Partial<StoreSettings>;
   onSwitchStoreMode?: (mode: "retail" | "wholesale") => void;
   isWholesaleLoggedIn?: boolean;
   onOpenWholesaleLogin?: () => void;
@@ -58,6 +60,7 @@ export default function CartScreen({
   categories: initialCategories = [],
   products: initialProducts = [],
   storeMode = "retail",
+  settings: propSettings,
   onSwitchStoreMode,
   isWholesaleLoggedIn = false,
   onOpenWholesaleLogin,
@@ -182,18 +185,75 @@ export default function CartScreen({
     else router.push("/account");
   };
 
+  // Store Settings (Dynamic B2B & B2C rules)
+  const [storeSettings, setStoreSettings] = useState<StoreSettings>({
+    ...defaultSettings,
+    ...(propSettings || {}),
+  });
+
+  useEffect(() => {
+    if (propSettings) {
+      setStoreSettings((prev) => ({ ...prev, ...propSettings }));
+    }
+  }, [propSettings]);
+
+  useEffect(() => {
+    fetch("/api/settings", { cache: "no-store" })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.settings) {
+          setStoreSettings((prev) => ({ ...prev, ...data.settings }));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
   const retailCount = getCartCount("retail");
   const wholesaleCount = getCartCount("wholesale");
 
-  // Subtotal of all items
+  const b2bMinCart = Number(storeSettings.wholesaleMinCartValue ?? 3000);
+  const b2bMinQty = Number(storeSettings.wholesaleMinQuantity ?? 1);
+  const b2bDeliveryCharge = Number(storeSettings.wholesaleDeliveryCharge ?? 125);
+
+  const b2cMinCart = Number(storeSettings.retailMinCartValue ?? 0);
+  const b2cFreeShipThreshold = Number(storeSettings.retailFreeShippingThreshold ?? 999);
+  const b2cDeliveryCharge = Number(storeSettings.retailDeliveryCharge ?? 125);
+
+  // Subtotal and Total item pieces
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const totalPieces = cart.reduce((sum, item) => sum + item.quantity, 0);
   const gst = Number((subtotal * 0.03).toFixed(1));
-  const shipping = cart.length > 0 ? 125 : 0;
+
+  // Dynamic Shipping logic
+  let shipping = 0;
+  if (cart.length > 0) {
+    if (activeCartMode === "wholesale") {
+      shipping = b2bDeliveryCharge;
+    } else {
+      // Retail B2C free shipping logic: Free above threshold, else delivery charge
+      if (subtotal >= b2cFreeShipThreshold) {
+        shipping = 0;
+      } else {
+        shipping = b2cDeliveryCharge;
+      }
+    }
+  }
+
   const total = Number((subtotal + gst + shipping).toFixed(1));
-  const b2bMin = 3000;
-  const remaining = Math.max(0, b2bMin - subtotal);
-  const progressPercent = Math.min(100, Math.max(3, (subtotal / b2bMin) * 100));
+
+  // B2B Thresholds
+  const b2bRemainingCart = Math.max(0, b2bMinCart - subtotal);
+  const b2bProgressPercent = b2bMinCart > 0 ? Math.min(100, Math.max(3, (subtotal / b2bMinCart) * 100)) : 100;
+  const b2bRemainingPieces = Math.max(0, b2bMinQty - totalPieces);
+  const isWholesaleMinMet = subtotal >= b2bMinCart && (b2bMinQty <= 1 || totalPieces >= b2bMinQty);
+
+  // B2C Thresholds
+  const b2cRemainingCart = Math.max(0, b2cMinCart - subtotal);
+  const b2cProgressPercent = b2cMinCart > 0 ? Math.min(100, Math.max(3, (subtotal / b2cMinCart) * 100)) : 100;
+  const isRetailMinMet = b2cMinCart <= 0 || subtotal >= b2cMinCart;
+  const b2cFreeShipRemaining = Math.max(0, b2cFreeShipThreshold - subtotal);
+  const b2cFreeShipPercent = b2cFreeShipThreshold > 0 ? Math.min(100, Math.max(3, (subtotal / b2cFreeShipThreshold) * 100)) : 100;
 
   const toggleSelectItem = (id: string) => {
     setSelectedItems((prev) =>
@@ -220,7 +280,7 @@ export default function CartScreen({
   };
 
   const handleCheckout = async (overrideIdentifier?: string) => {
-    // 1. Retail Login Check: Must be logged in before checking out from retail store
+    // 1. Retail Login Check & Minimum Cart Value Check
     if (activeCartMode === "retail") {
       const isRetailAuth =
         typeof window !== "undefined" &&
@@ -236,9 +296,15 @@ export default function CartScreen({
         setIsRetailLoginOpen(true);
         return;
       }
+
+      if (b2cMinCart > 0 && subtotal < b2cMinCart) {
+        setNotification(`Minimum retail order subtotal is ₹${b2cMinCart.toLocaleString("en-IN")}. Please add ₹${b2cRemainingCart.toFixed(0)} more.`);
+        setTimeout(() => setNotification(null), 3500);
+        return;
+      }
     }
 
-    // 2. Wholesale Login Check: Must be logged in and meet ₹3,000 minimum
+    // 2. Wholesale Login Check: Must be logged in and meet B2B minimums
     if (activeCartMode === "wholesale") {
       const isWholesaleAuth =
         typeof window !== "undefined" &&
@@ -247,8 +313,13 @@ export default function CartScreen({
         if (onOpenWholesaleLogin) onOpenWholesaleLogin();
         return;
       }
-      if (subtotal < b2bMin) {
-        setNotification(`Minimum B2B wholesale order is ₹3,000. Please add ₹${remaining} more.`);
+      if (b2bMinCart > 0 && subtotal < b2bMinCart) {
+        setNotification(`Minimum B2B wholesale order is ₹${b2bMinCart.toLocaleString("en-IN")}. Please add ₹${b2bRemainingCart.toFixed(0)} more.`);
+        setTimeout(() => setNotification(null), 3500);
+        return;
+      }
+      if (b2bMinQty > 1 && totalPieces < b2bMinQty) {
+        setNotification(`Minimum B2B wholesale quantity is ${b2bMinQty} pieces across cart. Please add ${b2bRemainingPieces} more items.`);
         setTimeout(() => setNotification(null), 3500);
         return;
       }
@@ -341,9 +412,9 @@ export default function CartScreen({
         {/* Top Announcement Bar */}
         <div className="w-full py-2 bg-[#000000] border-b border-[#141414] text-center mb-4 rounded-xl">
           <p className="text-[#e5a93c] text-[12.5px] sm:text-[13.5px] font-medium tracking-wide">
-            {storeMode === "wholesale"
-              ? "B2B Wholesale • Minimum Order: Rs 3,000 • Verified Businesses Only"
-              : "Retail Store • Free Shipping Over ₹999 • No Minimum Order"}
+            {activeCartMode === "wholesale"
+              ? `B2B Wholesale • Minimum Order: ₹${b2bMinCart.toLocaleString("en-IN")}${b2bMinQty > 1 ? ` (${b2bMinQty} pieces)` : ""} • Delivery: ₹${b2bDeliveryCharge}`
+              : `Retail Store • Free Delivery Above ₹${b2cFreeShipThreshold.toLocaleString("en-IN")}${b2cMinCart > 0 ? ` • Min Order: ₹${b2cMinCart.toLocaleString("en-IN")}` : " • No Minimum Order"}`}
           </p>
         </div>
 
@@ -363,7 +434,11 @@ export default function CartScreen({
               {activeCartMode === "wholesale" ? "Wholesale B2B Cart" : "Your Shopping Cart"}
             </h1>
             <p className="text-[11px] sm:text-xs text-[#e5a93c] uppercase tracking-wider font-medium">
-              {activeCartMode === "wholesale" ? "B2B Wholesale Portal (Min. ₹3,000)" : "Retail Store Channel"}
+              {activeCartMode === "wholesale"
+                ? `B2B Wholesale Portal (Min. ₹${b2bMinCart.toLocaleString("en-IN")})`
+                : b2cMinCart > 0
+                ? `Retail Store (Min. ₹${b2cMinCart.toLocaleString("en-IN")})`
+                : "Retail Store Channel"}
             </p>
           </div>
           <button
@@ -535,7 +610,13 @@ export default function CartScreen({
                   </div>
                   <div className="flex items-center justify-between text-[#8e8e93]">
                     <span>Shipping</span>
-                    <span className="text-white font-medium">₹{shipping.toFixed(1)}</span>
+                    {shipping === 0 ? (
+                      <span className="text-emerald-400 font-semibold flex items-center gap-1">
+                        <Check className="w-3.5 h-3.5" /> FREE
+                      </span>
+                    ) : (
+                      <span className="text-white font-medium">₹{shipping.toFixed(1)}</span>
+                    )}
                   </div>
                   <div className="pt-3 border-t border-[#1c1c1c] flex items-center justify-between text-base sm:text-lg">
                     <span className="text-white font-semibold">Total Payable</span>
@@ -555,8 +636,12 @@ export default function CartScreen({
                   </h5>
                   <p className="text-[#a8a8a8] text-xs leading-relaxed">
                     {activeCartMode === "wholesale"
-                      ? "Standard B2B shipping is ₹125 for all orders. Free shipping on orders above ₹10,000. Orders are dispatched within 24-48 business hours with GST invoice."
-                      : "Standard retail shipping is ₹125. Fast and safe insured delivery across India."}
+                      ? b2bDeliveryCharge === 0
+                        ? "100% Free B2B delivery for all wholesale partner orders. Dispatched within 24-48 business hours with GST invoice."
+                        : `Standard B2B delivery is ₹${b2bDeliveryCharge}. Orders are dispatched within 24-48 business hours with official GST invoice.`
+                      : subtotal >= b2cFreeShipThreshold
+                      ? `🎉 Free Delivery qualified! Orders over ₹${b2cFreeShipThreshold.toLocaleString("en-IN")} enjoy complimentary insured shipping across India.`
+                      : `Standard retail delivery is ₹${b2cDeliveryCharge}. Add ₹${b2cFreeShipRemaining.toFixed(0)} more to get 100% FREE Delivery!`}
                   </p>
                 </div>
               </div>
@@ -564,40 +649,104 @@ export default function CartScreen({
               {/* Minimum Order / Progress & Checkout Action */}
               <div className="w-full bg-[#0d0d0d] border border-[#222222] rounded-[22px] p-5 shadow-lg space-y-4">
                 {activeCartMode === "wholesale" ? (
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-[#8e8e93]">B2B Order Minimum Progress</span>
-                      <span className="text-[#e5a93c] font-semibold">₹{subtotal.toFixed(0)} / ₹3,000</span>
+                  <div className="space-y-3">
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-[#8e8e93]">B2B Order Minimum Progress</span>
+                        <span className="text-[#e5a93c] font-semibold">₹{subtotal.toFixed(0)} / ₹{b2bMinCart.toLocaleString("en-IN")}</span>
+                      </div>
+                      <div className="w-full h-2 rounded-full bg-[#1c1c1c] overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-[#d99726] to-[#f5c767] rounded-full transition-all duration-300"
+                          style={{ width: `${b2bProgressPercent}%` }}
+                        />
+                      </div>
+                      {subtotal < b2bMinCart ? (
+                        <p className="text-[#8e8e93] text-xs">
+                          Add <span className="text-[#e5a93c] font-semibold">₹{b2bRemainingCart.toFixed(0)}</span> more to meet wholesale value minimum.
+                        </p>
+                      ) : (
+                        <p className="text-emerald-400 text-xs font-medium flex items-center gap-1">
+                          <Check className="w-3.5 h-3.5" />
+                          <span>Wholesale value minimum met!</span>
+                        </p>
+                      )}
                     </div>
-                    <div className="w-full h-2 rounded-full bg-[#1c1c1c] overflow-hidden">
-                      <div
-                        className="h-full bg-gradient-to-r from-[#d99726] to-[#f5c767] rounded-full transition-all duration-300"
-                        style={{ width: `${progressPercent}%` }}
-                      />
-                    </div>
-                    {subtotal < b2bMin ? (
-                      <p className="text-[#8e8e93] text-xs">
-                        Add <span className="text-[#e5a93c] font-semibold">₹{remaining.toFixed(0)}</span> more to meet wholesale minimum.
-                      </p>
-                    ) : (
-                      <p className="text-emerald-400 text-xs font-medium flex items-center gap-1">
-                        <Check className="w-3.5 h-3.5" />
-                        <span>Wholesale minimum met! Ready to place order.</span>
-                      </p>
+
+                    {b2bMinQty > 1 && (
+                      <div className="pt-2 border-t border-[#1c1c1c] space-y-1">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-[#8e8e93]">B2B Total Items Quantity</span>
+                          <span className={`${totalPieces >= b2bMinQty ? "text-emerald-400" : "text-[#e5a93c]"} font-semibold`}>
+                            {totalPieces} / {b2bMinQty} pieces
+                          </span>
+                        </div>
+                        {totalPieces < b2bMinQty ? (
+                          <p className="text-[#8e8e93] text-xs">
+                            Add <span className="text-[#e5a93c] font-semibold">{b2bRemainingPieces}</span> more items to reach minimum wholesale batch size.
+                          </p>
+                        ) : (
+                          <p className="text-emerald-400 text-xs font-medium flex items-center gap-1">
+                            <Check className="w-3.5 h-3.5" />
+                            <span>Wholesale batch quantity requirement met!</span>
+                          </p>
+                        )}
+                      </div>
                     )}
                   </div>
                 ) : (
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="text-[#8e8e93]">Retail Checkout</span>
-                      <span className="text-emerald-400 font-medium flex items-center gap-1">
-                        <Check className="w-3.5 h-3.5" />
-                        <span>No Minimum Order</span>
-                      </span>
+                  <div className="space-y-3">
+                    {/* B2C Minimum Cart Value Check (if configured) */}
+                    {b2cMinCart > 0 && (
+                      <div className="space-y-1.5 pb-2 border-b border-[#1c1c1c]">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-[#8e8e93]">Retail Order Minimum</span>
+                          <span className="text-[#e5a93c] font-semibold">₹{subtotal.toFixed(0)} / ₹{b2cMinCart.toLocaleString("en-IN")}</span>
+                        </div>
+                        <div className="w-full h-1.5 rounded-full bg-[#1c1c1c] overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-[#d99726] to-[#f5c767] rounded-full transition-all duration-300"
+                            style={{ width: `${b2cProgressPercent}%` }}
+                          />
+                        </div>
+                        {subtotal < b2cMinCart ? (
+                          <p className="text-[#8e8e93] text-xs">
+                            Add <span className="text-[#e5a93c] font-semibold">₹{b2cRemainingCart.toFixed(0)}</span> more to reach minimum order value.
+                          </p>
+                        ) : (
+                          <p className="text-emerald-400 text-xs font-medium flex items-center gap-1">
+                            <Check className="w-3.5 h-3.5" />
+                            <span>Retail minimum order met!</span>
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Free Shipping Progress for Retail */}
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-[#8e8e93]">Free Shipping Progress</span>
+                        <span className="text-[#e5a93c] font-semibold">
+                          ₹{subtotal.toFixed(0)} / ₹{b2cFreeShipThreshold.toLocaleString("en-IN")}
+                        </span>
+                      </div>
+                      <div className="w-full h-2 rounded-full bg-[#1c1c1c] overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-emerald-500 to-emerald-300 rounded-full transition-all duration-300"
+                          style={{ width: `${b2cFreeShipPercent}%` }}
+                        />
+                      </div>
+                      {subtotal >= b2cFreeShipThreshold ? (
+                        <p className="text-emerald-400 text-xs font-medium flex items-center gap-1">
+                          <Check className="w-3.5 h-3.5" />
+                          <span>Congratulations! Free Shipping Unlocked!</span>
+                        </p>
+                      ) : (
+                        <p className="text-[#8e8e93] text-xs">
+                          Add <span className="text-emerald-400 font-semibold">₹{b2cFreeShipRemaining.toFixed(0)}</span> more to get FREE Delivery!
+                        </p>
+                      )}
                     </div>
-                    <p className="text-[#8e8e93] text-xs">
-                      Browse freely and order any quantity. Secure login via mobile OTP at checkout.
-                    </p>
                   </div>
                 )}
 
@@ -607,7 +756,7 @@ export default function CartScreen({
                   onClick={() => handleCheckout()}
                   disabled={isCheckingOut}
                   className={`w-full h-[52px] rounded-[16px] font-semibold text-sm sm:text-base flex items-center justify-center gap-2 shadow-xl transition-all cursor-pointer ${
-                    activeCartMode === "retail" || subtotal >= b2bMin
+                    (activeCartMode === "wholesale" ? isWholesaleMinMet : isRetailMinMet)
                       ? "bg-gradient-to-r from-[#e5a93c] to-[#f5c767] hover:opacity-95 active:scale-[0.99] text-[#111111]"
                       : "bg-[#1c160c] border border-[#e5a93c]/50 text-[#e5a93c] hover:bg-[#e5a93c] hover:text-black"
                   }`}

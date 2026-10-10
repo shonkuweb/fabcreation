@@ -46,6 +46,22 @@ export async function PUT(req: Request) {
     // Never allow updating adminPassword through general settings endpoint
     const { adminPassword: _disallowed, ...safeUpdates } = body;
 
+    const numericFields = [
+      "wholesaleMinCartValue",
+      "wholesaleMinQuantity",
+      "wholesaleDeliveryCharge",
+      "retailMinCartValue",
+      "retailFreeShippingThreshold",
+      "retailDeliveryCharge",
+    ] as const;
+
+    for (const field of numericFields) {
+      if (safeUpdates[field] !== undefined) {
+        const val = Number(safeUpdates[field]);
+        safeUpdates[field] = isNaN(val) ? 0 : Math.max(0, val);
+      }
+    }
+
     const updated = updateSettings(safeUpdates);
     const { adminPassword: _pw, ...safeResponse } = updated as any;
 

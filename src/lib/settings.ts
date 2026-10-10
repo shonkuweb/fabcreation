@@ -18,6 +18,14 @@ export interface StoreSettings {
   aboutHighlightDesc: string;
   aboutFooterSubtitle: string;
   aboutFooterHighlight: string;
+  // B2B Wholesale Checkout Configuration
+  wholesaleMinCartValue: number;
+  wholesaleMinQuantity: number;
+  wholesaleDeliveryCharge: number;
+  // B2C Retail Checkout & Delivery Configuration
+  retailMinCartValue: number;
+  retailFreeShippingThreshold: number;
+  retailDeliveryCharge: number;
   adminPassword?: string;
   updatedAt?: string;
 }
@@ -39,4 +47,12 @@ export const defaultSettings: StoreSettings = {
   aboutHighlightDesc: "Fab Creation goes beyond jewellery. We also provide E-commerce services, helping jewellery businesses take their collections online and reach customers beyond their physical store.",
   aboutFooterSubtitle: "Wholesale or retail. Traditional or contemporary. Jewellery or digital.",
   aboutFooterHighlight: "Fab Creation is where craftsmanship meets modern commerce.",
+  // B2B defaults
+  wholesaleMinCartValue: 3000,
+  wholesaleMinQuantity: 1,
+  wholesaleDeliveryCharge: 125,
+  // B2C defaults
+  retailMinCartValue: 0,
+  retailFreeShippingThreshold: 999,
+  retailDeliveryCharge: 125,
 };

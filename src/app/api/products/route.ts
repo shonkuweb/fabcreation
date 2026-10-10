@@ -43,12 +43,14 @@ export async function POST(req: Request) {
       channel,
       category,
       image,
+      images,
       video,
       stock,
       metal,
       target,
       occasion,
       subtitle,
+      description,
       featured,
     } = body;
 
@@ -74,6 +76,7 @@ export async function POST(req: Request) {
       channel: channel === "wholesale" || channel === "retail" ? channel : "both",
       category: assignedCategory,
       image: image || "https://pub-ce8688bc6c654bcfb99716f7c9373bcd.r2.dev/fab-creations/products/moon-necklace.jpg",
+      images: Array.isArray(images) ? images : undefined,
       video: video ? String(video).trim() : undefined,
       stock: Number(stock) || 1,
       metal: metal || "Stainless Steel",
@@ -82,6 +85,7 @@ export async function POST(req: Request) {
       rating: 5.0,
       reviewsCount: 0,
       subtitle: subtitle || "Anti tarnish",
+      description: description ? String(description).trim() : undefined,
       featured: Boolean(featured),
     });
 

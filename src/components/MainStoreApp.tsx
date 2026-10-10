@@ -455,6 +455,7 @@ export default function MainStoreApp({
               categories={initialCategories}
               products={initialProducts}
               storeMode={storeMode}
+              settings={settings}
               onSwitchStoreMode={handleSwitchStoreMode}
               isWholesaleLoggedIn={isWholesaleLoggedIn}
               onOpenWholesaleLogin={() => setIsWholesaleLoginOpen(true)}
@@ -495,9 +496,8 @@ export default function MainStoreApp({
           categories={initialCategories}
           cartCount={cartCount}
           storeMode={storeMode}
+          settings={settings}
           onSwitchStoreMode={handleSwitchStoreMode}
-          isWholesaleLoggedIn={isWholesaleLoggedIn}
-          isRetailLoggedIn={isRetailLoggedIn}
           onOpenWholesaleLogin={() => setIsWholesaleLoginOpen(true)}
           onOpenRetailLogin={openRetailLogin}
           onNavigateHome={goToHome}

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getOrders, createOrder, getProductById, updateProduct, type OrderItem } from "@/lib/db";
+import { getOrders, createOrder, getProductById, updateProduct, getSettings, type OrderItem } from "@/lib/db";
 import { sendOrderConfirmationEmail } from "@/lib/resend";
 import { isAdminAuthenticated } from "@/lib/adminAuth";
 
@@ -131,12 +131,45 @@ export async function POST(req: Request) {
       });
     }
 
-    // Enforce Wholesale Minimum Order Threshold
-    if (orderType === "wholesale" && calculatedSubtotal < 3000) {
+    const settings = getSettings();
+    const wholesaleMinCart = Number(settings.wholesaleMinCartValue ?? 3000);
+    const wholesaleMinQty = Number(settings.wholesaleMinQuantity ?? 1);
+    const wholesaleDelivery = Number(settings.wholesaleDeliveryCharge ?? 125);
+
+    const retailMinCart = Number(settings.retailMinCartValue ?? 0);
+    const retailFreeShip = Number(settings.retailFreeShippingThreshold ?? 999);
+    const retailDelivery = Number(settings.retailDeliveryCharge ?? 125);
+
+    const totalQuantity = verifiedItems.reduce((sum, item) => sum + item.quantity, 0);
+
+    // Enforce Wholesale Minimum Order Threshold & Quantity
+    if (orderType === "wholesale") {
+      if (wholesaleMinCart > 0 && calculatedSubtotal < wholesaleMinCart) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: `Minimum wholesale order subtotal is ₹${wholesaleMinCart.toLocaleString("en-IN")} across cart.`,
+          },
+          { status: 400 }
+        );
+      }
+      if (wholesaleMinQty > 1 && totalQuantity < wholesaleMinQty) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: `Minimum wholesale order quantity is ${wholesaleMinQty} pieces across cart (current: ${totalQuantity}).`,
+          },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Enforce Retail Minimum Order Threshold (if configured)
+    if (orderType === "retail" && retailMinCart > 0 && calculatedSubtotal < retailMinCart) {
       return NextResponse.json(
         {
           success: false,
-          message: "Minimum wholesale order subtotal is ₹3,000 across cart.",
+          message: `Minimum retail order subtotal is ₹${retailMinCart.toLocaleString("en-IN")} across cart.`,
         },
         { status: 400 }
       );
@@ -144,7 +177,19 @@ export async function POST(req: Request) {
 
     const finalSubtotal = Number(calculatedSubtotal.toFixed(1));
     const finalGst = Number((finalSubtotal * 0.03).toFixed(1));
-    const finalShipping = Number(shipping) === 0 ? 0 : 125;
+
+    // Dynamic Shipping calculation based on admin configuration
+    let finalShipping = 0;
+    if (orderType === "wholesale") {
+      finalShipping = wholesaleDelivery;
+    } else {
+      // Retail B2C shipping: free shipping if subtotal >= retailFreeShippingThreshold, else retailDeliveryCharge
+      if (finalSubtotal >= retailFreeShip) {
+        finalShipping = 0;
+      } else {
+        finalShipping = retailDelivery;
+      }
+    }
     const finalTotal = Number((finalSubtotal + finalGst + finalShipping).toFixed(1));
 
     const emailStr = (customerEmail || "").trim();

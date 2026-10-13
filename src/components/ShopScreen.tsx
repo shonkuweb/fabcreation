@@ -49,6 +49,7 @@ interface ShopScreenProps {
   onNavigateHome?: () => void;
   onNavigateCart?: () => void;
   onNavigateAccount?: () => void;
+  onNavigateCategories?: () => void;
   onSelectProduct?: (product: Product) => void;
   onAddToCart?: (product: Product, quantity?: number) => void;
   onSelectCategory?: (category: string | null) => void;
@@ -79,6 +80,7 @@ export default function ShopScreen({
   onNavigateHome,
   onNavigateCart,
   onNavigateAccount,
+  onNavigateCategories,
   onSelectProduct,
   onAddToCart,
   onSelectCategory,
@@ -268,6 +270,11 @@ export default function ShopScreen({
   const navigateToAccount = () => {
     if (onNavigateAccount) onNavigateAccount();
     else router.push("/account");
+  };
+
+  const navigateToCategories = () => {
+    if (onNavigateCategories) onNavigateCategories();
+    else router.push("/categories");
   };
 
   // Filter products by channel, search, and category
@@ -660,7 +667,7 @@ export default function ShopScreen({
           {/* 4. Categories */}
           <button
             type="button"
-            onClick={() => setIsCategoriesOpen(true)}
+            onClick={navigateToCategories}
             className="flex flex-col items-center justify-center flex-1 text-[#8e8e93] hover:text-[#e5a93c] transition-colors gap-1 cursor-pointer"
           >
             <Grid className="w-5 h-5" />

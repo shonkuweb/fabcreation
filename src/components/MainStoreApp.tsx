@@ -13,6 +13,7 @@ import NavigationDrawer from "@/components/NavigationDrawer";
 import AboutUsModal from "@/components/AboutUsModal";
 import CategoriesModal from "@/components/CategoriesModal";
 import WholesaleGateScreen from "@/components/WholesaleGateScreen";
+import CategoriesScreen from "@/components/CategoriesScreen";
 import type { Product, Category, OrderItem } from "@/lib/db";
 import { type StoreSettings, defaultSettings } from "@/lib/settings";
 import { getCartCount, fetchCartFromServer, addToCartByMode } from "@/lib/cart";
@@ -70,8 +71,9 @@ export default function MainStoreApp({
   const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
 
   // Resolve initial tab from prop or URL
-  const [tab, setTab] = useState<"home" | "shop" | "cart" | "account" | "product">(() => {
+  const [tab, setTab] = useState<"home" | "shop" | "cart" | "account" | "product" | "categories">(() => {
     const paramTab = searchParams?.get("tab") || initialTab;
+    if (paramTab === "categories") return "categories";
     if (paramTab === "shop") return "shop";
     if (paramTab === "cart") return "cart";
     if (paramTab === "account") return "account";
@@ -212,6 +214,8 @@ export default function MainStoreApp({
       const found = initialProducts.find((p) => p.id === currentId);
       if (found) setSelectedProduct(found);
       setTab("product");
+    } else if (currentTabParam === "categories") {
+      setTab("categories");
     } else if (currentTabParam === "shop") {
       setTab("shop");
       if (currentCat) setSelectedCategory(currentCat);
@@ -231,6 +235,16 @@ export default function MainStoreApp({
       window.scrollTo({ top: 0, behavior: "smooth" });
       if (typeof window !== "undefined") {
         window.history.replaceState(null, "", "/home");
+      }
+    });
+  };
+
+  const goToCategories = () => {
+    startTransition(() => {
+      setTab("categories");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      if (typeof window !== "undefined") {
+        window.history.replaceState(null, "", "/home?tab=categories");
       }
     });
   };
@@ -356,7 +370,7 @@ export default function MainStoreApp({
         onNavigateCart={goToCart}
         onNavigateAccount={goToAccount}
         onOpenAboutUs={() => setIsAboutUsOpen(true)}
-        onOpenCategories={() => setIsCategoriesOpen(true)}
+        onOpenCategories={goToCategories}
         onSignOut={handleSignOut}
         cartCount={cartCount}
       />
@@ -424,6 +438,32 @@ export default function MainStoreApp({
         />
       ) : (
         <>
+          {tab === "categories" && (
+            <CategoriesScreen
+              products={initialProducts}
+              categories={initialCategories}
+              cartCount={cartCount}
+              storeMode={storeMode}
+              settings={settings}
+              onSwitchStoreMode={handleSwitchStoreMode}
+              isWholesaleLoggedIn={isWholesaleLoggedIn}
+              isRetailLoggedIn={isRetailLoggedIn}
+              onOpenWholesaleLogin={() => setIsWholesaleLoginOpen(true)}
+              onOpenRetailLogin={openRetailLogin}
+              onOpenRetailRegister={openRetailRegister}
+              onOpenAboutUs={() => setIsAboutUsOpen(true)}
+              onNavigateHome={goToHome}
+              onNavigateShop={goToShop}
+              onNavigateCart={goToCart}
+              onNavigateAccount={goToAccount}
+              onNavigateCategories={goToCategories}
+              onSelectProduct={goToProduct}
+              onSelectCategory={goToShop}
+              onSignOut={handleSignOut}
+              onOpenMenu={() => setIsMenuOpen(true)}
+            />
+          )}
+
           {tab === "shop" && (
             <ShopScreen
               products={initialProducts}
@@ -442,6 +482,7 @@ export default function MainStoreApp({
               onNavigateHome={goToHome}
               onNavigateCart={goToCart}
               onNavigateAccount={goToAccount}
+              onNavigateCategories={goToCategories}
               onSelectProduct={goToProduct}
               onSelectCategory={goToShop}
               onSignOut={handleSignOut}
@@ -462,6 +503,7 @@ export default function MainStoreApp({
               onNavigateHome={goToHome}
               onNavigateShop={goToShop}
               onNavigateAccount={goToAccount}
+              onNavigateCategories={goToCategories}
               onSelectCategory={goToShop}
               onSelectProduct={goToProduct}
               onSignOut={handleSignOut}
@@ -483,6 +525,7 @@ export default function MainStoreApp({
               onNavigateHome={goToHome}
               onNavigateShop={goToShop}
               onNavigateCart={goToCart}
+              onNavigateCategories={goToCategories}
               onSelectProduct={goToProduct}
               onSelectCategory={goToShop}
               onSignOut={handleSignOut}
@@ -504,6 +547,7 @@ export default function MainStoreApp({
           onNavigateShop={goToShop}
           onNavigateCart={goToCart}
           onNavigateAccount={goToAccount}
+          onNavigateCategories={goToCategories}
           onSelectProduct={goToProduct}
           onSelectCategory={goToShop}
           onSignOut={handleSignOut}
@@ -528,6 +572,7 @@ export default function MainStoreApp({
           onNavigateShop={goToShop}
           onNavigateCart={goToCart}
           onNavigateAccount={goToAccount}
+          onNavigateCategories={goToCategories}
           onSelectProduct={goToProduct}
           onSelectCategory={goToShop}
           onSignOut={handleSignOut}

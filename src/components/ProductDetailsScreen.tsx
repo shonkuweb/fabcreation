@@ -62,6 +62,7 @@ interface ProductDetailsScreenProps {
   onNavigateShop?: () => void;
   onNavigateCart?: () => void;
   onNavigateAccount?: () => void;
+  onNavigateCategories?: () => void;
   onSelectCategory?: (category: string | null) => void;
   onSignOut?: () => void;
   onBack?: () => void;
@@ -87,6 +88,7 @@ export default function ProductDetailsScreen({
   onNavigateShop,
   onNavigateCart,
   onNavigateAccount,
+  onNavigateCategories,
   onSelectCategory,
   onSignOut,
   onBack,
@@ -225,6 +227,7 @@ export default function ProductDetailsScreen({
   const navShop = () => (onNavigateShop ? onNavigateShop() : router.push("/shop"));
   const navCart = () => (onNavigateCart ? onNavigateCart() : router.push("/cart"));
   const navAccount = () => (onNavigateAccount ? onNavigateAccount() : router.push("/account"));
+  const navCategories = () => (onNavigateCategories ? onNavigateCategories() : router.push("/categories"));
 
   // Load product from prop, localStorage, or query param / API
   useEffect(() => {
@@ -1135,7 +1138,7 @@ export default function ProductDetailsScreen({
           {/* Categories */}
           <button
             type="button"
-            onClick={() => setIsCategoriesOpen(true)}
+            onClick={navCategories}
             className="flex flex-col items-center justify-center flex-1 text-[#8e8e93] hover:text-[#e5a93c] transition-colors gap-1 cursor-pointer"
           >
             <Grid className="w-5 h-5" />

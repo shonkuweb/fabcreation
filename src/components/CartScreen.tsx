@@ -50,6 +50,7 @@ interface CartScreenProps {
   onNavigateHome?: () => void;
   onNavigateShop?: () => void;
   onNavigateAccount?: () => void;
+  onNavigateCategories?: () => void;
   onSelectCategory?: (category: string | null) => void;
   onSelectProduct?: (product: Product) => void;
   onSignOut?: () => void;
@@ -71,6 +72,7 @@ export default function CartScreen({
   onNavigateHome,
   onNavigateShop,
   onNavigateAccount,
+  onNavigateCategories,
   onSelectCategory,
   onSelectProduct,
   onSignOut,
@@ -184,6 +186,11 @@ export default function CartScreen({
   const navAccount = () => {
     if (onNavigateAccount) onNavigateAccount();
     else router.push("/account");
+  };
+
+  const navCategories = () => {
+    if (onNavigateCategories) onNavigateCategories();
+    else router.push("/categories");
   };
 
   // Store Settings (Dynamic B2B & B2C rules)
@@ -999,7 +1006,7 @@ export default function CartScreen({
           {/* 4. Categories */}
           <button
             type="button"
-            onClick={() => setIsCategoriesOpen(true)}
+            onClick={navCategories}
             className="flex flex-col items-center justify-center flex-1 text-[#8e8e93] hover:text-[#e5a93c] transition-colors gap-1 cursor-pointer"
           >
             <Grid className="w-5 h-5" />

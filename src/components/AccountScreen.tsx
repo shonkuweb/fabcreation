@@ -75,6 +75,7 @@ interface AccountScreenProps {
   onNavigateHome?: () => void;
   onNavigateShop?: () => void;
   onNavigateCart?: () => void;
+  onNavigateCategories?: () => void;
   onSelectCategory?: (category: string | null) => void;
   onSignOut?: () => void;
 }
@@ -98,6 +99,7 @@ export default function AccountScreen({
   onNavigateHome,
   onNavigateShop,
   onNavigateCart,
+  onNavigateCategories,
   onSelectCategory,
   onSignOut,
 }: AccountScreenProps) {
@@ -127,6 +129,11 @@ export default function AccountScreen({
   const navCart = () => {
     if (onNavigateCart) onNavigateCart();
     else router.push("/cart");
+  };
+
+  const navCategories = () => {
+    if (onNavigateCategories) onNavigateCategories();
+    else router.push("/categories");
   };
 
   // Profile state with database & storage persistence
@@ -1197,7 +1204,7 @@ export default function AccountScreen({
           {/* 4. Categories */}
           <button
             type="button"
-            onClick={() => setIsCategoriesOpen(true)}
+            onClick={navCategories}
             className="flex flex-col items-center justify-center flex-1 text-[#8e8e93] hover:text-[#e5a93c] transition-colors gap-1 cursor-pointer"
           >
             <Grid className="w-5 h-5" />

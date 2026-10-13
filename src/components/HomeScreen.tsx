@@ -12,6 +12,7 @@ import {
   Home,
   ShoppingBag,
   Grid,
+  LayoutGrid,
   User,
   Star,
   Lock,
@@ -50,6 +51,7 @@ interface HomeScreenProps {
   onNavigateShop?: () => void;
   onNavigateCart?: () => void;
   onNavigateAccount?: () => void;
+  onNavigateCategories?: () => void;
   onSelectProduct?: (product: Product) => void;
   onAddToCart?: (product: Product, quantity?: number) => void;
   onSelectCategory?: (category: string | null) => void;
@@ -80,6 +82,7 @@ export default function HomeScreen({
   onNavigateShop,
   onNavigateCart,
   onNavigateAccount,
+  onNavigateCategories,
   onSelectProduct,
   onAddToCart,
   onSelectCategory,
@@ -261,9 +264,24 @@ export default function HomeScreen({
     window.scrollTo({ top: 0, behavior: "smooth" });
   });
 
-  const navigateToShop = () => {
-    if (onNavigateShop) onNavigateShop();
-    else router.push("/shop");
+  const navigateToCategories = () => {
+    if (onNavigateCategories) {
+      onNavigateCategories();
+    } else {
+      router.push("/categories");
+    }
+  };
+
+  const navigateToShop = (categoryOrEvent?: string | null | React.MouseEvent | unknown) => {
+    const cat = typeof categoryOrEvent === "string" ? categoryOrEvent : null;
+    if (cat && onSelectCategory) {
+      onSelectCategory(cat);
+    }
+    if (onNavigateShop) {
+      onNavigateShop();
+    } else {
+      router.push(cat ? `/shop?cat=${encodeURIComponent(cat)}` : "/shop");
+    }
   };
 
   const navigateToCart = () => {
@@ -395,26 +413,32 @@ export default function HomeScreen({
           </div>
         </section>
 
-        {/* Categories Section (Mobile Only: lg:hidden - on desktop categories are directly in the navbar) */}
+        {/* Categories Section: 4 categories on mobile, 6 categories on desktop, with 'View All' CTA */}
         {displayedCategoryItems.length > 0 && (
-          <section className="lg:hidden px-4 py-2">
-            <div className="flex items-center justify-between mb-2.5">
-              <h3 className="text-white text-[17px] font-serif font-medium tracking-tight">
-                Shop by Category
-              </h3>
+          <section className="w-full px-4 sm:px-6 lg:px-8 py-3 sm:py-4 md:py-6">
+            <div className="flex items-center justify-between mb-3 sm:mb-4">
+              <div>
+                <h3 className="text-white text-[18px] sm:text-[20px] md:text-[22px] font-serif font-medium tracking-tight">
+                  Shop by Category
+                </h3>
+                <p className="text-[#8e8e93] text-[11.5px] sm:text-[13px] hidden sm:block mt-0.5">
+                  Discover our curated fine jewellery collections
+                </p>
+              </div>
               <button
-                onClick={() => setIsCategoriesOpen(true)}
-                className="text-[#e5a93c] hover:text-[#f5c767] text-[12px] font-medium flex items-center gap-1 cursor-pointer transition-colors"
+                type="button"
+                onClick={navigateToCategories}
+                className="text-[#e5a93c] hover:text-[#f5c767] text-[12px] sm:text-[13px] font-medium flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#181308] border border-[#3a2c14] hover:border-[#e5a93c]/60 cursor-pointer transition-all active:scale-95 group shadow-sm"
               >
                 <span>View All</span>
-                <ArrowRight className="w-3.5 h-3.5" />
+                <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
               </button>
             </div>
 
-            <div className="flex items-center gap-3.5 sm:gap-4 overflow-x-auto pb-2 pt-1 scrollbar-none px-1">
-              {displayedCategoryItems.map((catItem) => {
+            {/* Mobile View (< md): Exactly 4 categories in front, followed by 'View All' CTA card */}
+            <div className="flex md:hidden items-start gap-3.5 sm:gap-4 overflow-x-auto pb-2 pt-1 scrollbar-none px-1">
+              {displayedCategoryItems.slice(0, 4).map((catItem) => {
                 const catName = catItem.name;
-                // Fallback to product image if no category thumbnail is explicitly uploaded
                 const categoryProduct = products.find(
                   (p) => p.category?.toLowerCase() === catName.toLowerCase() && p.image
                 );
@@ -426,7 +450,7 @@ export default function HomeScreen({
                     type="button"
                     onClick={() => {
                       onSelectCategory?.(catName);
-                      navigateToShop();
+                      navigateToShop(catName);
                     }}
                     className="flex flex-col items-center gap-1.5 shrink-0 cursor-pointer group focus:outline-none"
                   >
@@ -454,6 +478,94 @@ export default function HomeScreen({
                   </button>
                 );
               })}
+
+              {/* Mobile View All CTA Card */}
+              <button
+                type="button"
+                onClick={navigateToCategories}
+                aria-label="View All Categories"
+                className="flex flex-col items-center gap-1.5 shrink-0 cursor-pointer group focus:outline-none"
+              >
+                <div className="relative w-[66px] h-[66px] sm:w-[72px] sm:h-[72px] rounded-full p-[2px] bg-gradient-to-tr from-[#3a2c14] via-[#e5a93c] to-[#3a2c14] group-hover:scale-105 group-hover:from-[#e5a93c] group-hover:to-[#f5c767] transition-all duration-300 shadow-md">
+                  <div className="w-full h-full rounded-full bg-[#141008] border border-[#3a2c14] flex flex-col items-center justify-center text-[#e5a93c] group-hover:bg-[#1c160a] transition-colors">
+                    <LayoutGrid className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                    {displayedCategoryItems.length > 4 && (
+                      <span className="text-[9.5px] font-bold text-[#f5c767] mt-0.5 leading-none">
+                        +{displayedCategoryItems.length - 4}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <span className="text-[#e5a93c] group-hover:text-[#f5c767] text-[11.5px] sm:text-[12px] font-semibold max-w-[76px] truncate text-center tracking-tight flex items-center justify-center gap-0.5">
+                  View All
+                  <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                </span>
+              </button>
+            </div>
+
+            {/* Desktop View (>= md): Exactly 6 categories in front, followed by 'View All' CTA card */}
+            <div className="hidden md:flex items-start justify-center gap-6 lg:gap-8 overflow-x-auto pb-2 pt-1 scrollbar-none px-1">
+              {displayedCategoryItems.slice(0, 6).map((catItem) => {
+                const catName = catItem.name;
+                const categoryProduct = products.find(
+                  (p) => p.category?.toLowerCase() === catName.toLowerCase() && p.image
+                );
+                const thumbnailSrc = catItem.image || categoryProduct?.image;
+
+                return (
+                  <button
+                    key={catName}
+                    type="button"
+                    onClick={() => {
+                      onSelectCategory?.(catName);
+                      navigateToShop(catName);
+                    }}
+                    className="flex flex-col items-center gap-2 shrink-0 cursor-pointer group focus:outline-none"
+                  >
+                    <div className="relative w-[82px] h-[82px] lg:w-[90px] lg:h-[90px] rounded-full p-[2.5px] bg-gradient-to-tr from-[#d69e3d] via-[#f5c767] to-[#8a6828] group-hover:scale-105 group-hover:from-[#f5c767] group-hover:to-[#e5a93c] transition-all duration-300 shadow-lg">
+                      <div className="w-full h-full rounded-full bg-[#121212] overflow-hidden flex items-center justify-center p-[2px]">
+                        {thumbnailSrc ? (
+                          <img
+                            src={thumbnailSrc}
+                            alt={catName}
+                            className="w-full h-full rounded-full object-cover transition-transform duration-300 group-hover:scale-110"
+                          />
+                        ) : (
+                          <div className="w-full h-full rounded-full bg-[#181308] border border-[#3a2c14] flex items-center justify-center text-[#e5a93c]">
+                            <Grid className="w-6 h-6 group-hover:scale-110 transition-transform" />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <span className="text-white text-[13px] font-medium group-hover:text-[#e5a93c] transition-colors max-w-[96px] truncate text-center tracking-tight">
+                      {catName}
+                    </span>
+                  </button>
+                );
+              })}
+
+              {/* Desktop View All CTA Card */}
+              <button
+                type="button"
+                onClick={navigateToCategories}
+                aria-label="View All Categories"
+                className="flex flex-col items-center gap-2 shrink-0 cursor-pointer group focus:outline-none"
+              >
+                <div className="relative w-[82px] h-[82px] lg:w-[90px] lg:h-[90px] rounded-full p-[2.5px] bg-gradient-to-tr from-[#3a2c14] via-[#e5a93c] to-[#3a2c14] group-hover:scale-105 group-hover:from-[#e5a93c] group-hover:to-[#f5c767] transition-all duration-300 shadow-lg">
+                  <div className="w-full h-full rounded-full bg-[#141008] border border-[#3a2c14] flex flex-col items-center justify-center text-[#e5a93c] group-hover:bg-[#1c160a] transition-colors">
+                    <LayoutGrid className="w-6 h-6 lg:w-7 lg:h-7 group-hover:scale-110 transition-transform" />
+                    {displayedCategoryItems.length > 6 && (
+                      <span className="text-[10.5px] font-bold text-[#f5c767] mt-0.5 leading-none">
+                        +{displayedCategoryItems.length - 6}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <span className="text-[#e5a93c] group-hover:text-[#f5c767] text-[13px] font-semibold max-w-[96px] truncate text-center tracking-tight flex items-center justify-center gap-0.5">
+                  View All
+                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                </span>
+              </button>
             </div>
           </section>
         )}
@@ -661,7 +773,7 @@ export default function HomeScreen({
           {/* Categories */}
           <button
             type="button"
-            onClick={() => setIsCategoriesOpen(true)}
+            onClick={navigateToCategories}
             className="flex flex-col items-center justify-center flex-1 text-[#8e8e93] hover:text-[#e5a93c] transition-colors gap-1 cursor-pointer"
           >
             <Grid className="w-5 h-5" />

@@ -13,6 +13,7 @@ export interface Product {
   image: string;
   images?: string[];
   video?: string;
+  wholesaleMinQty?: number;
   stock: number;
   metal: string;
   target: string;
@@ -38,6 +39,7 @@ export interface OrderItem {
   price: number;
   quantity: number;
   image: string;
+  wholesaleMinQty?: number;
 }
 
 export interface Order {
@@ -209,6 +211,12 @@ function getDb(): DatabaseData {
       return {
         ...p,
         channel: p.channel || "both",
+        wholesaleMinQty:
+          typeof p.wholesaleMinQty === "number" && p.wholesaleMinQty > 0
+            ? Math.floor(p.wholesaleMinQty)
+            : typeof p.minQuantity === "number" && p.minQuantity > 0
+            ? Math.floor(p.minQuantity)
+            : 1,
         retailPrice: rPrice,
         wholesalePrice: wPrice,
         price: rPrice || wPrice || 0,
@@ -341,10 +349,16 @@ export function createProduct(productData: Omit<Product, "id" | "createdAt">): P
     images = [primaryImage];
   }
 
+  const wholesaleMinQty =
+    typeof productData.wholesaleMinQty === "number" && productData.wholesaleMinQty > 0
+      ? Math.floor(productData.wholesaleMinQty)
+      : 1;
+
   const newProduct: Product = {
     ...productData,
     image: primaryImage,
     images,
+    wholesaleMinQty,
     description: productData.description ? String(productData.description).trim() : undefined,
     retailPrice,
     wholesalePrice,
@@ -367,6 +381,10 @@ export function updateProduct(id: string, updates: Partial<Product>): Product | 
   const nextRetail = updates.retailPrice !== undefined ? Number(updates.retailPrice) : current.retailPrice;
   const nextWholesale = updates.wholesalePrice !== undefined ? Number(updates.wholesalePrice) : current.wholesalePrice;
   const nextPrice = nextRetail ?? nextWholesale ?? updates.price ?? current.price;
+  const nextWholesaleMinQty =
+    updates.wholesaleMinQty !== undefined
+      ? Math.max(1, Math.floor(Number(updates.wholesaleMinQty) || 1))
+      : current.wholesaleMinQty || 1;
 
   let images = updates.images !== undefined ? updates.images : current.images;
   if (Array.isArray(images)) {
@@ -384,6 +402,7 @@ export function updateProduct(id: string, updates: Partial<Product>): Product | 
     ...updates,
     image: primaryImage,
     images,
+    wholesaleMinQty: nextWholesaleMinQty,
     description:
       updates.description !== undefined
         ? updates.description

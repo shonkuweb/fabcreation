@@ -147,6 +147,7 @@ export function addToCartByMode(
             ...item,
             quantity: item.quantity + quantity,
             price: effectivePrice,
+            wholesaleMinQty: product.wholesaleMinQty ?? item.wholesaleMinQty ?? 1,
           }
         : item
     );
@@ -159,6 +160,7 @@ export function addToCartByMode(
         price: effectivePrice,
         quantity,
         image: product.image,
+        wholesaleMinQty: product.wholesaleMinQty ?? 1,
       },
     ];
   }

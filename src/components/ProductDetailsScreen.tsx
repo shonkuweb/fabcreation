@@ -29,6 +29,7 @@ import {
   Grid,
   Lock,
   FileText,
+  Package,
 } from "lucide-react";
 import Footer from "@/components/Footer";
 import CategoriesModal from "@/components/CategoriesModal";
@@ -123,6 +124,17 @@ export default function ProductDetailsScreen({
       })
       .catch(() => {});
   }, []);
+
+  // B2B MOQ: Product-specific minimum order quantity for wholesale
+  const productMinQty = (storeMode === "wholesale" && product?.wholesaleMinQty && product.wholesaleMinQty > 1)
+    ? product.wholesaleMinQty
+    : 1;
+
+  useEffect(() => {
+    if (storeMode === "wholesale" && product?.wholesaleMinQty && product.wholesaleMinQty > 1) {
+      setQuantity((prev) => Math.max(prev, product.wholesaleMinQty || 1));
+    }
+  }, [storeMode, product?.wholesaleMinQty]);
 
   // Media items: up to 4 photos + optional 5s video
   const mediaList = React.useMemo(() => {
@@ -363,14 +375,15 @@ export default function ProductDetailsScreen({
   // Quick Add to cart for recommended product
   const handleAddToCartForRelated = (p: Product, e?: React.MouseEvent) => {
     e?.stopPropagation();
+    const qtyToAdd = storeMode === "wholesale" ? Math.max(1, p.wholesaleMinQty || 1) : 1;
     if (storeMode === "wholesale") {
       if (!isWholesaleLoggedIn) {
         if (onOpenWholesaleLogin) onOpenWholesaleLogin();
         return;
       }
-      const { items, effectivePrice } = addToCartByMode(p, storeMode, 1);
+      const { items, effectivePrice } = addToCartByMode(p, storeMode, qtyToAdd);
       setCartCount(items.reduce((s, i) => s + i.quantity, 0));
-      onAddToCart?.({ ...p, price: effectivePrice }, 1);
+      onAddToCart?.({ ...p, price: effectivePrice }, qtyToAdd);
       navCart();
       return;
     }
@@ -811,14 +824,24 @@ export default function ProductDetailsScreen({
 
             {/* Quantity Stepper & Add to Cart */}
             <div className="space-y-3">
+              {storeMode === "wholesale" && (product.wholesaleMinQty ?? 1) > 1 && (
+                <div className="flex items-center gap-2 p-2.5 rounded-xl bg-amber-950/40 border border-amber-800/60 text-[#f5c767] text-xs font-medium">
+                  <Package className="w-4 h-4 text-[#e5a93c] shrink-0" />
+                  <span>
+                    Wholesale Minimum: <strong>{product.wholesaleMinQty} pieces</strong> required for this item
+                  </span>
+                </div>
+              )}
+
               <div className="flex items-center gap-3">
                 {/* Stepper */}
                 <div className="flex items-center h-[52px] rounded-[16px] bg-[#0e0e0e] border border-[#262626] px-3.5 gap-3 shrink-0">
                   <button
                     type="button"
-                    onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                    disabled={quantity <= 1}
+                    onClick={() => setQuantity((q) => Math.max(productMinQty, q - 1))}
+                    disabled={quantity <= productMinQty}
                     className="w-8 h-8 rounded-lg bg-[#1a1a1a] flex items-center justify-center text-white hover:text-[#e5a93c] transition-colors disabled:opacity-40 cursor-pointer"
+                    title={quantity <= productMinQty ? `Minimum required: ${productMinQty}` : "Decrease quantity"}
                   >
                     -
                   </button>
@@ -830,6 +853,7 @@ export default function ProductDetailsScreen({
                     onClick={() => setQuantity((q) => Math.min(product.stock || 99, q + 1))}
                     disabled={quantity >= (product.stock || 99)}
                     className="w-8 h-8 rounded-lg bg-[#1a1a1a] flex items-center justify-center text-white hover:text-[#e5a93c] transition-colors disabled:opacity-40 cursor-pointer"
+                    title="Increase quantity"
                   >
                     +
                   </button>

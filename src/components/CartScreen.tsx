@@ -17,6 +17,7 @@ import {
   CheckCircle,
   Plus,
   Sparkles,
+  AlertCircle,
 } from "lucide-react";
 import CategoriesModal from "@/components/CategoriesModal";
 import StoreModeToggle from "@/components/StoreModeToggle";
@@ -246,7 +247,14 @@ export default function CartScreen({
   const b2bRemainingCart = Math.max(0, b2bMinCart - subtotal);
   const b2bProgressPercent = b2bMinCart > 0 ? Math.min(100, Math.max(3, (subtotal / b2bMinCart) * 100)) : 100;
   const b2bRemainingPieces = Math.max(0, b2bMinQty - totalPieces);
-  const isWholesaleMinMet = subtotal >= b2bMinCart && (b2bMinQty <= 1 || totalPieces >= b2bMinQty);
+
+  // Check individual product wholesale MOQs
+  const itemsFailingMOQ = activeCartMode === "wholesale"
+    ? cart.filter((item) => (item.wholesaleMinQty ?? 1) > 1 && item.quantity < (item.wholesaleMinQty ?? 1))
+    : [];
+  const isEveryItemMOQMet = itemsFailingMOQ.length === 0;
+
+  const isWholesaleMinMet = subtotal >= b2bMinCart && (b2bMinQty <= 1 || totalPieces >= b2bMinQty) && isEveryItemMOQMet;
 
   // B2C Thresholds
   const b2cRemainingCart = Math.max(0, b2cMinCart - subtotal);
@@ -320,6 +328,12 @@ export default function CartScreen({
       }
       if (b2bMinQty > 1 && totalPieces < b2bMinQty) {
         setNotification(`Minimum B2B wholesale quantity is ${b2bMinQty} pieces across cart. Please add ${b2bRemainingPieces} more items.`);
+        setTimeout(() => setNotification(null), 3500);
+        return;
+      }
+      if (itemsFailingMOQ.length > 0) {
+        const first = itemsFailingMOQ[0];
+        setNotification(`"${first.name}" requires a minimum wholesale quantity of ${first.wholesaleMinQty} pieces (current: ${first.quantity}).`);
         setTimeout(() => setNotification(null), 3500);
         return;
       }
@@ -536,9 +550,21 @@ export default function CartScreen({
                           <h3 className="text-white text-sm sm:text-base font-medium leading-tight">
                             {item.name}
                           </h3>
-                          <span className="text-[11px] text-[#8e8e93]">
-                            Qty: {item.quantity} × ₹{item.price}
-                          </span>
+                          <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                            <span className="text-[11px] text-[#8e8e93]">
+                              Qty: {item.quantity} × ₹{item.price}
+                            </span>
+                            {activeCartMode === "wholesale" && (item.wholesaleMinQty ?? 1) > 1 && (
+                              <span className="px-1.5 py-0.2 rounded bg-amber-950/60 border border-amber-800/50 text-[#f5c767] text-[10px] font-semibold">
+                                MOQ: {item.wholesaleMinQty} pcs
+                              </span>
+                            )}
+                          </div>
+                          {activeCartMode === "wholesale" && (item.wholesaleMinQty ?? 1) > 1 && item.quantity < (item.wholesaleMinQty ?? 1) && (
+                            <p className="text-rose-400 text-[10.5px] font-medium pt-0.5">
+                              ⚠️ Needs min. {item.wholesaleMinQty} pcs for wholesale
+                            </p>
+                          )}
                         </div>
                       </div>
 
@@ -569,8 +595,13 @@ export default function CartScreen({
                       <div className="flex items-center h-[34px] rounded-[10px] bg-[#141414] border border-[#2a2a2a] px-2 gap-3">
                         <button
                           type="button"
-                          onClick={() => handleUpdateQty(item.id, Math.max(1, item.quantity - 1))}
-                          className="text-[#8e8e93] hover:text-white text-sm font-bold px-1.5 cursor-pointer"
+                          onClick={() => {
+                            const minAllowed = activeCartMode === "wholesale" ? Math.max(1, item.wholesaleMinQty || 1) : 1;
+                            handleUpdateQty(item.id, Math.max(minAllowed, item.quantity - 1));
+                          }}
+                          disabled={activeCartMode === "wholesale" && item.quantity <= (item.wholesaleMinQty || 1)}
+                          className="text-[#8e8e93] hover:text-white text-sm font-bold px-1.5 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                          title={activeCartMode === "wholesale" && item.quantity <= (item.wholesaleMinQty || 1) ? `Minimum wholesale quantity is ${item.wholesaleMinQty || 1}` : "Decrease"}
                         >
                           -
                         </button>
@@ -693,6 +724,26 @@ export default function CartScreen({
                         )}
                       </div>
                     )}
+
+                    {/* B2B Item MOQ Status */}
+                    {itemsFailingMOQ.length > 0 ? (
+                      <div className="pt-2 border-t border-[#1c1c1c] space-y-1">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-[#8e8e93]">Item MOQ Requirements</span>
+                          <span className="text-rose-400 font-semibold">{itemsFailingMOQ.length} below MOQ</span>
+                        </div>
+                        <p className="text-amber-400 text-xs">
+                          {itemsFailingMOQ.map((i) => `"${i.name}" (needs ${i.wholesaleMinQty} pcs)`).join(", ")}
+                        </p>
+                      </div>
+                    ) : cart.some((i) => (i.wholesaleMinQty ?? 1) > 1) ? (
+                      <div className="pt-2 border-t border-[#1c1c1c]">
+                        <p className="text-emerald-400 text-xs font-medium flex items-center gap-1">
+                          <Check className="w-3.5 h-3.5" />
+                          <span>All product minimum quantities met!</span>
+                        </p>
+                      </div>
+                    ) : null}
                   </div>
                 ) : (
                   <div className="space-y-3">

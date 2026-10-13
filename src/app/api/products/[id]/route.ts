@@ -43,6 +43,9 @@ export async function PUT(
     if (updates.wholesalePrice !== undefined) updates.wholesalePrice = Number(updates.wholesalePrice);
     if (updates.price !== undefined) updates.price = Number(updates.price);
     if (updates.stock !== undefined) updates.stock = Number(updates.stock);
+    if (updates.wholesaleMinQty !== undefined) {
+      updates.wholesaleMinQty = Math.max(1, Math.floor(Number(updates.wholesaleMinQty) || 1));
+    }
 
     const updated = updateProduct(params.id, updates);
     if (!updated) {

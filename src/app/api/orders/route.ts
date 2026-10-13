@@ -102,6 +102,7 @@ export async function POST(req: Request) {
       let itemPrice = 0;
       let itemName = String(rawItem.name || "Jewellery Item").trim();
       let itemImage = String(rawItem.image || "/images/products/moon-necklace.jpg");
+      let itemWholesaleMinQty = rawItem.wholesaleMinQty ? Number(rawItem.wholesaleMinQty) : 1;
 
       if (dbProduct) {
         itemName = dbProduct.name;
@@ -109,13 +110,7 @@ export async function POST(req: Request) {
         const rPrice = dbProduct.retailPrice ?? dbProduct.price ?? 0;
         const wPrice = dbProduct.wholesalePrice ?? dbProduct.price ?? rPrice;
         itemPrice = orderType === "wholesale" ? wPrice : rPrice;
-
-        // Atomically decrement stock when order is placed
-        if (typeof dbProduct.stock === "number" && dbProduct.stock > 0) {
-          updateProduct(dbProduct.id, {
-            stock: Math.max(0, dbProduct.stock - quantity),
-          });
-        }
+        itemWholesaleMinQty = dbProduct.wholesaleMinQty ?? itemWholesaleMinQty;
       } else {
         // Fallback for custom items if ever needed
         itemPrice = Math.max(0, Number(rawItem.price) || 0);
@@ -128,6 +123,7 @@ export async function POST(req: Request) {
         price: itemPrice,
         quantity,
         image: itemImage,
+        wholesaleMinQty: itemWholesaleMinQty,
       });
     }
 
@@ -142,8 +138,23 @@ export async function POST(req: Request) {
 
     const totalQuantity = verifiedItems.reduce((sum, item) => sum + item.quantity, 0);
 
-    // Enforce Wholesale Minimum Order Threshold & Quantity
+    // Enforce Wholesale Minimum Order Threshold & Quantities
     if (orderType === "wholesale") {
+      // 1. Enforce individual product MOQs
+      for (const item of verifiedItems) {
+        const itemMOQ = item.wholesaleMinQty ?? 1;
+        if (itemMOQ > 1 && item.quantity < itemMOQ) {
+          return NextResponse.json(
+            {
+              success: false,
+              message: `Minimum wholesale quantity for "${item.name}" is ${itemMOQ} pieces (current: ${item.quantity}).`,
+            },
+            { status: 400 }
+          );
+        }
+      }
+
+      // 2. Enforce total cart value minimum
       if (wholesaleMinCart > 0 && calculatedSubtotal < wholesaleMinCart) {
         return NextResponse.json(
           {
@@ -153,6 +164,8 @@ export async function POST(req: Request) {
           { status: 400 }
         );
       }
+
+      // 3. Enforce total pieces count minimum
       if (wholesaleMinQty > 1 && totalQuantity < wholesaleMinQty) {
         return NextResponse.json(
           {
@@ -173,6 +186,18 @@ export async function POST(req: Request) {
         },
         { status: 400 }
       );
+    }
+
+    // Decrement stock only after all validations have passed
+    for (const item of verifiedItems) {
+      if (item.id && !item.id.startsWith("item-")) {
+        const p = getProductById(item.id);
+        if (p && typeof p.stock === "number" && p.stock > 0) {
+          updateProduct(p.id, {
+            stock: Math.max(0, p.stock - item.quantity),
+          });
+        }
+      }
     }
 
     const finalSubtotal = Number(calculatedSubtotal.toFixed(1));

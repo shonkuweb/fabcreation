@@ -104,6 +104,7 @@ export default function AdminPage() {
     images: [] as string[],
     video: "",
     description: "",
+    wholesaleMinQty: "1",
     stock: "10",
     subtitle: "Anti tarnish",
     metal: "Stainless Steel",
@@ -705,6 +706,7 @@ export default function AdminPage() {
       image: primaryImage,
       images,
       description: productForm.description ? productForm.description.trim() : "",
+      wholesaleMinQty: Math.max(1, Math.floor(Number(productForm.wholesaleMinQty) || 1)),
       retailPrice: finalRetail,
       wholesalePrice: finalWholesale,
       price: finalRetail || finalWholesale,
@@ -780,6 +782,7 @@ export default function AdminPage() {
       images,
       video: p.video || "",
       description: p.description || "",
+      wholesaleMinQty: String(p.wholesaleMinQty || 1),
       stock: String(p.stock),
       subtitle: p.subtitle,
       metal: p.metal,
@@ -805,6 +808,7 @@ export default function AdminPage() {
       images: [],
       video: "",
       description: "",
+      wholesaleMinQty: "1",
       stock: "10",
       subtitle: "Anti tarnish",
       metal: "Stainless Steel",
@@ -1507,17 +1511,24 @@ export default function AdminPage() {
                           </div>
                         </td>
 
-                        {/* Stock */}
+                        {/* Stock & B2B MOQ */}
                         <td className="py-3 px-3">
-                          <span
-                            className={`px-2 py-0.5 rounded text-[11px] font-medium ${
-                              p.stock > 0
-                                ? "bg-emerald-950/60 text-emerald-400 border border-emerald-900/50"
-                                : "bg-rose-950/60 text-rose-400 border border-rose-900/50"
-                            }`}
-                          >
-                            {p.stock} in stock
-                          </span>
+                          <div className="flex flex-col gap-1 items-start">
+                            <span
+                              className={`px-2 py-0.5 rounded text-[11px] font-medium ${
+                                p.stock > 0
+                                  ? "bg-emerald-950/60 text-emerald-400 border border-emerald-900/50"
+                                  : "bg-rose-950/60 text-rose-400 border border-rose-900/50"
+                              }`}
+                            >
+                              {p.stock} in stock
+                            </span>
+                            {(p.wholesaleMinQty ?? 1) > 1 && (
+                              <span className="px-1.5 py-0.2 rounded bg-amber-950/70 border border-amber-800/60 text-[#f5c767] text-[10px] font-semibold whitespace-nowrap">
+                                B2B MOQ: {p.wholesaleMinQty} pcs
+                              </span>
+                            )}
+                          </div>
                         </td>
 
                         {/* Actions */}
@@ -3449,16 +3460,34 @@ export default function AdminPage() {
                 </p>
               </div>
 
-              {/* Stock & Subtitle */}
-              <div className="grid grid-cols-2 gap-3">
+              {/* Stock, B2B MOQ, and Subtitle */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-[#a0a0a0] mb-1 font-medium">Stock Units</label>
+                  <label className="block text-[#a0a0a0] mb-1 font-medium">Stock Units *</label>
                   <input
                     type="number"
+                    min="0"
                     value={productForm.stock}
                     onChange={(e) => setProductForm({ ...productForm, stock: e.target.value })}
                     className="w-full h-10 rounded-xl bg-[#141414] border border-[#262626] px-3 text-white outline-none focus:border-[#e5a93c]"
                   />
+                  <p className="text-[10px] text-[#666] mt-0.5">Available stock</p>
+                </div>
+
+                <div>
+                  <label className="block text-[#a0a0a0] mb-1 font-medium flex items-center justify-between">
+                    <span>B2B Min. Qty</span>
+                    <span className="text-[10px] text-[#e5a93c] font-semibold">MOQ</span>
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={productForm.wholesaleMinQty}
+                    onChange={(e) => setProductForm({ ...productForm, wholesaleMinQty: e.target.value })}
+                    placeholder="1"
+                    className="w-full h-10 rounded-xl bg-[#141414] border border-[#262626] px-3 text-white outline-none focus:border-[#e5a93c]"
+                  />
+                  <p className="text-[10px] text-[#666] mt-0.5">Min. pcs for wholesale</p>
                 </div>
 
                 <div>
@@ -3470,6 +3499,7 @@ export default function AdminPage() {
                     placeholder="e.g. Anti tarnish"
                     className="w-full h-10 rounded-xl bg-[#141414] border border-[#262626] px-3 text-white outline-none focus:border-[#e5a93c]"
                   />
+                  <p className="text-[10px] text-[#666] mt-0.5">Short tagline</p>
                 </div>
               </div>
 

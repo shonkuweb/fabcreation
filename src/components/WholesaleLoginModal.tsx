@@ -689,7 +689,7 @@ export default function WholesaleLoginModal({
 
                 <div className="space-y-2 pt-1">
                   <a
-                    href={`https://wa.me/916289417338?text=Hello%20Fab%20Creations%2C%20I%20have%20submitted%20my%20wholesale%20application%20for%20${encodeURIComponent(
+                    href={`https://wa.me/918726275466?text=Hello%20Fab%20Creations%2C%20I%20have%20submitted%20my%20wholesale%20application%20for%20${encodeURIComponent(
                       regBusinessName
                     )}%20(Email%3A%20${regEmail}).%20Please%20review%20and%20approve.`}
                     target="_blank"

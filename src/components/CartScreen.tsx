@@ -58,7 +58,7 @@ interface CartScreenProps {
 
 export default function CartScreen({
   cart: initialCart = [],
-  userMobile = "6289417338",
+  userMobile = "8726275466",
   categories: initialCategories = [],
   products: initialProducts = [],
   storeMode = "retail",
@@ -363,7 +363,7 @@ export default function CartScreen({
     const activeIdentifier =
       overrideIdentifier ||
       (activeCartMode === "wholesale"
-        ? (userMobile || (typeof window !== "undefined" ? localStorage.getItem("fc_wholesale_mobile") || localStorage.getItem("fc_user_mobile") : null) || "6289417338")
+        ? (userMobile || (typeof window !== "undefined" ? localStorage.getItem("fc_wholesale_mobile") || localStorage.getItem("fc_user_mobile") : null) || "8726275466")
         : (userMobile || storedEmail || (typeof window !== "undefined" ? localStorage.getItem("fc_retail_mobile") : null) || ""));
 
     if (!activeIdentifier) {

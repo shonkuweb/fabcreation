@@ -207,7 +207,7 @@ export default function Footer({ onNavigateShop, onNavigateHome, onNavigateAccou
               </li>
               <li>
                 <a
-                  href="https://wa.me/916289417338"
+                  href="https://wa.me/918726275466"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 text-[#d1d5db] hover:text-[#e5a93c] transition-colors cursor-pointer"
@@ -239,7 +239,7 @@ export default function Footer({ onNavigateShop, onNavigateHome, onNavigateAccou
               </p>
               <p>
                 <span className="text-[#e5a93c] font-medium block">Helpline / WhatsApp:</span>
-                +91 6289417338
+                +91 8726275466
               </p>
               <p>
                 <span className="text-[#e5a93c] font-medium block">Email:</span>

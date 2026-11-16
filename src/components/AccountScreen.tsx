@@ -81,7 +81,7 @@ interface AccountScreenProps {
 }
 
 export default function AccountScreen({
-  userMobile = "6289417338",
+  userMobile = "8726275466",
   cartCount: initialCartCount = 0,
   categories: initialCategories = [],
   wishlist: initialWishlist = [],

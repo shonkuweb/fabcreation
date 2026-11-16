@@ -94,7 +94,7 @@ export default function MainStoreApp({
   });
 
   const [previousTab, setPreviousTab] = useState<"home" | "shop">("home");
-  const [userMobile, setUserMobile] = useState("6289417338");
+  const [userMobile, setUserMobile] = useState("8726275466");
   const [cartCount, setCartCount] = useState(0);
 
   // Load user details, store mode, and initial cart count from database & storage

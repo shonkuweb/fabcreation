@@ -6,13 +6,13 @@ export type StoreMode = "retail" | "wholesale";
 
 // Helper to get active user mobile identifier
 export function getActiveUserMobile(mode: StoreMode): string {
-  if (typeof window === "undefined") return mode === "wholesale" ? "6289417338" : "guest_retail";
+  if (typeof window === "undefined") return mode === "wholesale" ? "8726275466" : "guest_retail";
   try {
     if (mode === "wholesale") {
       return (
         localStorage.getItem("fc_wholesale_mobile") ||
         localStorage.getItem("fc_user_mobile") ||
-        "6289417338"
+        "8726275466"
       );
     } else {
       return (
@@ -24,7 +24,7 @@ export function getActiveUserMobile(mode: StoreMode): string {
       );
     }
   } catch {
-    return mode === "wholesale" ? "6289417338" : "retail_customer";
+    return mode === "wholesale" ? "8726275466" : "retail_customer";
   }
 }
 
@@ -323,7 +323,7 @@ export function getAccountProfile(mode: StoreMode): {
   const prefix = getAccountKeyPrefix(mode);
   if (typeof window === "undefined") {
     return {
-      mobile: mode === "wholesale" ? "6289417338" : "",
+      mobile: mode === "wholesale" ? "8726275466" : "",
       name: "",
       email: "",
       companyName: "",
@@ -334,7 +334,7 @@ export function getAccountProfile(mode: StoreMode): {
   try {
     const mobile =
       localStorage.getItem(`${prefix}_mobile`) ||
-      (mode === "wholesale" ? localStorage.getItem("fc_user_mobile") || "6289417338" : "");
+      (mode === "wholesale" ? localStorage.getItem("fc_user_mobile") || "8726275466" : "");
     const name = localStorage.getItem(`${prefix}_name`) || "";
     const email = localStorage.getItem(`${prefix}_email`) || "";
     const companyName = localStorage.getItem(`${prefix}_company`) || "";
@@ -342,7 +342,7 @@ export function getAccountProfile(mode: StoreMode): {
     return { mobile, name, email, companyName, gstin };
   } catch {
     return {
-      mobile: mode === "wholesale" ? "6289417338" : "",
+      mobile: mode === "wholesale" ? "8726275466" : "",
       name: "",
       email: "",
       companyName: "",

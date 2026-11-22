@@ -23,6 +23,9 @@ services:
       - ADMIN_SESSION_SECRET=${ADMIN_SESSION_SECRET}
       - RESEND_API_KEY=${RESEND_API_KEY}
       - RESEND_FROM_EMAIL=${RESEND_FROM_EMAIL:-Fab Creations <otp@fab-creations.com>}
+      - RAZORPAY_KEY_ID=${RAZORPAY_KEY_ID}
+      - RAZORPAY_KEY_SECRET=${RAZORPAY_KEY_SECRET}
+      - NEXT_PUBLIC_RAZORPAY_KEY_ID=${NEXT_PUBLIC_RAZORPAY_KEY_ID}
     volumes:
       # Persistent host mount for database data (products, categories, orders)
       - ./data:/app/data

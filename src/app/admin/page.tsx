@@ -1897,10 +1897,40 @@ export default function AdminPage() {
                         </div>
                       </div>
 
-                      {/* Customer Phone */}
-                      <div className="p-2.5 rounded-xl bg-[#141414] border border-[#222222] flex items-center justify-between text-xs">
-                        <span className="text-[#8e8e93]">Customer Phone:</span>
-                        <span className="text-white font-medium">+91 {ord.customerMobile}</span>
+                      {/* Customer & Payment Info */}
+                      <div className="p-3 rounded-xl bg-[#141414] border border-[#222222] space-y-1.5 text-xs">
+                        {ord.customerName && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-[#8e8e93]">Customer Name:</span>
+                            <span className="text-white font-medium">{ord.customerName}</span>
+                          </div>
+                        )}
+                        <div className="flex items-center justify-between">
+                          <span className="text-[#8e8e93]">Phone:</span>
+                          <span className="text-white font-medium">{ord.customerMobile?.startsWith("+") ? ord.customerMobile : `+91 ${ord.customerMobile}`}</span>
+                        </div>
+                        {ord.customerEmail && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-[#8e8e93]">Email:</span>
+                            <span className="text-white font-medium truncate max-w-[200px]" title={ord.customerEmail}>{ord.customerEmail}</span>
+                          </div>
+                        )}
+                        <div className="pt-1.5 mt-1 border-t border-[#1f1f1f] flex items-center justify-between">
+                          <span className="text-[#8e8e93]">Payment:</span>
+                          {ord.paymentStatus === "paid" || ord.razorpayPaymentId ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-semibold bg-emerald-950/70 border border-emerald-700/60 text-emerald-300">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                              <span>Paid via Razorpay</span>
+                              {ord.razorpayPaymentId && (
+                                <span className="font-mono text-[9.5px] text-emerald-400/80">({ord.razorpayPaymentId})</span>
+                              )}
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-semibold bg-amber-950/60 border border-amber-800/50 text-[#f5c767]">
+                              Pending Payment
+                            </span>
+                          )}
+                        </div>
                       </div>
 
                       {/* Items List */}
@@ -1935,7 +1965,7 @@ export default function AdminPage() {
                       {/* Pricing Breakdown */}
                       <div className="pt-2 border-t border-[#1f1f1f] flex items-center justify-between text-xs">
                         <span className="text-[#8e8e93]">
-                          Subtotal: ₹{ord.subtotal} | Shipping: ₹{ord.shipping}
+                          Subtotal: ₹{ord.subtotal} | GST (3%): ₹{ord.gst ?? 0} | Shipping: {ord.shipping > 0 ? `₹${ord.shipping}` : "Free"}
                         </span>
                         <span className="text-white text-sm font-semibold">Total: ₹{ord.total}</span>
                       </div>

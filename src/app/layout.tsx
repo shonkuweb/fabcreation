@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import "./globals.css";
 
 export const viewport: Viewport = {
@@ -58,6 +59,10 @@ export default function RootLayout({
         />
       </head>
       <body className="bg-[#050505] text-white min-h-screen selection:bg-gold/30 selection:text-gold-light antialiased font-sans">
+        <Script
+          src="https://checkout.razorpay.com/v1/checkout.js"
+          strategy="lazyOnload"
+        />
         {children}
       </body>
     </html>

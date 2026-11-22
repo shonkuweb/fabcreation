@@ -231,8 +231,12 @@ export async function POST(req: Request) {
       gst: finalGst,
       shipping: finalShipping,
       total: finalTotal,
-      status: "Pending",
+      status: body.paymentStatus === "paid" ? "Confirmed" : "Pending",
       orderType,
+      paymentStatus: body.paymentStatus,
+      paymentMethod: body.paymentMethod,
+      razorpayOrderId: body.razorpayOrderId,
+      razorpayPaymentId: body.razorpayPaymentId,
     });
 
     // Send confirmation email

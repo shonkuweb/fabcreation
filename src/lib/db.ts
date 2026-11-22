@@ -55,6 +55,10 @@ export interface Order {
   shipping: number;
   total: number;
   status: "Pending" | "Confirmed" | "Dispatched" | "Delivered";
+  paymentStatus?: "pending" | "paid" | "failed";
+  paymentMethod?: "razorpay" | "cod" | "manual";
+  razorpayOrderId?: string;
+  razorpayPaymentId?: string;
   createdAt: string;
 }
 

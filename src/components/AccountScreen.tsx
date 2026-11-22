@@ -781,7 +781,14 @@ export default function AccountScreen({
 
                     {/* Order Total Row */}
                     <div className="pt-2 border-t border-[#1c1c1c] flex items-center justify-between text-xs">
-                      <span className="text-[#8e8e93]">Total Amount (inc. GST & shipping):</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[#8e8e93]">Total (inc. GST & shipping):</span>
+                        {(order.paymentStatus === "paid" || order.razorpayPaymentId) && (
+                          <span className="text-[10px] text-emerald-400 bg-emerald-950/60 border border-emerald-800/60 px-1.5 py-0.5 rounded font-medium">
+                            Paid via Razorpay
+                          </span>
+                        )}
+                      </div>
                       <span className="text-[#e5a93c] font-bold text-sm">
                         ₹{order.total}
                       </span>

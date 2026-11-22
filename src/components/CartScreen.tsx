@@ -294,6 +294,21 @@ export default function CartScreen({
     onClearCart?.();
   };
 
+  // Load Razorpay script on-demand if not already loaded
+  const loadRazorpayScript = (): Promise<boolean> => {
+    return new Promise((resolve) => {
+      if (typeof window === "undefined") return resolve(false);
+      if ((window as any).Razorpay) return resolve(true);
+
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.async = true;
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
+
   const handleCheckout = async (overrideIdentifier?: string) => {
     // 1. Retail Login Check & Minimum Cart Value Check
     if (activeCartMode === "retail") {
@@ -380,41 +395,142 @@ export default function CartScreen({
       activeIdentifier.includes("@") ? "" : activeIdentifier;
 
     setIsCheckingOut(true);
+    setNotification("Initializing Razorpay checkout...");
+
     try {
-      const res = await fetch("/api/orders", {
+      // 1. Create Razorpay order on backend
+      const createOrderRes = await fetch("/api/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          items: cart,
           orderType: activeCartMode,
           storeMode: activeCartMode,
           customerMobile: customerMobile || activeIdentifier,
           customerEmail,
           customerName: storedName || "Customer",
-          items: cart,
-          subtotal,
-          gst,
-          shipping,
-          total,
         }),
       });
 
-      const data = await res.json();
-      if (data.success && data.order) {
-        clearCartByMode(activeCartMode);
-        setCart([]);
-        onClearCart?.();
-        setOrderSuccess(data.order.orderNumber);
-        setNotification(`Order placed successfully! Order #${data.order.orderNumber}`);
-        setTimeout(() => {
-          navAccount();
-        }, 2000);
-      } else {
-        setNotification(data.message || "Failed to place order. Please try again.");
+      const orderData = await createOrderRes.json();
+      if (!createOrderRes.ok || !orderData.success || !orderData.order_id) {
+        setNotification(orderData.message || orderData.error || "Failed to initialize payment gateway.");
+        setIsCheckingOut(false);
+        return;
       }
+
+      // 2. Load Razorpay Checkout SDK
+      const isLoaded = await loadRazorpayScript();
+      if (!isLoaded || !(window as any).Razorpay) {
+        setNotification("Razorpay payment gateway failed to load. Please check your connection.");
+        setIsCheckingOut(false);
+        return;
+      }
+
+      // 3. Open Razorpay Checkout Modal
+      const razorpayKey =
+        orderData.key_id ||
+        process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ||
+        "rzp_test_U2vM87ObwlA5Xi";
+
+      const rzpOptions = {
+        key: razorpayKey,
+        amount: orderData.amount,
+        currency: orderData.currency || "INR",
+        name: "Fab Creations",
+        description:
+          activeCartMode === "wholesale"
+            ? "B2B Wholesale Order Checkout"
+            : "Luxury Jewellery Order Checkout",
+        image: "https://pub-ce8688bc6c654bcfb99716f7c9373bcd.r2.dev/fab-creations/brand-logo.png",
+        order_id: orderData.order_id,
+        handler: async function (response: {
+          razorpay_payment_id: string;
+          razorpay_order_id: string;
+          razorpay_signature: string;
+        }) {
+          try {
+            setNotification("Payment received! Verifying cryptographic signature...");
+            setIsCheckingOut(true);
+
+            // 4. Verify payment signature on backend & create database order
+            const verifyRes = await fetch("/api/verify-payment", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                orderType: activeCartMode,
+                storeMode: activeCartMode,
+                customerMobile: customerMobile || activeIdentifier,
+                customerEmail,
+                customerName: storedName || "Customer",
+                items: cart,
+              }),
+            });
+
+            const verifyData = await verifyRes.json();
+            if (verifyRes.ok && verifyData.success && verifyData.order) {
+              clearCartByMode(activeCartMode);
+              setCart([]);
+              onClearCart?.();
+              setOrderSuccess(verifyData.order.orderNumber);
+              setNotification(
+                `Payment verified! Order #${verifyData.order.orderNumber} placed successfully. Confirmation email sent.`
+              );
+              setTimeout(() => {
+                navAccount();
+              }, 2500);
+            } else {
+              setNotification(
+                verifyData.message ||
+                  verifyData.error ||
+                  "Payment signature verification failed. Please contact support."
+              );
+              setIsCheckingOut(false);
+            }
+          } catch (vErr) {
+            console.error("[Razorpay Verification Request Error]:", vErr);
+            setNotification("Network error verifying payment. Please contact support.");
+            setIsCheckingOut(false);
+          }
+        },
+        prefill: {
+          name: storedName || "Customer",
+          email: customerEmail || "",
+          contact: customerMobile || (activeIdentifier.replace(/\D/g, "") ? activeIdentifier : ""),
+        },
+        notes: {
+          orderType: activeCartMode,
+          storeMode: activeCartMode,
+        },
+        theme: {
+          color: "#e5a93c",
+        },
+        modal: {
+          ondismiss: function () {
+            setIsCheckingOut(false);
+            setNotification("Payment cancelled. Cart preserved.");
+            setTimeout(() => setNotification(null), 3000);
+          },
+        },
+      };
+
+      const rzpInstance = new (window as any).Razorpay(rzpOptions);
+
+      rzpInstance.on("payment.failed", function (failResp: any) {
+        console.error("Razorpay payment failed:", failResp?.error);
+        setIsCheckingOut(false);
+        setNotification(
+          `Payment failed: ${failResp?.error?.description || "Transaction declined"}`
+        );
+      });
+
+      rzpInstance.open();
     } catch (err) {
-      console.error("Checkout request failed:", err);
+      console.error("Razorpay checkout request failed:", err);
       setNotification("Checkout request failed. Please check connection and try again.");
-    } finally {
       setIsCheckingOut(false);
     }
   };
@@ -822,11 +938,11 @@ export default function CartScreen({
                   {isCheckingOut ? (
                     <div className="flex items-center space-x-2">
                       <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
-                      <span>Placing Order...</span>
+                      <span>Processing Payment...</span>
                     </div>
                   ) : (
                     <>
-                      <span>PROCEED TO CHECKOUT</span>
+                      <span>PAY WITH RAZORPAY • ₹{total.toLocaleString("en-IN")}</span>
                       <ArrowRight className="w-4 h-4" />
                     </>
                   )}

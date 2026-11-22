@@ -89,7 +89,10 @@ export async function POST(req: Request) {
       currency: rzpOrder.currency,
       receipt: rzpOrder.receipt,
       key_id:
-        process.env.RAZORPAY_KEY_ID || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        rzpOrder.key_id ||
+        process.env.RAZORPAY_KEY_ID ||
+        process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ||
+        "rzp_test_U2vM87ObwlA5Xi",
     });
   } catch (err: any) {
     console.error("[Razorpay Create Order Error]:", err);

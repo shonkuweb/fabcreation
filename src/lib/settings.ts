@@ -26,6 +26,9 @@ export interface StoreSettings {
   retailMinCartValue: number;
   retailFreeShippingThreshold: number;
   retailDeliveryCharge: number;
+  // Dynamic Product Attributes (Metal types and Use cases)
+  metalTypes?: string[];
+  useCases?: string[];
   adminPassword?: string;
   updatedAt?: string;
 }
@@ -55,4 +58,26 @@ export const defaultSettings: StoreSettings = {
   retailMinCartValue: 0,
   retailFreeShippingThreshold: 999,
   retailDeliveryCharge: 125,
+  // Dynamic Product Attributes defaults
+  metalTypes: [
+    "Stainless Steel",
+    "Brass",
+    "Copper",
+    "18K Gold Plated",
+    "Silver Plated",
+    "Alloy",
+    "Titanium",
+    "Rose Gold Plated",
+    "Oxidised Silver",
+  ],
+  useCases: [
+    "Daily Wear",
+    "Party Wear",
+    "Office Wear",
+    "Festive Wear",
+    "Wedding / Bridal",
+    "Casual Wear",
+    "Gifting",
+    "Special Occasion",
+  ],
 };

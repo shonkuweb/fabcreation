@@ -138,6 +138,170 @@ export default function AdminPage() {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  // Dynamic Metal Type & Use Case addition state
+  const [isAddingMetal, setIsAddingMetal] = useState(false);
+  const [newMetalInput, setNewMetalInput] = useState("");
+  const [isAddingUseCase, setIsAddingUseCase] = useState(false);
+  const [newUseCaseInput, setNewUseCaseInput] = useState("");
+  const [settingsNewMetal, setSettingsNewMetal] = useState("");
+  const [settingsNewUseCase, setSettingsNewUseCase] = useState("");
+
+  const availableMetalTypes = React.useMemo(() => {
+    const fromSettings = Array.isArray(settings.metalTypes) && settings.metalTypes.length > 0
+      ? settings.metalTypes
+      : (defaultSettings.metalTypes || []);
+    const fromProducts = products.map((p) => p.metal).filter(Boolean);
+    const current = productForm.metal ? [productForm.metal] : [];
+    return Array.from(new Set([...fromSettings, ...fromProducts, ...current].filter(Boolean)));
+  }, [settings.metalTypes, products, productForm.metal]);
+
+  const availableUseCases = React.useMemo(() => {
+    const fromSettings = Array.isArray(settings.useCases) && settings.useCases.length > 0
+      ? settings.useCases
+      : (defaultSettings.useCases || []);
+    const fromProducts = products.map((p) => p.occasion).filter(Boolean);
+    const current = productForm.occasion ? [productForm.occasion] : [];
+    return Array.from(new Set([...fromSettings, ...fromProducts, ...current].filter(Boolean)));
+  }, [settings.useCases, products, productForm.occasion]);
+
+  const handleAddNewMetal = async () => {
+    const trimmed = newMetalInput.trim();
+    if (!trimmed) {
+      setIsAddingMetal(false);
+      return;
+    }
+    const currentList = Array.isArray(settings.metalTypes) && settings.metalTypes.length > 0
+      ? settings.metalTypes
+      : (defaultSettings.metalTypes || []);
+    const updated = Array.from(new Set([...currentList, trimmed]));
+    const updatedSettings = { ...settings, metalTypes: updated };
+    setSettings(updatedSettings);
+    setProductForm((prev) => ({ ...prev, metal: trimmed }));
+    setNewMetalInput("");
+    setIsAddingMetal(false);
+    showNotification(`Added "${trimmed}" to metal types!`);
+
+    try {
+      await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ metalTypes: updated }),
+      });
+    } catch (e) {
+      console.warn("Failed to persist new metal type:", e);
+    }
+  };
+
+  const handleAddNewUseCase = async () => {
+    const trimmed = newUseCaseInput.trim();
+    if (!trimmed) {
+      setIsAddingUseCase(false);
+      return;
+    }
+    const currentList = Array.isArray(settings.useCases) && settings.useCases.length > 0
+      ? settings.useCases
+      : (defaultSettings.useCases || []);
+    const updated = Array.from(new Set([...currentList, trimmed]));
+    const updatedSettings = { ...settings, useCases: updated };
+    setSettings(updatedSettings);
+    setProductForm((prev) => ({ ...prev, occasion: trimmed }));
+    setNewUseCaseInput("");
+    setIsAddingUseCase(false);
+    showNotification(`Added "${trimmed}" to use cases!`);
+
+    try {
+      await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ useCases: updated }),
+      });
+    } catch (e) {
+      console.warn("Failed to persist new use case:", e);
+    }
+  };
+
+  const handleRemoveMetalType = async (itemToRemove: string) => {
+    const currentList = Array.isArray(settings.metalTypes) && settings.metalTypes.length > 0
+      ? settings.metalTypes
+      : (defaultSettings.metalTypes || []);
+    const updated = currentList.filter((m) => m !== itemToRemove);
+    const updatedSettings = { ...settings, metalTypes: updated };
+    setSettings(updatedSettings);
+    showNotification(`Removed "${itemToRemove}" from metal types`);
+    try {
+      await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ metalTypes: updated }),
+      });
+    } catch (e) {
+      console.warn("Failed to remove metal type:", e);
+    }
+  };
+
+  const handleRemoveUseCase = async (itemToRemove: string) => {
+    const currentList = Array.isArray(settings.useCases) && settings.useCases.length > 0
+      ? settings.useCases
+      : (defaultSettings.useCases || []);
+    const updated = currentList.filter((u) => u !== itemToRemove);
+    const updatedSettings = { ...settings, useCases: updated };
+    setSettings(updatedSettings);
+    showNotification(`Removed "${itemToRemove}" from use cases`);
+    try {
+      await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ useCases: updated }),
+      });
+    } catch (e) {
+      console.warn("Failed to remove use case:", e);
+    }
+  };
+
+  const handleSettingsAddMetal = async () => {
+    const trimmed = settingsNewMetal.trim();
+    if (!trimmed) return;
+    const currentList = Array.isArray(settings.metalTypes) && settings.metalTypes.length > 0
+      ? settings.metalTypes
+      : (defaultSettings.metalTypes || []);
+    const updated = Array.from(new Set([...currentList, trimmed]));
+    const updatedSettings = { ...settings, metalTypes: updated };
+    setSettings(updatedSettings);
+    setSettingsNewMetal("");
+    showNotification(`Added "${trimmed}" to metal types!`);
+    try {
+      await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ metalTypes: updated }),
+      });
+    } catch (e) {
+      console.warn("Failed to persist new metal type:", e);
+    }
+  };
+
+  const handleSettingsAddUseCase = async () => {
+    const trimmed = settingsNewUseCase.trim();
+    if (!trimmed) return;
+    const currentList = Array.isArray(settings.useCases) && settings.useCases.length > 0
+      ? settings.useCases
+      : (defaultSettings.useCases || []);
+    const updated = Array.from(new Set([...currentList, trimmed]));
+    const updatedSettings = { ...settings, useCases: updated };
+    setSettings(updatedSettings);
+    setSettingsNewUseCase("");
+    showNotification(`Added "${trimmed}" to use cases!`);
+    try {
+      await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ useCases: updated }),
+      });
+    } catch (e) {
+      console.warn("Failed to persist new use case:", e);
+    }
+  };
+
   const showNotification = (msg: string) => {
     setNotification(msg);
     setTimeout(() => setNotification(null), 3500);
@@ -791,6 +955,10 @@ export default function AdminPage() {
       occasion: p.occasion,
       featured: p.featured,
     });
+    setIsAddingMetal(false);
+    setIsAddingUseCase(false);
+    setNewMetalInput("");
+    setNewUseCaseInput("");
     setIsProductModalOpen(true);
   };
 
@@ -812,11 +980,15 @@ export default function AdminPage() {
       wholesaleMinQty: "1",
       stock: "10",
       subtitle: "Long Lasting",
-      metal: "Stainless Steel",
+      metal: availableMetalTypes[0] || "Stainless Steel",
       target: "Women",
-      occasion: "Daily Wear",
+      occasion: availableUseCases[0] || "Daily Wear",
       featured: true,
     });
+    setIsAddingMetal(false);
+    setIsAddingUseCase(false);
+    setNewMetalInput("");
+    setNewUseCaseInput("");
     setIsProductModalOpen(true);
   };
 
@@ -2920,7 +3092,141 @@ export default function AdminPage() {
               </div>
             </div>
 
-            {/* 4. Admin Panel Password & Security */}
+            {/* 4. Product Attribute Lists (Metal Types & Use Cases) */}
+            <div className="p-5 rounded-2xl bg-[#0d0d0d] border border-[#222222] space-y-5">
+              <div className="flex items-center justify-between pb-3 border-b border-[#1c1c1c]">
+                <div className="flex items-center gap-2.5">
+                  <div className="p-2 rounded-xl bg-[#1c160c] border border-[#e5a93c]/30 text-[#e5a93c]">
+                    <Layers className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-white text-sm font-semibold">Product Attribute Lists</h4>
+                    <p className="text-xs text-[#8e8e93]">
+                      Manage option lists for Metal Type and Use Case that appear when adding/editing products.
+                    </p>
+                  </div>
+                </div>
+                <span className="text-[11px] text-[#e5a93c] px-2.5 py-0.5 rounded-full bg-[#1c160c] border border-[#e5a93c]/30 hidden sm:inline font-medium">
+                  Catalog Options
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {/* Metal Types Manager */}
+                <div className="p-4 rounded-xl bg-[#121212] border border-[#222222] space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h5 className="text-white text-xs font-semibold flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-[#e5a93c]" />
+                      <span>Metal Types ({(settings.metalTypes || defaultSettings.metalTypes || []).length})</span>
+                    </h5>
+                    <span className="text-[10px] text-[#777]">Appears in Add Product</span>
+                  </div>
+
+                  {/* Add Input */}
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="text"
+                      placeholder="Add new metal type..."
+                      value={settingsNewMetal}
+                      onChange={(e) => setSettingsNewMetal(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          handleSettingsAddMetal();
+                        }
+                      }}
+                      className="flex-1 h-9 rounded-xl bg-[#181818] border border-[#2a2a2a] px-3 text-xs text-white placeholder-[#666] outline-none focus:border-[#e5a93c]"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleSettingsAddMetal}
+                      className="h-9 px-3 rounded-xl bg-[#e5a93c] hover:bg-[#d4982f] text-black font-semibold text-xs flex items-center justify-center cursor-pointer transition-colors shrink-0"
+                    >
+                      <Plus className="w-3.5 h-3.5 mr-0.5" />
+                      <span>Add</span>
+                    </button>
+                  </div>
+
+                  {/* Tags list */}
+                  <div className="flex flex-wrap gap-1.5 max-h-[160px] overflow-y-auto pr-1 pt-1">
+                    {(settings.metalTypes || defaultSettings.metalTypes || []).map((m) => (
+                      <span
+                        key={m}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#1a1a1a] border border-[#2c2c2c] text-xs text-white group"
+                      >
+                        <span>{m}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveMetalType(m)}
+                          className="text-[#666] hover:text-rose-400 transition-colors ml-0.5"
+                          title={`Remove ${m}`}
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Use Cases Manager */}
+                <div className="p-4 rounded-xl bg-[#121212] border border-[#222222] space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h5 className="text-white text-xs font-semibold flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-[#e5a93c]" />
+                      <span>Use Cases ({(settings.useCases || defaultSettings.useCases || []).length})</span>
+                    </h5>
+                    <span className="text-[10px] text-[#777]">Appears in Add Product</span>
+                  </div>
+
+                  {/* Add Input */}
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      type="text"
+                      placeholder="Add new use case..."
+                      value={settingsNewUseCase}
+                      onChange={(e) => setSettingsNewUseCase(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          handleSettingsAddUseCase();
+                        }
+                      }}
+                      className="flex-1 h-9 rounded-xl bg-[#181818] border border-[#2a2a2a] px-3 text-xs text-white placeholder-[#666] outline-none focus:border-[#e5a93c]"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleSettingsAddUseCase}
+                      className="h-9 px-3 rounded-xl bg-[#e5a93c] hover:bg-[#d4982f] text-black font-semibold text-xs flex items-center justify-center cursor-pointer transition-colors shrink-0"
+                    >
+                      <Plus className="w-3.5 h-3.5 mr-0.5" />
+                      <span>Add</span>
+                    </button>
+                  </div>
+
+                  {/* Tags list */}
+                  <div className="flex flex-wrap gap-1.5 max-h-[160px] overflow-y-auto pr-1 pt-1">
+                    {(settings.useCases || defaultSettings.useCases || []).map((u) => (
+                      <span
+                        key={u}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-[#1a1a1a] border border-[#2c2c2c] text-xs text-white group"
+                      >
+                        <span>{u}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveUseCase(u)}
+                          className="text-[#666] hover:text-rose-400 transition-colors ml-0.5"
+                          title={`Remove ${u}`}
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 5. Admin Panel Password & Security */}
             <div className="p-5 rounded-2xl bg-[#0d0d0d] border border-[#222222] space-y-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
@@ -3584,28 +3890,174 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              {/* Metal & Occasion */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[#a0a0a0] mb-1 font-medium">Metal Type</label>
-                  <input
-                    type="text"
-                    value={productForm.metal}
-                    onChange={(e) => setProductForm({ ...productForm, metal: e.target.value })}
-                    placeholder="e.g. Stainless Steel"
-                    className="w-full h-10 rounded-xl bg-[#141414] border border-[#262626] px-3 text-white outline-none focus:border-[#e5a93c]"
-                  />
+              {/* Metal Type & Use Case (Occasion) List Dropdowns */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Metal Type List */}
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between mb-0.5">
+                    <label className="text-[#a0a0a0] font-medium text-xs flex items-center gap-1">
+                      <span>Metal Type</span>
+                      <span className="text-[#e5a93c]">*</span>
+                    </label>
+                    {!isAddingMetal ? (
+                      <button
+                        type="button"
+                        onClick={() => setIsAddingMetal(true)}
+                        className="text-[11px] text-[#e5a93c] hover:underline flex items-center gap-0.5 cursor-pointer font-medium"
+                      >
+                        <Plus className="w-3 h-3" />
+                        <span>Add Option</span>
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsAddingMetal(false);
+                          setNewMetalInput("");
+                        }}
+                        className="text-[11px] text-[#8e8e93] hover:text-white cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                    )}
+                  </div>
+
+                  {!isAddingMetal ? (
+                    <select
+                      value={productForm.metal}
+                      onChange={(e) => {
+                        if (e.target.value === "__add_new__") {
+                          setIsAddingMetal(true);
+                        } else {
+                          setProductForm({ ...productForm, metal: e.target.value });
+                        }
+                      }}
+                      className="w-full h-10 rounded-xl bg-[#141414] border border-[#262626] px-3 text-white text-xs outline-none focus:border-[#e5a93c] cursor-pointer"
+                    >
+                      {availableMetalTypes.map((m) => (
+                        <option key={m} value={m}>
+                          {m}
+                        </option>
+                      ))}
+                      <option value="__add_new__" className="text-[#e5a93c] font-semibold bg-[#1a150c]">
+                        + Add New Metal Type to List...
+                      </option>
+                    </select>
+                  ) : (
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="text"
+                        autoFocus
+                        value={newMetalInput}
+                        onChange={(e) => setNewMetalInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            handleAddNewMetal();
+                          } else if (e.key === "Escape") {
+                            setIsAddingMetal(false);
+                            setNewMetalInput("");
+                          }
+                        }}
+                        placeholder="e.g. 925 Sterling Silver"
+                        className="flex-1 h-10 rounded-xl bg-[#141414] border border-[#e5a93c] px-3 text-white text-xs outline-none placeholder:text-[#666]"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAddNewMetal}
+                        className="h-10 px-3 rounded-xl bg-[#e5a93c] hover:bg-[#d4982f] text-black font-semibold text-xs flex items-center justify-center cursor-pointer transition-colors shrink-0"
+                      >
+                        Add
+                      </button>
+                    </div>
+                  )}
+                  <p className="text-[10px] text-[#666]">
+                    Select from list or click &quot;+ Add Option&quot; to add new
+                  </p>
                 </div>
 
-                <div>
-                  <label className="block text-[#a0a0a0] mb-1 font-medium">Occasion</label>
-                  <input
-                    type="text"
-                    value={productForm.occasion}
-                    onChange={(e) => setProductForm({ ...productForm, occasion: e.target.value })}
-                    placeholder="e.g. Daily Wear"
-                    className="w-full h-10 rounded-xl bg-[#141414] border border-[#262626] px-3 text-white outline-none focus:border-[#e5a93c]"
-                  />
+                {/* Use Case (Occasion) List */}
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between mb-0.5">
+                    <label className="text-[#a0a0a0] font-medium text-xs flex items-center gap-1">
+                      <span>Use Case</span>
+                      <span className="text-[#e5a93c]">*</span>
+                    </label>
+                    {!isAddingUseCase ? (
+                      <button
+                        type="button"
+                        onClick={() => setIsAddingUseCase(true)}
+                        className="text-[11px] text-[#e5a93c] hover:underline flex items-center gap-0.5 cursor-pointer font-medium"
+                      >
+                        <Plus className="w-3 h-3" />
+                        <span>Add Option</span>
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsAddingUseCase(false);
+                          setNewUseCaseInput("");
+                        }}
+                        className="text-[11px] text-[#8e8e93] hover:text-white cursor-pointer"
+                      >
+                        Cancel
+                      </button>
+                    )}
+                  </div>
+
+                  {!isAddingUseCase ? (
+                    <select
+                      value={productForm.occasion}
+                      onChange={(e) => {
+                        if (e.target.value === "__add_new__") {
+                          setIsAddingUseCase(true);
+                        } else {
+                          setProductForm({ ...productForm, occasion: e.target.value });
+                        }
+                      }}
+                      className="w-full h-10 rounded-xl bg-[#141414] border border-[#262626] px-3 text-white text-xs outline-none focus:border-[#e5a93c] cursor-pointer"
+                    >
+                      {availableUseCases.map((u) => (
+                        <option key={u} value={u}>
+                          {u}
+                        </option>
+                      ))}
+                      <option value="__add_new__" className="text-[#e5a93c] font-semibold bg-[#1a150c]">
+                        + Add New Use Case to List...
+                      </option>
+                    </select>
+                  ) : (
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="text"
+                        autoFocus
+                        value={newUseCaseInput}
+                        onChange={(e) => setNewUseCaseInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") {
+                            e.preventDefault();
+                            handleAddNewUseCase();
+                          } else if (e.key === "Escape") {
+                            setIsAddingUseCase(false);
+                            setNewUseCaseInput("");
+                          }
+                        }}
+                        placeholder="e.g. Vacation Wear / Festive"
+                        className="flex-1 h-10 rounded-xl bg-[#141414] border border-[#e5a93c] px-3 text-white text-xs outline-none placeholder:text-[#666]"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleAddNewUseCase}
+                        className="h-10 px-3 rounded-xl bg-[#e5a93c] hover:bg-[#d4982f] text-black font-semibold text-xs flex items-center justify-center cursor-pointer transition-colors shrink-0"
+                      >
+                        Add
+                      </button>
+                    </div>
+                  )}
+                  <p className="text-[10px] text-[#666]">
+                    Select from list or click &quot;+ Add Option&quot; to add new
+                  </p>
                 </div>
               </div>
 

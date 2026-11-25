@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import {
   Lock,
+  MapPin,
   Package,
   Layers,
   ShoppingBag,
@@ -1898,39 +1899,89 @@ export default function AdminPage() {
                       </div>
 
                       {/* Customer & Payment Info */}
-                      <div className="p-3 rounded-xl bg-[#141414] border border-[#222222] space-y-1.5 text-xs">
-                        {ord.customerName && (
-                          <div className="flex items-center justify-between">
-                            <span className="text-[#8e8e93]">Customer Name:</span>
-                            <span className="text-white font-medium">{ord.customerName}</span>
-                          </div>
-                        )}
-                        <div className="flex items-center justify-between">
-                          <span className="text-[#8e8e93]">Phone:</span>
-                          <span className="text-white font-medium">{ord.customerMobile?.startsWith("+") ? ord.customerMobile : `+91 ${ord.customerMobile}`}</span>
-                        </div>
-                        {ord.customerEmail && (
-                          <div className="flex items-center justify-between">
-                            <span className="text-[#8e8e93]">Email:</span>
-                            <span className="text-white font-medium truncate max-w-[200px]" title={ord.customerEmail}>{ord.customerEmail}</span>
-                          </div>
-                        )}
-                        <div className="pt-1.5 mt-1 border-t border-[#1f1f1f] flex items-center justify-between">
-                          <span className="text-[#8e8e93]">Payment:</span>
+                      <div className="p-3.5 rounded-xl bg-[#141414] border border-[#222222] space-y-2 text-xs">
+                        <div className="flex items-center justify-between pb-1.5 border-b border-[#1f1f1f]">
+                          <span className="text-[#e5a93c] font-semibold flex items-center gap-1.5 text-[11px] uppercase tracking-wider">
+                            <User className="w-3.5 h-3.5" />
+                            <span>Customer Details</span>
+                          </span>
                           {ord.paymentStatus === "paid" || ord.razorpayPaymentId ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-semibold bg-emerald-950/70 border border-emerald-700/60 text-emerald-300">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-emerald-950/70 border border-emerald-700/60 text-emerald-300">
                               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
                               <span>Paid via Razorpay</span>
                               {ord.razorpayPaymentId && (
-                                <span className="font-mono text-[9.5px] text-emerald-400/80">({ord.razorpayPaymentId})</span>
+                                <span className="font-mono text-[9px] text-emerald-400/80">({ord.razorpayPaymentId})</span>
                               )}
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10.5px] font-semibold bg-amber-950/60 border border-amber-800/50 text-[#f5c767]">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-amber-950/60 border border-amber-800/50 text-[#f5c767]">
                               Pending Payment
                             </span>
                           )}
                         </div>
+
+                        {/* Customer Name */}
+                        <div className="flex items-center justify-between">
+                          <span className="text-[#8e8e93]">Name:</span>
+                          <span className="text-white font-medium">{ord.customerName || "Customer"}</span>
+                        </div>
+
+                        {/* Customer Phone */}
+                        <div className="flex items-center justify-between">
+                          <span className="text-[#8e8e93]">Phone:</span>
+                          <span className="text-white font-medium">{ord.customerMobile?.startsWith("+") ? ord.customerMobile : `+91 ${ord.customerMobile}`}</span>
+                        </div>
+
+                        {/* Customer Email */}
+                        {ord.customerEmail && (
+                          <div className="flex items-center justify-between">
+                            <span className="text-[#8e8e93]">Email:</span>
+                            <span className="text-white font-medium truncate max-w-[220px]" title={ord.customerEmail}>{ord.customerEmail}</span>
+                          </div>
+                        )}
+
+                        {/* Actual Delivery Address */}
+                        {(() => {
+                          const addr: any =
+                            ord.shippingAddress ||
+                            retailUsers.find((u) => u.mobile === ord.customerMobile || u.email === ord.customerEmail)?.addresses?.[0];
+
+                          return addr ? (
+                            <div className="pt-2 mt-1 border-t border-[#1f1f1f] space-y-1">
+                              <span className="text-[#e5a93c] font-semibold flex items-center gap-1 text-[11px] uppercase tracking-wider">
+                                <MapPin className="w-3.5 h-3.5" />
+                                <span>Actual Delivery Address</span>
+                              </span>
+                              {typeof addr === "string" ? (
+                                <p className="text-[#ddd] text-xs leading-relaxed pl-1">{addr}</p>
+                              ) : (
+                                <div className="text-[#ddd] text-xs leading-relaxed pl-1 space-y-0.5 bg-[#0a0a0a] p-2.5 rounded-lg border border-[#1f1f1f]">
+                                  {addr.contactName && addr.contactName !== ord.customerName && (
+                                    <p><span className="text-[#888]">Recipient:</span> {addr.contactName}</p>
+                                  )}
+                                  {addr.businessName && (
+                                    <p><span className="text-[#888]">Business:</span> {addr.businessName}</p>
+                                  )}
+                                  <p className="text-white font-medium">{addr.addressLine}</p>
+                                  <p className="text-[#ccc]">
+                                    {[addr.city, addr.state].filter(Boolean).join(", ")}
+                                    {addr.pincode ? ` - ${addr.pincode}` : ""}
+                                  </p>
+                                  {addr.phone && addr.phone !== ord.customerMobile && (
+                                    <p className="text-[#888] text-[11px]">Alt Phone: {addr.phone}</p>
+                                  )}
+                                  {addr.gstin && (
+                                    <p className="text-[#888] text-[11px]">GSTIN: {addr.gstin}</p>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <div className="pt-1.5 mt-1 border-t border-[#1f1f1f]">
+                              <span className="text-[#777] text-[11px] italic">No address provided at checkout</span>
+                            </div>
+                          );
+                        })()}
                       </div>
 
                       {/* Items List */}

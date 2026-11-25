@@ -49,6 +49,16 @@ export interface Order {
   customerMobile: string;
   customerName?: string;
   customerEmail?: string;
+  shippingAddress?: UserAddress | {
+    contactName?: string;
+    phone?: string;
+    addressLine: string;
+    city: string;
+    state: string;
+    pincode: string;
+    businessName?: string;
+    gstin?: string;
+  };
   items: OrderItem[];
   subtotal: number;
   gst: number;

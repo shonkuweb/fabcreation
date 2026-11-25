@@ -18,11 +18,13 @@ import {
   Plus,
   Sparkles,
   AlertCircle,
+  MapPin,
+  Edit2,
 } from "lucide-react";
 import CategoriesModal from "@/components/CategoriesModal";
 import StoreModeToggle from "@/components/StoreModeToggle";
 import RetailLoginModal from "@/components/RetailLoginModal";
-import type { OrderItem, Category, Product } from "@/lib/db";
+import type { OrderItem, Category, Product, UserAddress } from "@/lib/db";
 import { type StoreSettings, defaultSettings } from "@/lib/settings";
 import {
   getCartItems,
@@ -32,6 +34,8 @@ import {
   clearCartByMode,
   fetchCartFromServer,
   addToCartByMode,
+  getAccountAddresses,
+  saveAccountAddresses,
 } from "@/lib/cart";
 
 interface CartScreenProps {
@@ -87,6 +91,174 @@ export default function CartScreen({
   const [isCheckingOut, setIsCheckingOut] = useState(false);
   const [orderSuccess, setOrderSuccess] = useState<string | null>(null);
   const [isRetailLoginOpen, setIsRetailLoginOpen] = useState(false);
+
+  // Delivery address & customer contact details
+  const [shippingDetails, setShippingDetails] = useState<{
+    name: string;
+    phone: string;
+    email: string;
+    addressLine: string;
+    city: string;
+    state: string;
+    pincode: string;
+    businessName: string;
+    gstin: string;
+  }>({
+    name: "",
+    phone: "",
+    email: "",
+    addressLine: "",
+    city: "",
+    state: "",
+    pincode: "",
+    businessName: "",
+    gstin: "",
+  });
+  const [isEditingAddress, setIsEditingAddress] = useState(false);
+
+  // Load existing address and user details from localStorage & database
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const existingAddresses = getAccountAddresses(activeCartMode);
+    const storedName =
+      localStorage.getItem("fc_user_name") ||
+      localStorage.getItem("fc_wholesale_owner") ||
+      localStorage.getItem("fc_wholesale_business") ||
+      "";
+    const storedEmail =
+      localStorage.getItem("fc_retail_email") ||
+      localStorage.getItem("fc_user_email") ||
+      localStorage.getItem("fc_wholesale_email") ||
+      "";
+    const storedPhone =
+      localStorage.getItem("fc_retail_mobile") ||
+      localStorage.getItem("fc_user_mobile") ||
+      localStorage.getItem("fc_wholesale_mobile") ||
+      userMobile ||
+      "";
+
+    if (existingAddresses && existingAddresses.length > 0) {
+      const first = existingAddresses[0];
+      setShippingDetails({
+        name: first.contactName || storedName || "",
+        phone: first.phone || storedPhone || "",
+        email: storedEmail || "",
+        addressLine: first.addressLine || "",
+        city: first.city || "",
+        state: first.state || "",
+        pincode: first.pincode || "",
+        businessName: first.businessName || "",
+        gstin: first.gstin || "",
+      });
+      if (!first.addressLine || !first.city || !first.pincode) {
+        setIsEditingAddress(true);
+      } else {
+        setIsEditingAddress(false);
+      }
+    } else {
+      setShippingDetails((prev) => ({
+        ...prev,
+        name: prev.name || storedName || "",
+        email: prev.email || storedEmail || "",
+        phone: prev.phone || storedPhone || "",
+      }));
+      setIsEditingAddress(true);
+    }
+  }, [activeCartMode, userMobile]);
+
+  const hasValidAddress = Boolean(
+    shippingDetails.name.trim() &&
+    shippingDetails.phone.replace(/\D/g, "").length >= 10 &&
+    shippingDetails.email.trim().includes("@") &&
+    shippingDetails.addressLine.trim().length >= 5 &&
+    shippingDetails.city.trim() &&
+    shippingDetails.state.trim() &&
+    shippingDetails.pincode.replace(/\D/g, "").length === 6
+  );
+
+  const validateAddressFields = (showToast = true): boolean => {
+    if (!shippingDetails.name.trim()) {
+      if (showToast) {
+        setNotification("Please enter customer / recipient name.");
+        setTimeout(() => setNotification(null), 3000);
+      }
+      return false;
+    }
+    const cleanPhone = shippingDetails.phone.replace(/\D/g, "");
+    if (cleanPhone.length < 10) {
+      if (showToast) {
+        setNotification("Please enter a valid 10-digit mobile number.");
+        setTimeout(() => setNotification(null), 3000);
+      }
+      return false;
+    }
+    const cleanEmail = shippingDetails.email.trim();
+    if (!cleanEmail || !cleanEmail.includes("@") || !cleanEmail.includes(".")) {
+      if (showToast) {
+        setNotification("Please enter a valid email address for order confirmation.");
+        setTimeout(() => setNotification(null), 3000);
+      }
+      return false;
+    }
+    if (!shippingDetails.addressLine.trim() || shippingDetails.addressLine.trim().length < 5) {
+      if (showToast) {
+        setNotification("Please enter complete delivery address (House / Flat / Street).");
+        setTimeout(() => setNotification(null), 3000);
+      }
+      return false;
+    }
+    if (!shippingDetails.city.trim()) {
+      if (showToast) {
+        setNotification("Please enter delivery city.");
+        setTimeout(() => setNotification(null), 3000);
+      }
+      return false;
+    }
+    if (!shippingDetails.state.trim()) {
+      if (showToast) {
+        setNotification("Please enter delivery state.");
+        setTimeout(() => setNotification(null), 3000);
+      }
+      return false;
+    }
+    const cleanPin = shippingDetails.pincode.replace(/\D/g, "");
+    if (cleanPin.length !== 6) {
+      if (showToast) {
+        setNotification("Please enter a valid 6-digit postal pincode.");
+        setTimeout(() => setNotification(null), 3000);
+      }
+      return false;
+    }
+    return true;
+  };
+
+  const saveCurrentAddress = () => {
+    const cleanPhone = shippingDetails.phone.replace(/\D/g, "");
+    const addrObj: UserAddress = {
+      id: `addr_${Date.now()}`,
+      contactName: shippingDetails.name.trim(),
+      phone: cleanPhone,
+      addressLine: shippingDetails.addressLine.trim(),
+      city: shippingDetails.city.trim(),
+      state: shippingDetails.state.trim(),
+      pincode: shippingDetails.pincode.trim(),
+      businessName: shippingDetails.businessName.trim() || undefined,
+      gstin: shippingDetails.gstin.trim() || undefined,
+    };
+    saveAccountAddresses(activeCartMode, [addrObj]);
+    try {
+      localStorage.setItem("fc_user_name", shippingDetails.name.trim());
+      if (shippingDetails.email.trim()) {
+        localStorage.setItem("fc_retail_email", shippingDetails.email.trim());
+        localStorage.setItem("fc_user_email", shippingDetails.email.trim());
+      }
+      if (cleanPhone) {
+        localStorage.setItem("fc_retail_mobile", cleanPhone);
+        localStorage.setItem("fc_user_mobile", cleanPhone);
+      }
+    } catch {}
+  };
 
   // Sync activeCartMode when storeMode prop changes
   useEffect(() => {
@@ -386,13 +558,36 @@ export default function CartScreen({
       return;
     }
 
+    // 3. Verify Delivery Address fields before opening Razorpay
+    if (!validateAddressFields(true)) {
+      setIsEditingAddress(true);
+      return;
+    }
+
+    saveCurrentAddress();
+
     const customerEmail =
       overrideIdentifier && overrideIdentifier.includes("@")
         ? overrideIdentifier
-        : (storedEmail || (activeIdentifier.includes("@") ? activeIdentifier : undefined));
+        : (shippingDetails.email.trim() || storedEmail || (activeIdentifier.includes("@") ? activeIdentifier : undefined));
 
     const customerMobile =
-      activeIdentifier.includes("@") ? "" : activeIdentifier;
+      shippingDetails.phone.replace(/\D/g, "") ||
+      (activeIdentifier.includes("@") ? "" : activeIdentifier);
+
+    const customerName =
+      shippingDetails.name.trim() || storedName || "Customer";
+
+    const finalShippingAddress = {
+      contactName: customerName,
+      phone: customerMobile,
+      addressLine: shippingDetails.addressLine.trim(),
+      city: shippingDetails.city.trim(),
+      state: shippingDetails.state.trim(),
+      pincode: shippingDetails.pincode.trim(),
+      businessName: shippingDetails.businessName.trim() || undefined,
+      gstin: shippingDetails.gstin.trim() || undefined,
+    };
 
     setIsCheckingOut(true);
     setNotification("Initializing Razorpay checkout...");
@@ -406,9 +601,16 @@ export default function CartScreen({
           items: cart,
           orderType: activeCartMode,
           storeMode: activeCartMode,
-          customerMobile: customerMobile || activeIdentifier,
+          customerMobile,
           customerEmail,
-          customerName: storedName || "Customer",
+          customerName,
+          shippingAddress: finalShippingAddress,
+          notes: {
+            customerName,
+            customerMobile,
+            customerEmail: customerEmail || "",
+            deliveryAddress: `${finalShippingAddress.addressLine}, ${finalShippingAddress.city}, ${finalShippingAddress.state} - ${finalShippingAddress.pincode}`,
+          },
         }),
       });
 
@@ -463,9 +665,10 @@ export default function CartScreen({
                 razorpay_signature: response.razorpay_signature,
                 orderType: activeCartMode,
                 storeMode: activeCartMode,
-                customerMobile: customerMobile || activeIdentifier,
+                customerMobile,
                 customerEmail,
-                customerName: storedName || "Customer",
+                customerName,
+                shippingAddress: finalShippingAddress,
                 items: cart,
               }),
             });
@@ -497,9 +700,9 @@ export default function CartScreen({
           }
         },
         prefill: {
-          name: storedName || "Customer",
+          name: customerName,
           email: customerEmail || "",
-          contact: customerMobile || (activeIdentifier.replace(/\D/g, "") ? activeIdentifier : ""),
+          contact: customerMobile,
         },
         notes: {
           orderType: activeCartMode,
@@ -798,6 +1001,200 @@ export default function CartScreen({
                       : `Standard retail delivery is ₹${b2cDeliveryCharge}. Add ₹${b2cFreeShipRemaining.toFixed(0)} more to get 100% FREE Delivery!`}
                   </p>
                 </div>
+              </div>
+
+              {/* Delivery Address & Contact Details Card */}
+              <div className="w-full bg-[#0d0d0d] border border-[#222222] rounded-[22px] p-5 shadow-lg space-y-3.5">
+                <div className="flex items-center justify-between pb-2 border-b border-[#1c1c1c]">
+                  <div className="flex items-center gap-2">
+                    <div className="w-7 h-7 rounded-lg bg-[#1c160c] border border-[#e5a93c]/40 flex items-center justify-center text-[#e5a93c]">
+                      <MapPin className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h4 className="text-white text-sm sm:text-base font-semibold leading-tight">
+                        Delivery Address
+                      </h4>
+                      <p className="text-[11px] text-[#8e8e93]">
+                        Required for courier delivery & GST invoice
+                      </p>
+                    </div>
+                  </div>
+                  {hasValidAddress && !isEditingAddress && (
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingAddress(true)}
+                      className="text-[#e5a93c] hover:underline text-xs font-semibold flex items-center gap-1 cursor-pointer"
+                    >
+                      <Edit2 className="w-3 h-3" />
+                      <span>Edit</span>
+                    </button>
+                  )}
+                </div>
+
+                {hasValidAddress && !isEditingAddress ? (
+                  <div className="bg-[#141414] border border-[#262626] rounded-xl p-3.5 space-y-1.5 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="text-white font-semibold text-sm">{shippingDetails.name}</span>
+                      <span className="text-[#e5a93c] text-[10px] font-semibold bg-[#1c160c] px-2 py-0.5 rounded border border-[#e5a93c]/30">
+                        {activeCartMode === "wholesale" ? "Wholesale Partner" : "Retail Customer"}
+                      </span>
+                    </div>
+                    {shippingDetails.businessName && (
+                      <p className="text-[#bbb] font-medium">{shippingDetails.businessName}</p>
+                    )}
+                    <p className="text-[#a0a0a0] leading-relaxed">
+                      {shippingDetails.addressLine}
+                    </p>
+                    <p className="text-white font-medium">
+                      {[shippingDetails.city, shippingDetails.state].filter(Boolean).join(", ")} - {shippingDetails.pincode}
+                    </p>
+                    <div className="pt-2 border-t border-[#1f1f1f] flex flex-wrap items-center gap-x-4 gap-y-1 text-[#8e8e93] text-[11px]">
+                      <span>📱 +91 {shippingDetails.phone.replace(/\D/g, "")}</span>
+                      {shippingDetails.email && <span>✉️ {shippingDetails.email}</span>}
+                    </div>
+                    {shippingDetails.gstin && (
+                      <p className="text-[#8e8e93] text-[11px] pt-1">GSTIN: {shippingDetails.gstin}</p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      <div className="space-y-1">
+                        <label className="text-[11px] text-[#a0a0a0] font-medium block">
+                          Full Name <span className="text-[#e5a93c]">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Your Full Name"
+                          value={shippingDetails.name}
+                          onChange={(e) => setShippingDetails((p) => ({ ...p, name: e.target.value }))}
+                          className="w-full h-10 rounded-xl bg-[#141414] border border-[#2a2a2a] px-3 text-xs text-white placeholder-[#666] focus:border-[#e5a93c] outline-none"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[11px] text-[#a0a0a0] font-medium block">
+                          Phone Number <span className="text-[#e5a93c]">*</span>
+                        </label>
+                        <input
+                          type="tel"
+                          maxLength={10}
+                          placeholder="10-digit Mobile"
+                          value={shippingDetails.phone}
+                          onChange={(e) => setShippingDetails((p) => ({ ...p, phone: e.target.value.replace(/\D/g, "") }))}
+                          className="w-full h-10 rounded-xl bg-[#141414] border border-[#2a2a2a] px-3 text-xs text-white placeholder-[#666] focus:border-[#e5a93c] outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[11px] text-[#a0a0a0] font-medium block">
+                        Email Address <span className="text-[#e5a93c]">*</span>
+                        <span className="text-[#666] font-normal ml-1">(for confirmation & bill)</span>
+                      </label>
+                      <input
+                        type="email"
+                        placeholder="name@example.com"
+                        value={shippingDetails.email}
+                        onChange={(e) => setShippingDetails((p) => ({ ...p, email: e.target.value }))}
+                        className="w-full h-10 rounded-xl bg-[#141414] border border-[#2a2a2a] px-3 text-xs text-white placeholder-[#666] focus:border-[#e5a93c] outline-none"
+                      />
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[11px] text-[#a0a0a0] font-medium block">
+                        House / Flat No., Street, Landmark <span className="text-[#e5a93c]">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="e.g. Flat 402, Royal Palms, Link Road"
+                        value={shippingDetails.addressLine}
+                        onChange={(e) => setShippingDetails((p) => ({ ...p, addressLine: e.target.value }))}
+                        className="w-full h-10 rounded-xl bg-[#141414] border border-[#2a2a2a] px-3 text-xs text-white placeholder-[#666] focus:border-[#e5a93c] outline-none"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <div className="space-y-1">
+                        <label className="text-[11px] text-[#a0a0a0] font-medium block">
+                          City <span className="text-[#e5a93c]">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="City"
+                          value={shippingDetails.city}
+                          onChange={(e) => setShippingDetails((p) => ({ ...p, city: e.target.value }))}
+                          className="w-full h-10 rounded-xl bg-[#141414] border border-[#2a2a2a] px-3 text-xs text-white placeholder-[#666] focus:border-[#e5a93c] outline-none"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[11px] text-[#a0a0a0] font-medium block">
+                          State <span className="text-[#e5a93c]">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="State"
+                          value={shippingDetails.state}
+                          onChange={(e) => setShippingDetails((p) => ({ ...p, state: e.target.value }))}
+                          className="w-full h-10 rounded-xl bg-[#141414] border border-[#2a2a2a] px-3 text-xs text-white placeholder-[#666] focus:border-[#e5a93c] outline-none"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <div className="space-y-1">
+                        <label className="text-[11px] text-[#a0a0a0] font-medium block">
+                          Pincode <span className="text-[#e5a93c]">*</span>
+                        </label>
+                        <input
+                          type="text"
+                          maxLength={6}
+                          placeholder="6-digit Pincode"
+                          value={shippingDetails.pincode}
+                          onChange={(e) => setShippingDetails((p) => ({ ...p, pincode: e.target.value.replace(/\D/g, "") }))}
+                          className="w-full h-10 rounded-xl bg-[#141414] border border-[#2a2a2a] px-3 text-xs text-white placeholder-[#666] focus:border-[#e5a93c] outline-none"
+                        />
+                      </div>
+                      {activeCartMode === "wholesale" ? (
+                        <div className="space-y-1">
+                          <label className="text-[11px] text-[#a0a0a0] font-medium block">
+                            GSTIN (Optional)
+                          </label>
+                          <input
+                            type="text"
+                            placeholder="GSTIN"
+                            value={shippingDetails.gstin || ""}
+                            onChange={(e) => setShippingDetails((p) => ({ ...p, gstin: e.target.value.toUpperCase() }))}
+                            className="w-full h-10 rounded-xl bg-[#141414] border border-[#2a2a2a] px-3 text-xs text-white placeholder-[#666] focus:border-[#e5a93c] outline-none"
+                          />
+                        </div>
+                      ) : (
+                        <div className="space-y-1">
+                          <label className="text-[11px] text-[#a0a0a0] font-medium block">
+                            Country
+                          </label>
+                          <div className="w-full h-10 rounded-xl bg-[#141414] border border-[#2a2a2a] px-3 text-xs text-[#888] flex items-center">
+                            India (Domestic)
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {hasValidAddress && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (validateAddressFields(false)) {
+                            saveCurrentAddress();
+                            setIsEditingAddress(false);
+                          }
+                        }}
+                        className="w-full py-2 rounded-xl bg-[#1a1a1a] hover:bg-[#252525] border border-[#333] text-xs font-medium text-white transition-colors cursor-pointer"
+                      >
+                        Save & Confirm Address
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Minimum Order / Progress & Checkout Action */}

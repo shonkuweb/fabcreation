@@ -74,7 +74,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { customerMobile, customerEmail, customerName, items, shipping } = body;
+    const { customerMobile, customerEmail, customerName, items, shipping, shippingAddress } = body;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json(
@@ -226,6 +226,7 @@ export async function POST(req: Request) {
       customerMobile: validMobile,
       customerEmail: emailStr || (validMobile.includes("@") ? validMobile : undefined),
       customerName: (customerName || "").trim() || "Customer",
+      shippingAddress: shippingAddress || undefined,
       items: verifiedItems,
       subtotal: finalSubtotal,
       gst: finalGst,

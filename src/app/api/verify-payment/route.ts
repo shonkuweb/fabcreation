@@ -25,6 +25,7 @@ export async function POST(req: Request) {
       customerMobile,
       customerEmail,
       customerName,
+      shippingAddress,
     } = body;
 
     // Validate required Razorpay verification fields
@@ -151,10 +152,50 @@ export async function POST(req: Request) {
       const validMobile =
         mobileStr || emailStr || (mode === "wholesale" ? "Wholesale Partner" : "Retail Customer");
 
+      // Auto-lookup address from user database if not passed
+      let finalShippingAddress = shippingAddress;
+      if (!finalShippingAddress) {
+        try {
+          const { getRetailUsers, getWholesaleUsers } = await import("@/lib/db");
+          if (mode === "wholesale") {
+            const wsUser = getWholesaleUsers().find(
+              (u) =>
+                (u.mobile && u.mobile.replace(/\D/g, "") === validMobile.replace(/\D/g, "")) ||
+                (u.email && u.email.toLowerCase() === emailStr.toLowerCase())
+            );
+            if (wsUser?.addresses && wsUser.addresses.length > 0) {
+              finalShippingAddress = wsUser.addresses[0];
+            }
+          } else {
+            const retUser = getRetailUsers().find(
+              (u) =>
+                (u.mobile && u.mobile.replace(/\D/g, "") === validMobile.replace(/\D/g, "")) ||
+                (u.email && u.email.toLowerCase() === emailStr.toLowerCase())
+            );
+            if (retUser?.addresses && retUser.addresses.length > 0) {
+              finalShippingAddress = retUser.addresses[0];
+            }
+          }
+        } catch (addrErr) {
+          console.warn("[Verify Payment] Address lookup warning:", addrErr);
+        }
+      }
+
+      const finalCustomerName =
+        (customerName || "").trim() ||
+        (finalShippingAddress && typeof finalShippingAddress === "object" ? finalShippingAddress.contactName : "") ||
+        "Customer";
+
+      const finalMobile =
+        mobileStr ||
+        (finalShippingAddress && typeof finalShippingAddress === "object" ? finalShippingAddress.phone : "") ||
+        validMobile;
+
       createdOrder = createOrder({
-        customerMobile: validMobile,
+        customerMobile: finalMobile,
         customerEmail: emailStr || (validMobile.includes("@") ? validMobile : undefined),
-        customerName: (customerName || "").trim() || "Customer",
+        customerName: finalCustomerName,
+        shippingAddress: finalShippingAddress,
         items: verifiedItems,
         subtotal: finalSubtotal,
         gst: finalGst,
@@ -167,6 +208,23 @@ export async function POST(req: Request) {
         razorpayOrderId: razorpay_order_id,
         razorpayPaymentId: razorpay_payment_id,
       });
+
+      // Persist address to retail user account for future auto-fill
+      if (finalShippingAddress && typeof finalShippingAddress === "object" && finalShippingAddress.addressLine) {
+        try {
+          const { upsertRetailUser } = await import("@/lib/db");
+          if (mode === "retail" && emailStr) {
+            upsertRetailUser({
+              name: finalCustomerName,
+              email: emailStr,
+              mobile: finalMobile,
+              addresses: [finalShippingAddress],
+            });
+          }
+        } catch (saveErr) {
+          console.warn("[Verify Payment] User address persistence note:", saveErr);
+        }
+      }
 
       // Send Order Confirmation Email
       let recipientEmail = emailStr || (validMobile.includes("@") ? validMobile : "");
@@ -194,6 +252,13 @@ export async function POST(req: Request) {
       }
 
       if (recipientEmail && recipientEmail.includes("@")) {
+        const formattedAddressStr =
+          typeof createdOrder.shippingAddress === "string"
+            ? createdOrder.shippingAddress
+            : createdOrder.shippingAddress
+            ? `${createdOrder.shippingAddress.addressLine}, ${createdOrder.shippingAddress.city}, ${createdOrder.shippingAddress.state} - ${createdOrder.shippingAddress.pincode}`
+            : undefined;
+
         sendOrderConfirmationEmail({
           orderNumber: createdOrder.orderNumber,
           customerName: createdOrder.customerName,
@@ -206,6 +271,7 @@ export async function POST(req: Request) {
           shipping: createdOrder.shipping,
           total: createdOrder.total,
           createdAt: createdOrder.createdAt,
+          shippingAddress: formattedAddressStr,
         }).catch((emailErr) => {
           console.error("[Razorpay Verify] Confirmation email delivery failed:", emailErr);
         });

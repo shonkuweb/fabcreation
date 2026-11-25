@@ -106,7 +106,7 @@ export default function AdminPage() {
     description: "",
     wholesaleMinQty: "1",
     stock: "10",
-    subtitle: "Anti tarnish",
+    subtitle: "Long Lasting",
     metal: "Stainless Steel",
     target: "Women",
     occasion: "Daily Wear",
@@ -810,7 +810,7 @@ export default function AdminPage() {
       description: "",
       wholesaleMinQty: "1",
       stock: "10",
-      subtitle: "Anti tarnish",
+      subtitle: "Long Lasting",
       metal: "Stainless Steel",
       target: "Women",
       occasion: "Daily Wear",
@@ -3526,7 +3526,7 @@ export default function AdminPage() {
                     type="text"
                     value={productForm.subtitle}
                     onChange={(e) => setProductForm({ ...productForm, subtitle: e.target.value })}
-                    placeholder="e.g. Anti tarnish"
+                    placeholder="e.g. Long Lasting"
                     className="w-full h-10 rounded-xl bg-[#141414] border border-[#262626] px-3 text-white outline-none focus:border-[#e5a93c]"
                   />
                   <p className="text-[10px] text-[#666] mt-0.5">Short tagline</p>

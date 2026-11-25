@@ -887,7 +887,9 @@ export default function AccountScreen({
                             {p.name}
                           </h4>
                           <p className="text-[#8e8e93] text-[11px] truncate mb-2">
-                            {p.subtitle || p.category}
+                            {p.subtitle && p.subtitle.toLowerCase().includes("anti")
+                              ? "Long Lasting"
+                              : (p.subtitle || p.category)}
                           </p>
                         </div>
 

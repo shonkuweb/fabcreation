@@ -654,7 +654,9 @@ export default function HomeScreen({
 
                       {/* Subtitle */}
                       <p className="text-[#8e8e93] text-[12px] mb-2 font-normal line-clamp-1">
-                        {product.subtitle || product.category}
+                        {product.subtitle && product.subtitle.toLowerCase().includes("anti")
+                          ? "Long Lasting"
+                          : (product.subtitle || product.category)}
                       </p>
                     </div>
 

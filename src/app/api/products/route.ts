@@ -86,7 +86,7 @@ export async function POST(req: Request) {
       occasion: occasion || "Daily Wear",
       rating: 5.0,
       reviewsCount: 0,
-      subtitle: subtitle || "Anti tarnish",
+      subtitle: subtitle || "Long Lasting",
       description: description ? String(description).trim() : undefined,
       featured: Boolean(featured),
     });

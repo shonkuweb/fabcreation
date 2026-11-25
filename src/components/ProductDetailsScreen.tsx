@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Heart,
+  Share2,
   ShoppingCart,
   Layers,
   User,
@@ -333,6 +334,56 @@ export default function ProductDetailsScreen({
     setWishlist(getWishlistItems(storeMode));
   }, [initialProduct, initialAllProducts, initialCategories, storeMode]);
 
+  // Share handler for current product
+  const handleShareProduct = async (e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    if (!product) return;
+
+    const shareUrl =
+      typeof window !== "undefined"
+        ? window.location.href
+        : `https://fab-creations.com/product?id=${product.id}`;
+    const shareTitle = product.name || "Fab Creations Luxury Jewellery";
+    const shareText = `Check out this ${product.name} on Fab Creations!`;
+
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try {
+        await navigator.share({
+          title: shareTitle,
+          text: shareText,
+          url: shareUrl,
+        });
+      } catch (err: any) {
+        if (err?.name !== "AbortError") {
+          fallbackCopyShareUrl(shareUrl);
+        }
+      }
+    } else {
+      fallbackCopyShareUrl(shareUrl);
+    }
+  };
+
+  const fallbackCopyShareUrl = (url: string) => {
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      navigator.clipboard
+        .writeText(url)
+        .then(() => {
+          setNotification("Product link copied to clipboard!");
+          setTimeout(() => setNotification(null), 2500);
+        })
+        .catch(() => {
+          setNotification("Link: " + url);
+          setTimeout(() => setNotification(null), 3000);
+        });
+    } else {
+      setNotification("Link: " + url);
+      setTimeout(() => setNotification(null), 3000);
+    }
+  };
+
   // Wishlist handler for current product
   const handleToggleWishlist = () => {
     if (!product) return;
@@ -590,18 +641,32 @@ export default function ProductDetailsScreen({
                 ))}
               </div>
 
-              {/* Heart Wishlist Button */}
-              <button
-                onClick={handleToggleWishlist}
-                className="absolute top-3.5 right-3.5 z-20 w-9 h-9 rounded-full bg-black/60 backdrop-blur-sm border border-neutral-800 flex items-center justify-center text-[#e5a93c] hover:scale-110 active:scale-95 transition-all cursor-pointer shadow-md"
-                title="Save to Wishlist"
-              >
-                <Heart
-                  className={`w-4 h-4 ${
-                    isWishlist ? "fill-[#e5a93c] text-[#e5a93c]" : "text-[#e5a93c]"
-                  }`}
-                />
-              </button>
+              {/* Top Right Action Buttons: Share & Wishlist */}
+              <div className="absolute top-3.5 right-3.5 z-20 flex items-center gap-2">
+                {/* Share Button */}
+                <button
+                  type="button"
+                  onClick={handleShareProduct}
+                  className="w-9 h-9 rounded-full bg-black/60 backdrop-blur-sm border border-neutral-800 flex items-center justify-center text-[#e5a93c] hover:scale-110 active:scale-95 transition-all cursor-pointer shadow-md"
+                  title="Share with Friends"
+                >
+                  <Share2 className="w-4 h-4 text-[#e5a93c]" />
+                </button>
+
+                {/* Heart Wishlist Button */}
+                <button
+                  type="button"
+                  onClick={handleToggleWishlist}
+                  className="w-9 h-9 rounded-full bg-black/60 backdrop-blur-sm border border-neutral-800 flex items-center justify-center text-[#e5a93c] hover:scale-110 active:scale-95 transition-all cursor-pointer shadow-md"
+                  title="Save to Wishlist"
+                >
+                  <Heart
+                    className={`w-4 h-4 ${
+                      isWishlist ? "fill-[#e5a93c] text-[#e5a93c]" : "text-[#e5a93c]"
+                    }`}
+                  />
+                </button>
+              </div>
 
               {/* Slide Counter Pill */}
               {mediaList.length > 1 && (
@@ -718,8 +783,8 @@ export default function ProductDetailsScreen({
               </div>
               <div className="p-3 rounded-[16px] bg-[#0d0d0d] border border-[#202020] flex flex-col items-center">
                 <Sparkles className="w-5 h-5 text-[#e5a93c] mb-1" />
-                <span className="text-white text-[11px] font-medium">Anti Tarnish</span>
-                <span className="text-[#8e8e93] text-[9.5px]">Long lasting</span>
+                <span className="text-white text-[11px] font-medium">Long Lasting</span>
+                <span className="text-[#8e8e93] text-[9.5px]">Premium shine</span>
               </div>
               <div className="p-3 rounded-[16px] bg-[#0d0d0d] border border-[#202020] flex flex-col items-center">
                 <CreditCard className="w-5 h-5 text-[#e5a93c] mb-1" />
@@ -753,17 +818,16 @@ export default function ProductDetailsScreen({
                 <span className="text-[#e5a93c] truncate max-w-[200px]">{product.name}</span>
               </div>
 
-              <div className="flex items-start justify-between gap-3 pt-1">
+              <div className="pt-1">
                 <h1 className="text-white text-2xl sm:text-3xl lg:text-4xl font-serif font-medium leading-tight tracking-tight">
                   {product.name}
                 </h1>
-                <span className="px-3 py-1 rounded-full bg-[#18140c] border border-[#4a3816] text-[#e5a93c] text-xs font-semibold shrink-0">
-                  SKU: {product.sku}
-                </span>
               </div>
 
               <p className="text-[#a0a0a0] text-sm">
-                {product.subtitle || "Premium anti-tarnish waterproof stainless steel jewellery"}
+                {product.subtitle && product.subtitle.toLowerCase().includes("anti")
+                  ? "Long Lasting"
+                  : (product.subtitle || "Long Lasting")}
               </p>
 
               {/* Rating */}
@@ -896,7 +960,7 @@ export default function ProductDetailsScreen({
                   product.description.trim()
                 ) : (
                   <p className="text-[#888] italic">
-                    Crafted with premium hypoallergenic stainless steel and finished with high-polish 18K gold plating. Features our signature waterproof, anti-tarnish coating built to resist perfumes, moisture, and daily wear without losing brilliance.
+                    Crafted with premium hypoallergenic stainless steel and finished with high-polish 18K gold plating. Features our signature waterproof, long-lasting coating built to resist perfumes, moisture, and daily wear without losing brilliance.
                   </p>
                 )}
               </div>
@@ -906,7 +970,7 @@ export default function ProductDetailsScreen({
             <div className="w-full bg-[#0d0d0d] border border-[#222222] rounded-[22px] overflow-hidden shadow-sm divide-y divide-[#1a1a1a]">
               <div className="px-5 py-3.5 flex items-center justify-between text-sm">
                 <span className="text-[#8e8e93]">Material</span>
-                <span className="text-white font-medium">{product.metal || "Stainless Steel (Anti-Tarnish)"}</span>
+                <span className="text-white font-medium">{product.metal || "Stainless Steel (Long-Lasting)"}</span>
               </div>
               <div className="px-5 py-3.5 flex items-center justify-between text-sm">
                 <span className="text-[#8e8e93]">Target Audience</span>
@@ -1032,7 +1096,9 @@ export default function ProductDetailsScreen({
 
                         {/* Subtitle */}
                         <p className="text-[#8e8e93] text-[11.5px] mb-2 font-normal line-clamp-1">
-                          {p.subtitle || p.category}
+                          {p.subtitle && p.subtitle.toLowerCase().includes("anti")
+                            ? "Long Lasting"
+                            : (p.subtitle || p.category)}
                         </p>
                       </div>
 

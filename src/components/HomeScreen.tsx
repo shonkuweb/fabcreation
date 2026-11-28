@@ -48,7 +48,7 @@ interface HomeScreenProps {
   onToggleWishlist?: (productId: string) => void;
   onNavigateHome?: () => void;
   onSignOut?: () => void;
-  onNavigateShop?: () => void;
+  onNavigateShop?: (category?: string | null) => void;
   onNavigateCart?: () => void;
   onNavigateAccount?: () => void;
   onNavigateCategories?: () => void;
@@ -273,12 +273,11 @@ export default function HomeScreen({
   };
 
   const navigateToShop = (categoryOrEvent?: string | null | React.MouseEvent | unknown) => {
-    const cat = typeof categoryOrEvent === "string" ? categoryOrEvent : null;
-    if (cat && onSelectCategory) {
-      onSelectCategory(cat);
-    }
+    const cat = typeof categoryOrEvent === "string" && categoryOrEvent.trim() ? categoryOrEvent.trim() : null;
     if (onNavigateShop) {
-      onNavigateShop();
+      onNavigateShop(cat);
+    } else if (onSelectCategory) {
+      onSelectCategory(cat);
     } else {
       router.push(cat ? `/shop?cat=${encodeURIComponent(cat)}` : "/shop");
     }
@@ -326,11 +325,7 @@ export default function HomeScreen({
         wishlistCount={wishlist.length}
         onNavigateHome={navigateToHome}
         onNavigateShop={(cat) => {
-          if (onSelectCategory) {
-            onSelectCategory(cat || null);
-          } else if (onNavigateShop) {
-            onNavigateShop();
-          }
+          navigateToShop(cat || null);
         }}
         onNavigateCart={navigateToCart}
         onNavigateAccount={navigateToAccount}
@@ -338,16 +333,12 @@ export default function HomeScreen({
         onOpenMenu={onOpenMenu}
         activeCategory={null}
         onSelectCategory={(cat) => {
-          if (onSelectCategory) {
-            onSelectCategory(cat);
-          } else {
-            navigateToShop();
-          }
+          navigateToShop(cat || null);
         }}
         categories={categories}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}
-        onSearchSubmit={navigateToShop}
+        onSearchSubmit={() => navigateToShop(null)}
         currentTab="home"
         navbarRetailOffer={settings?.navbarRetailOffer}
         navbarWholesaleOffer={settings?.navbarWholesaleOffer}
@@ -402,7 +393,8 @@ export default function HomeScreen({
 
               <div>
                 <button
-                  onClick={onNavigateShop}
+                  type="button"
+                  onClick={() => navigateToShop(null)}
                   className="h-[34px] sm:h-[38px] md:h-[42px] px-4 sm:px-5 md:px-6 rounded-full border border-[#e5a93c] bg-black/40 backdrop-blur-sm text-[#e5a93c] hover:bg-[#e5a93c] hover:text-black transition-all text-[11.5px] sm:text-[12px] md:text-[13px] font-semibold tracking-wide flex items-center gap-1.5 shadow-md active:scale-95 cursor-pointer"
                 >
                   <span>{settings?.heroButtonText || "SHOP NOW"}</span>
@@ -448,10 +440,7 @@ export default function HomeScreen({
                   <button
                     key={catName}
                     type="button"
-                    onClick={() => {
-                      onSelectCategory?.(catName);
-                      navigateToShop(catName);
-                    }}
+                    onClick={() => navigateToShop(catName)}
                     className="flex flex-col items-center gap-1.5 shrink-0 cursor-pointer group focus:outline-none"
                   >
                     {/* Round Shape Container with Luxury Gold Gradient Ring */}
@@ -516,10 +505,7 @@ export default function HomeScreen({
                   <button
                     key={catName}
                     type="button"
-                    onClick={() => {
-                      onSelectCategory?.(catName);
-                      navigateToShop(catName);
-                    }}
+                    onClick={() => navigateToShop(catName)}
                     className="flex flex-col items-center gap-2 shrink-0 cursor-pointer group focus:outline-none"
                   >
                     <div className="relative w-[82px] h-[82px] lg:w-[90px] lg:h-[90px] rounded-full p-[2.5px] bg-gradient-to-tr from-[#d69e3d] via-[#f5c767] to-[#8a6828] group-hover:scale-105 group-hover:from-[#f5c767] group-hover:to-[#e5a93c] transition-all duration-300 shadow-lg">
@@ -578,7 +564,8 @@ export default function HomeScreen({
               Featured Products
             </h3>
             <button
-              onClick={onNavigateShop}
+              type="button"
+              onClick={() => navigateToShop(null)}
               className="text-[#e5a93c] hover:text-[#f5c767] text-[13px] font-medium flex items-center gap-1 cursor-pointer transition-colors"
             >
               <span>View All</span>
@@ -713,7 +700,7 @@ export default function HomeScreen({
         {/* Luxury Footer */}
         <Footer
           onNavigateHome={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-          onNavigateShop={navigateToShop}
+          onNavigateShop={() => navigateToShop(null)}
           onNavigateAccount={navigateToAccount}
         />
       </div>
@@ -724,11 +711,7 @@ export default function HomeScreen({
         onClose={() => setIsCategoriesOpen(false)}
         categories={categories}
         onSelectCategory={(catName) => {
-          if (onSelectCategory) {
-            onSelectCategory(catName);
-          } else {
-            navigateToShop();
-          }
+          navigateToShop(catName);
         }}
       />
 
@@ -748,7 +731,7 @@ export default function HomeScreen({
           {/* Shop */}
           <button
             type="button"
-            onClick={navigateToShop}
+            onClick={() => navigateToShop(null)}
             className="flex flex-col items-center justify-center flex-1 text-[#8e8e93] hover:text-white transition-colors gap-1 cursor-pointer"
           >
             <ShoppingBag className="w-5 h-5" />

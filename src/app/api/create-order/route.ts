@@ -74,11 +74,23 @@ export async function POST(req: Request) {
       receipt ||
       `rcpt_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
 
+    const sanitizedNotes: Record<string, string> = {};
+    if (notes && typeof notes === "object") {
+      for (const [k, v] of Object.entries(notes)) {
+        if (v !== undefined && v !== null && String(v).trim()) {
+          sanitizedNotes[k] = String(v).trim().slice(0, 250);
+        }
+      }
+    }
+    if (typeof body.quickNote === "string" && body.quickNote.trim() && !sanitizedNotes.quickNote) {
+      sanitizedNotes.quickNote = body.quickNote.trim().slice(0, 250);
+    }
+
     const rzpOrder = await createRazorpayOrder({
       amount: Math.round(amount),
       currency: String(currency).toUpperCase(),
       receipt: receiptId,
-      notes: notes || {},
+      notes: sanitizedNotes,
     });
 
     return NextResponse.json({

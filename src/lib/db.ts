@@ -59,6 +59,7 @@ export interface Order {
     businessName?: string;
     gstin?: string;
   };
+  quickNote?: string;
   items: OrderItem[];
   subtotal: number;
   gst: number;

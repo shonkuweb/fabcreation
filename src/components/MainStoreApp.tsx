@@ -251,7 +251,7 @@ export default function MainStoreApp({
 
   const goToShop = (catName?: string | null) => {
     startTransition(() => {
-      const category = catName !== undefined ? catName : null;
+      const category = typeof catName === "string" && catName.trim() ? catName.trim() : null;
       setSelectedCategory(category);
       setTab("shop");
       window.scrollTo({ top: 0, behavior: "smooth" });

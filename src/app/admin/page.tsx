@@ -2095,13 +2095,28 @@ export default function AdminPage() {
                         {/* Customer Name */}
                         <div className="flex items-center justify-between">
                           <span className="text-[#8e8e93]">Name:</span>
-                          <span className="text-white font-medium">{ord.customerName || "Customer"}</span>
+                          <span className="text-white font-medium">
+                            {ord.customerName ||
+                              (typeof ord.shippingAddress === "object" ? ord.shippingAddress?.contactName : "") ||
+                              "Customer"}
+                          </span>
                         </div>
 
                         {/* Customer Phone */}
                         <div className="flex items-center justify-between">
                           <span className="text-[#8e8e93]">Phone:</span>
-                          <span className="text-white font-medium">{ord.customerMobile?.startsWith("+") ? ord.customerMobile : `+91 ${ord.customerMobile}`}</span>
+                          <span className="text-white font-medium">
+                            {(() => {
+                              const rawPhone =
+                                (typeof ord.shippingAddress === "object" && ord.shippingAddress?.phone) ||
+                                ord.customerMobile ||
+                                "";
+                              if (!rawPhone) return "Not provided";
+                              return rawPhone.startsWith("+") || rawPhone.includes("@")
+                                ? rawPhone
+                                : `+91 ${rawPhone}`;
+                            })()}
+                          </span>
                         </div>
 
                         {/* Customer Email */}
@@ -2112,7 +2127,7 @@ export default function AdminPage() {
                           </div>
                         )}
 
-                        {/* Actual Delivery Address */}
+                        {/* Actual Delivery Address & Pincode */}
                         {(() => {
                           const addr: any =
                             ord.shippingAddress ||
@@ -2122,12 +2137,12 @@ export default function AdminPage() {
                             <div className="pt-2 mt-1 border-t border-[#1f1f1f] space-y-1">
                               <span className="text-[#e5a93c] font-semibold flex items-center gap-1 text-[11px] uppercase tracking-wider">
                                 <MapPin className="w-3.5 h-3.5" />
-                                <span>Actual Delivery Address</span>
+                                <span>Delivery Address &amp; Pincode</span>
                               </span>
                               {typeof addr === "string" ? (
                                 <p className="text-[#ddd] text-xs leading-relaxed pl-1">{addr}</p>
                               ) : (
-                                <div className="text-[#ddd] text-xs leading-relaxed pl-1 space-y-0.5 bg-[#0a0a0a] p-2.5 rounded-lg border border-[#1f1f1f]">
+                                <div className="text-[#ddd] text-xs leading-relaxed pl-1 space-y-1 bg-[#0a0a0a] p-2.5 rounded-lg border border-[#1f1f1f]">
                                   {addr.contactName && addr.contactName !== ord.customerName && (
                                     <p><span className="text-[#888]">Recipient:</span> {addr.contactName}</p>
                                   )}
@@ -2135,12 +2150,16 @@ export default function AdminPage() {
                                     <p><span className="text-[#888]">Business:</span> {addr.businessName}</p>
                                   )}
                                   <p className="text-white font-medium">{addr.addressLine}</p>
-                                  <p className="text-[#ccc]">
-                                    {[addr.city, addr.state].filter(Boolean).join(", ")}
-                                    {addr.pincode ? ` - ${addr.pincode}` : ""}
-                                  </p>
+                                  <div className="flex flex-wrap items-center justify-between gap-2 text-[#ccc]">
+                                    <span>{[addr.city, addr.state].filter(Boolean).join(", ")}</span>
+                                    {addr.pincode && (
+                                      <span className="px-2 py-0.5 rounded bg-[#1c160c] border border-[#e5a93c]/40 text-[#f5c767] font-mono text-[11px] font-semibold">
+                                        PIN: {addr.pincode}
+                                      </span>
+                                    )}
+                                  </div>
                                   {addr.phone && addr.phone !== ord.customerMobile && (
-                                    <p className="text-[#888] text-[11px]">Alt Phone: {addr.phone}</p>
+                                    <p className="text-[#888] text-[11px]">Delivery Phone: +91 {addr.phone}</p>
                                   )}
                                   {addr.gstin && (
                                     <p className="text-[#888] text-[11px]">GSTIN: {addr.gstin}</p>
@@ -2154,6 +2173,21 @@ export default function AdminPage() {
                             </div>
                           );
                         })()}
+
+                        {/* Customer Quick Note */}
+                        <div className="pt-2 mt-1 border-t border-[#1f1f1f] space-y-1">
+                          <span className="text-[#e5a93c] font-semibold flex items-center gap-1 text-[11px] uppercase tracking-wider">
+                            <FileText className="w-3.5 h-3.5" />
+                            <span>Quick Note</span>
+                          </span>
+                          {ord.quickNote ? (
+                            <p className="text-amber-100 text-xs leading-relaxed bg-[#1a1409] border border-[#e5a93c]/30 p-2.5 rounded-lg whitespace-pre-wrap">
+                              {ord.quickNote}
+                            </p>
+                          ) : (
+                            <p className="text-[#777] text-[11px] italic pl-1">No quick note added</p>
+                          )}
+                        </div>
                       </div>
 
                       {/* Items List */}

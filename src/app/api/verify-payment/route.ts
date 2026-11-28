@@ -26,6 +26,8 @@ export async function POST(req: Request) {
       customerEmail,
       customerName,
       shippingAddress,
+      quickNote,
+      orderNote,
     } = body;
 
     // Validate required Razorpay verification fields
@@ -191,11 +193,19 @@ export async function POST(req: Request) {
         (finalShippingAddress && typeof finalShippingAddress === "object" ? finalShippingAddress.phone : "") ||
         validMobile;
 
+      const cleanQuickNote =
+        typeof quickNote === "string"
+          ? quickNote.trim()
+          : typeof orderNote === "string"
+          ? orderNote.trim()
+          : "";
+
       createdOrder = createOrder({
         customerMobile: finalMobile,
         customerEmail: emailStr || (validMobile.includes("@") ? validMobile : undefined),
         customerName: finalCustomerName,
         shippingAddress: finalShippingAddress,
+        quickNote: cleanQuickNote || undefined,
         items: verifiedItems,
         subtotal: finalSubtotal,
         gst: finalGst,
@@ -272,6 +282,7 @@ export async function POST(req: Request) {
           total: createdOrder.total,
           createdAt: createdOrder.createdAt,
           shippingAddress: formattedAddressStr,
+          quickNote: createdOrder.quickNote,
         }).catch((emailErr) => {
           console.error("[Razorpay Verify] Confirmation email delivery failed:", emailErr);
         });

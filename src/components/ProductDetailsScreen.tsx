@@ -850,7 +850,7 @@ export default function ProductDetailsScreen({
               </div>
             </div>
 
-            {/* Price & Stock Card */}
+            {/* Price Card */}
             <div className="w-full rounded-[22px] border border-[#222222] bg-[#0d0d0d] p-5 flex items-center justify-between shadow-md">
               <div>
                 <span className="text-[#8e8e93] text-xs block mb-1">
@@ -873,19 +873,6 @@ export default function ProductDetailsScreen({
                     <span className="text-[#8e8e93] text-xs">/ piece (incl. GST)</span>
                   </div>
                 )}
-              </div>
-
-              <div className="text-right">
-                <span className="text-[#8e8e93] text-xs block mb-1">Stock Status</span>
-                <span
-                  className={`text-xs font-semibold px-3 py-1 rounded-full ${
-                    product.stock > 0
-                      ? "bg-emerald-950/60 border border-emerald-500/40 text-emerald-400"
-                      : "bg-rose-950/60 border border-rose-500/40 text-rose-400"
-                  }`}
-                >
-                  {product.stock > 0 ? `${product.stock} In Stock` : "Out of Stock"}
-                </span>
               </div>
             </div>
 

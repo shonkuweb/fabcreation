@@ -74,7 +74,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-    const { customerMobile, customerEmail, customerName, items, shipping, shippingAddress } = body;
+    const { customerMobile, customerEmail, customerName, items, shipping, shippingAddress, quickNote, orderNote } = body;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       return NextResponse.json(
@@ -222,11 +222,19 @@ export async function POST(req: Request) {
     const validMobile =
       mobileStr || emailStr || (orderType === "wholesale" ? "Wholesale Partner" : "Retail Customer");
 
+    const cleanQuickNote =
+      typeof quickNote === "string"
+        ? quickNote.trim()
+        : typeof orderNote === "string"
+        ? orderNote.trim()
+        : "";
+
     const newOrder = createOrder({
       customerMobile: validMobile,
       customerEmail: emailStr || (validMobile.includes("@") ? validMobile : undefined),
       customerName: (customerName || "").trim() || "Customer",
       shippingAddress: shippingAddress || undefined,
+      quickNote: cleanQuickNote || undefined,
       items: verifiedItems,
       subtotal: finalSubtotal,
       gst: finalGst,
@@ -266,6 +274,13 @@ export async function POST(req: Request) {
     }
 
     if (recipientEmail && recipientEmail.includes("@")) {
+      const formattedAddressStr =
+        typeof newOrder.shippingAddress === "string"
+          ? newOrder.shippingAddress
+          : newOrder.shippingAddress
+          ? `${newOrder.shippingAddress.addressLine}, ${newOrder.shippingAddress.city}, ${newOrder.shippingAddress.state} - ${newOrder.shippingAddress.pincode}`
+          : undefined;
+
       sendOrderConfirmationEmail({
         orderNumber: newOrder.orderNumber,
         customerName: newOrder.customerName,
@@ -278,6 +293,8 @@ export async function POST(req: Request) {
         shipping: newOrder.shipping,
         total: newOrder.total,
         createdAt: newOrder.createdAt,
+        shippingAddress: formattedAddressStr,
+        quickNote: newOrder.quickNote,
       }).catch((emailErr) => {
         console.error("[Orders API] Background order email failed:", emailErr);
       });

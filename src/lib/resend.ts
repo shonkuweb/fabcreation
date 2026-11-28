@@ -175,6 +175,16 @@ export interface OrderEmailData {
   total: number;
   createdAt?: string;
   shippingAddress?: string;
+  quickNote?: string;
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 /**
@@ -303,6 +313,30 @@ export async function sendOrderConfirmationEmail(
                   </div>
                 </td>
               </tr>
+
+              ${
+                order.shippingAddress || order.quickNote
+                  ? `
+              <!-- Delivery & Quick Note -->
+              <tr>
+                <td style="padding: 0 28px 16px 28px;">
+                  <div style="background-color: #121212; border: 1px solid #262626; border-radius: 14px; padding: 14px 18px; font-size: 12.5px; color: #cfcfcf; line-height: 1.55;">
+                    ${
+                      order.shippingAddress
+                        ? `<div style="margin-bottom: ${order.quickNote ? "10px" : "0"};"><div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px; color: #e5a93c; font-weight: 700; margin-bottom: 4px;">Delivery Address</div><div>${escapeHtml(order.shippingAddress)}</div></div>`
+                        : ""
+                    }
+                    ${
+                      order.quickNote
+                        ? `<div><div style="font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px; color: #e5a93c; font-weight: 700; margin-bottom: 4px;">Quick Note</div><div>${escapeHtml(order.quickNote)}</div></div>`
+                        : ""
+                    }
+                  </div>
+                </td>
+              </tr>
+              `
+                  : ""
+              }
 
               <!-- Footer & Help -->
               <tr>

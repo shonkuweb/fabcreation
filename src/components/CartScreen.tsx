@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -19,7 +19,7 @@ import {
   Sparkles,
   AlertCircle,
   MapPin,
-  Edit2,
+  FileText,
 } from "lucide-react";
 import CategoriesModal from "@/components/CategoriesModal";
 import StoreModeToggle from "@/components/StoreModeToggle";
@@ -62,7 +62,7 @@ interface CartScreenProps {
 
 export default function CartScreen({
   cart: initialCart = [],
-  userMobile = "8726275466",
+  userMobile = "",
   categories: initialCategories = [],
   products: initialProducts = [],
   storeMode = "retail",
@@ -103,6 +103,7 @@ export default function CartScreen({
     pincode: string;
     businessName: string;
     gstin: string;
+    quickNote: string;
   }>({
     name: "",
     phone: "",
@@ -113,8 +114,75 @@ export default function CartScreen({
     pincode: "",
     businessName: "",
     gstin: "",
+    quickNote: "",
   });
-  const [isEditingAddress, setIsEditingAddress] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<
+    Partial<Record<"name" | "phone" | "email" | "addressLine" | "city" | "state" | "pincode", string>>
+  >({});
+  const fieldRefs = useRef<Record<string, HTMLInputElement | HTMLTextAreaElement | null>>({});
+
+  type AddressField = "name" | "phone" | "email" | "addressLine" | "city" | "state" | "pincode";
+
+  const getFieldError = (field: AddressField, value: string): string | undefined => {
+    switch (field) {
+      case "name":
+        return value.trim() ? undefined : "Please enter your full name.";
+      case "phone": {
+        const cleanPhone = value.replace(/\D/g, "");
+        return cleanPhone.length === 10
+          ? undefined
+          : "Please enter a valid 10-digit phone number.";
+      }
+      case "email": {
+        const cleanEmail = value.trim();
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)
+          ? undefined
+          : "Please enter a valid email address.";
+      }
+      case "addressLine":
+        return value.trim().length >= 5
+          ? undefined
+          : "Please enter your complete delivery address.";
+      case "city":
+        return value.trim() ? undefined : "Please enter delivery city.";
+      case "state":
+        return value.trim() ? undefined : "Please enter delivery state.";
+      case "pincode": {
+        const cleanPin = value.replace(/\D/g, "");
+        return cleanPin.length === 6
+          ? undefined
+          : "Please enter a valid 6-digit pincode.";
+      }
+    }
+  };
+
+  const handleFieldBlur = (field: AddressField) => {
+    const val = shippingDetails[field];
+    if (!val.trim() && !fieldErrors[field]) return;
+    const err = getFieldError(field, val);
+    setFieldErrors((prev) => {
+      if (err) return { ...prev, [field]: err };
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  };
+
+  const updateShippingField = (
+    field: AddressField | "businessName" | "gstin" | "quickNote",
+    value: string
+  ) => {
+    setShippingDetails((prev) => ({ ...prev, [field]: value }));
+    if (field in fieldErrors) {
+      setFieldErrors((prev) => {
+        if (!prev[field as AddressField]) return prev;
+        const next = { ...prev };
+        delete next[field as AddressField];
+        return next;
+      });
+    }
+  };
 
   // Load existing address and user details from localStorage & database
   useEffect(() => {
@@ -131,31 +199,31 @@ export default function CartScreen({
       localStorage.getItem("fc_user_email") ||
       localStorage.getItem("fc_wholesale_email") ||
       "";
-    const storedPhone =
-      localStorage.getItem("fc_retail_mobile") ||
-      localStorage.getItem("fc_user_mobile") ||
-      localStorage.getItem("fc_wholesale_mobile") ||
-      userMobile ||
-      "";
+    const modePhone =
+      activeCartMode === "wholesale"
+        ? localStorage.getItem("fc_wholesale_mobile") || ""
+        : localStorage.getItem("fc_retail_mobile") || localStorage.getItem("fc_user_mobile") || "";
+    const propPhone =
+      userMobile && userMobile !== "8726275466" && !userMobile.includes("@") ? userMobile : "";
+    const storedPhone = (modePhone || propPhone).replace(/\D/g, "");
 
     if (existingAddresses && existingAddresses.length > 0) {
       const first = existingAddresses[0];
-      setShippingDetails({
-        name: first.contactName || storedName || "",
-        phone: first.phone || storedPhone || "",
-        email: storedEmail || "",
-        addressLine: first.addressLine || "",
-        city: first.city || "",
-        state: first.state || "",
-        pincode: first.pincode || "",
-        businessName: first.businessName || "",
-        gstin: first.gstin || "",
-      });
-      if (!first.addressLine || !first.city || !first.pincode) {
-        setIsEditingAddress(true);
-      } else {
-        setIsEditingAddress(false);
-      }
+      const nextPhone = (first.phone || storedPhone || "").replace(/\D/g, "");
+      const nextName = first.contactName || storedName || "";
+      const nextEmail = storedEmail || "";
+      setShippingDetails((prev) => ({
+        ...prev,
+        name: prev.name || nextName,
+        phone: prev.phone || nextPhone,
+        email: prev.email || nextEmail,
+        addressLine: prev.addressLine || first.addressLine || "",
+        city: prev.city || first.city || "",
+        state: prev.state || first.state || "",
+        pincode: prev.pincode || first.pincode || "",
+        businessName: prev.businessName || first.businessName || "",
+        gstin: prev.gstin || first.gstin || "",
+      }));
     } else {
       setShippingDetails((prev) => ({
         ...prev,
@@ -163,14 +231,13 @@ export default function CartScreen({
         email: prev.email || storedEmail || "",
         phone: prev.phone || storedPhone || "",
       }));
-      setIsEditingAddress(true);
     }
   }, [activeCartMode, userMobile]);
 
   const hasValidAddress = Boolean(
     shippingDetails.name.trim() &&
-    shippingDetails.phone.replace(/\D/g, "").length >= 10 &&
-    shippingDetails.email.trim().includes("@") &&
+    shippingDetails.phone.replace(/\D/g, "").length === 10 &&
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(shippingDetails.email.trim()) &&
     shippingDetails.addressLine.trim().length >= 5 &&
     shippingDetails.city.trim() &&
     shippingDetails.state.trim() &&
@@ -178,58 +245,43 @@ export default function CartScreen({
   );
 
   const validateAddressFields = (showToast = true): boolean => {
-    if (!shippingDetails.name.trim()) {
-      if (showToast) {
-        setNotification("Please enter customer / recipient name.");
-        setTimeout(() => setNotification(null), 3000);
+    const orderedFields: AddressField[] = [
+      "name",
+      "phone",
+      "email",
+      "addressLine",
+      "city",
+      "state",
+      "pincode",
+    ];
+    const errors: Partial<Record<AddressField, string>> = {};
+    let firstInvalid: AddressField | null = null;
+
+    for (const field of orderedFields) {
+      const err = getFieldError(field, shippingDetails[field]);
+      if (err) {
+        errors[field] = err;
+        if (!firstInvalid) firstInvalid = field;
       }
+    }
+
+    setFieldErrors(errors);
+
+    if (firstInvalid) {
+      if (showToast) {
+        setNotification(errors[firstInvalid] || "Please complete all required checkout details.");
+        setTimeout(() => setNotification(null), 3500);
+      }
+      requestAnimationFrame(() => {
+        const el = fieldRefs.current[firstInvalid!];
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "center" });
+          el.focus();
+        }
+      });
       return false;
     }
-    const cleanPhone = shippingDetails.phone.replace(/\D/g, "");
-    if (cleanPhone.length < 10) {
-      if (showToast) {
-        setNotification("Please enter a valid 10-digit mobile number.");
-        setTimeout(() => setNotification(null), 3000);
-      }
-      return false;
-    }
-    const cleanEmail = shippingDetails.email.trim();
-    if (!cleanEmail || !cleanEmail.includes("@") || !cleanEmail.includes(".")) {
-      if (showToast) {
-        setNotification("Please enter a valid email address for order confirmation.");
-        setTimeout(() => setNotification(null), 3000);
-      }
-      return false;
-    }
-    if (!shippingDetails.addressLine.trim() || shippingDetails.addressLine.trim().length < 5) {
-      if (showToast) {
-        setNotification("Please enter complete delivery address (House / Flat / Street).");
-        setTimeout(() => setNotification(null), 3000);
-      }
-      return false;
-    }
-    if (!shippingDetails.city.trim()) {
-      if (showToast) {
-        setNotification("Please enter delivery city.");
-        setTimeout(() => setNotification(null), 3000);
-      }
-      return false;
-    }
-    if (!shippingDetails.state.trim()) {
-      if (showToast) {
-        setNotification("Please enter delivery state.");
-        setTimeout(() => setNotification(null), 3000);
-      }
-      return false;
-    }
-    const cleanPin = shippingDetails.pincode.replace(/\D/g, "");
-    if (cleanPin.length !== 6) {
-      if (showToast) {
-        setNotification("Please enter a valid 6-digit postal pincode.");
-        setTimeout(() => setNotification(null), 3000);
-      }
-      return false;
-    }
+
     return true;
   };
 
@@ -482,8 +534,21 @@ export default function CartScreen({
   };
 
   const handleCheckout = async (overrideIdentifier?: string) => {
-    // 1. Retail Login Check & Minimum Cart Value Check
+    // 1. Validate Checkout Form Details (Name, Phone, Email, Delivery Address, City, State, Pincode) FIRST
+    if (!validateAddressFields(true)) {
+      return;
+    }
+
+    saveCurrentAddress();
+
+    // 2. Retail Login Check & Minimum Cart Value Check
     if (activeCartMode === "retail") {
+      if (b2cMinCart > 0 && subtotal < b2cMinCart) {
+        setNotification(`Minimum retail order subtotal is ₹${b2cMinCart.toLocaleString("en-IN")}. Please add ₹${b2cRemainingCart.toFixed(0)} more.`);
+        setTimeout(() => setNotification(null), 3500);
+        return;
+      }
+
       const isRetailAuth =
         typeof window !== "undefined" &&
         (localStorage.getItem("fc_retail_logged_in") === "true" ||
@@ -498,15 +563,9 @@ export default function CartScreen({
         setIsRetailLoginOpen(true);
         return;
       }
-
-      if (b2cMinCart > 0 && subtotal < b2cMinCart) {
-        setNotification(`Minimum retail order subtotal is ₹${b2cMinCart.toLocaleString("en-IN")}. Please add ₹${b2cRemainingCart.toFixed(0)} more.`);
-        setTimeout(() => setNotification(null), 3500);
-        return;
-      }
     }
 
-    // 2. Wholesale Login Check: Must be logged in and meet B2B minimums
+    // 3. Wholesale Login Check: Must be logged in and meet B2B minimums
     if (activeCartMode === "wholesale") {
       const isWholesaleAuth =
         typeof window !== "undefined" &&
@@ -550,21 +609,22 @@ export default function CartScreen({
     const activeIdentifier =
       overrideIdentifier ||
       (activeCartMode === "wholesale"
-        ? (userMobile || (typeof window !== "undefined" ? localStorage.getItem("fc_wholesale_mobile") || localStorage.getItem("fc_user_mobile") : null) || "8726275466")
-        : (userMobile || storedEmail || (typeof window !== "undefined" ? localStorage.getItem("fc_retail_mobile") : null) || ""));
+        ? (typeof window !== "undefined"
+            ? localStorage.getItem("fc_wholesale_mobile") ||
+              localStorage.getItem("fc_wholesale_email") ||
+              localStorage.getItem("fc_user_mobile")
+            : null) ||
+          (userMobile && userMobile !== "8726275466" ? userMobile : "")
+        : storedEmail ||
+          (typeof window !== "undefined"
+            ? localStorage.getItem("fc_retail_mobile") || localStorage.getItem("fc_user_mobile")
+            : null) ||
+          (userMobile && userMobile !== "8726275466" ? userMobile : ""));
 
     if (!activeIdentifier) {
       setIsRetailLoginOpen(true);
       return;
     }
-
-    // 3. Verify Delivery Address fields before opening Razorpay
-    if (!validateAddressFields(true)) {
-      setIsEditingAddress(true);
-      return;
-    }
-
-    saveCurrentAddress();
 
     const customerEmail =
       overrideIdentifier && overrideIdentifier.includes("@")
@@ -573,10 +633,12 @@ export default function CartScreen({
 
     const customerMobile =
       shippingDetails.phone.replace(/\D/g, "") ||
-      (activeIdentifier.includes("@") ? "" : activeIdentifier);
+      (activeIdentifier.includes("@") ? "" : activeIdentifier.replace(/\D/g, ""));
 
     const customerName =
       shippingDetails.name.trim() || storedName || "Customer";
+
+    const trimmedQuickNote = shippingDetails.quickNote.trim();
 
     const finalShippingAddress = {
       contactName: customerName,
@@ -605,11 +667,13 @@ export default function CartScreen({
           customerEmail,
           customerName,
           shippingAddress: finalShippingAddress,
+          quickNote: trimmedQuickNote || undefined,
           notes: {
             customerName,
             customerMobile,
             customerEmail: customerEmail || "",
             deliveryAddress: `${finalShippingAddress.addressLine}, ${finalShippingAddress.city}, ${finalShippingAddress.state} - ${finalShippingAddress.pincode}`,
+            ...(trimmedQuickNote ? { quickNote: trimmedQuickNote.slice(0, 250) } : {}),
           },
         }),
       });
@@ -669,6 +733,7 @@ export default function CartScreen({
                 customerEmail,
                 customerName,
                 shippingAddress: finalShippingAddress,
+                quickNote: trimmedQuickNote || undefined,
                 items: cart,
               }),
             });
@@ -1003,358 +1068,484 @@ export default function CartScreen({
                 </div>
               </div>
 
-              {/* Delivery Address & Contact Details Card */}
-              <div className="w-full bg-[#0d0d0d] border border-[#222222] rounded-[22px] p-5 shadow-lg space-y-3.5">
-                <div className="flex items-center justify-between pb-2 border-b border-[#1c1c1c]">
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-lg bg-[#1c160c] border border-[#e5a93c]/40 flex items-center justify-center text-[#e5a93c]">
-                      <MapPin className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <h4 className="text-white text-sm sm:text-base font-semibold leading-tight">
-                        Delivery Address
-                      </h4>
-                      <p className="text-[11px] text-[#8e8e93]">
-                        Required for courier delivery & GST invoice
-                      </p>
+              {/* Checkout Details & Quick Note Form */}
+              <form
+                id="checkout-form"
+                aria-labelledby="checkout-details-heading"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleCheckout();
+                }}
+                noValidate
+                className="space-y-4"
+              >
+                {/* Delivery Address & Contact Details Card */}
+                <div className="w-full bg-[#0d0d0d] border border-[#222222] rounded-[22px] p-5 shadow-lg space-y-3.5">
+                  <div className="flex items-center justify-between pb-2 border-b border-[#1c1c1c]">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg bg-[#1c160c] border border-[#e5a93c]/40 flex items-center justify-center text-[#e5a93c]">
+                        <MapPin className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h4
+                          id="checkout-details-heading"
+                          className="text-white text-sm sm:text-base font-semibold leading-tight"
+                        >
+                          Checkout Form
+                        </h4>
+                        <p className="text-[11px] text-[#8e8e93]">
+                          Please fill in all details before proceeding to checkout
+                        </p>
+                      </div>
                     </div>
                   </div>
-                  {hasValidAddress && !isEditingAddress && (
-                    <button
-                      type="button"
-                      onClick={() => setIsEditingAddress(true)}
-                      className="text-[#e5a93c] hover:underline text-xs font-semibold flex items-center gap-1 cursor-pointer"
-                    >
-                      <Edit2 className="w-3 h-3" />
-                      <span>Edit</span>
-                    </button>
-                  )}
-                </div>
 
-                {hasValidAddress && !isEditingAddress ? (
-                  <div className="bg-[#141414] border border-[#262626] rounded-xl p-3.5 space-y-1.5 text-xs">
-                    <div className="flex items-center justify-between">
-                      <span className="text-white font-semibold text-sm">{shippingDetails.name}</span>
-                      <span className="text-[#e5a93c] text-[10px] font-semibold bg-[#1c160c] px-2 py-0.5 rounded border border-[#e5a93c]/30">
-                        {activeCartMode === "wholesale" ? "Wholesale Partner" : "Retail Customer"}
-                      </span>
-                    </div>
-                    {shippingDetails.businessName && (
-                      <p className="text-[#bbb] font-medium">{shippingDetails.businessName}</p>
-                    )}
-                    <p className="text-[#a0a0a0] leading-relaxed">
-                      {shippingDetails.addressLine}
-                    </p>
-                    <p className="text-white font-medium">
-                      {[shippingDetails.city, shippingDetails.state].filter(Boolean).join(", ")} - {shippingDetails.pincode}
-                    </p>
-                    <div className="pt-2 border-t border-[#1f1f1f] flex flex-wrap items-center gap-x-4 gap-y-1 text-[#8e8e93] text-[11px]">
-                      <span>📱 +91 {shippingDetails.phone.replace(/\D/g, "")}</span>
-                      {shippingDetails.email && <span>✉️ {shippingDetails.email}</span>}
-                    </div>
-                    {shippingDetails.gstin && (
-                      <p className="text-[#8e8e93] text-[11px] pt-1">GSTIN: {shippingDetails.gstin}</p>
-                    )}
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                      <div className="space-y-1">
-                        <label className="text-[11px] text-[#a0a0a0] font-medium block">
-                          Full Name <span className="text-[#e5a93c]">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="Your Full Name"
-                          value={shippingDetails.name}
-                          onChange={(e) => setShippingDetails((p) => ({ ...p, name: e.target.value }))}
-                          className="w-full h-10 rounded-xl bg-[#141414] border border-[#2a2a2a] px-3 text-xs text-white placeholder-[#666] focus:border-[#e5a93c] outline-none"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[11px] text-[#a0a0a0] font-medium block">
-                          Phone Number <span className="text-[#e5a93c]">*</span>
-                        </label>
-                        <input
-                          type="tel"
-                          maxLength={10}
-                          placeholder="10-digit Mobile"
-                          value={shippingDetails.phone}
-                          onChange={(e) => setShippingDetails((p) => ({ ...p, phone: e.target.value.replace(/\D/g, "") }))}
-                          className="w-full h-10 rounded-xl bg-[#141414] border border-[#2a2a2a] px-3 text-xs text-white placeholder-[#666] focus:border-[#e5a93c] outline-none"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-[11px] text-[#a0a0a0] font-medium block">
-                        Email Address <span className="text-[#e5a93c]">*</span>
-                        <span className="text-[#666] font-normal ml-1">(for confirmation & bill)</span>
-                      </label>
-                      <input
-                        type="email"
-                        placeholder="name@example.com"
-                        value={shippingDetails.email}
-                        onChange={(e) => setShippingDetails((p) => ({ ...p, email: e.target.value }))}
-                        className="w-full h-10 rounded-xl bg-[#141414] border border-[#2a2a2a] px-3 text-xs text-white placeholder-[#666] focus:border-[#e5a93c] outline-none"
-                      />
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className="text-[11px] text-[#a0a0a0] font-medium block">
-                        House / Flat No., Street, Landmark <span className="text-[#e5a93c]">*</span>
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="e.g. Flat 402, Royal Palms, Link Road"
-                        value={shippingDetails.addressLine}
-                        onChange={(e) => setShippingDetails((p) => ({ ...p, addressLine: e.target.value }))}
-                        className="w-full h-10 rounded-xl bg-[#141414] border border-[#2a2a2a] px-3 text-xs text-white placeholder-[#666] focus:border-[#e5a93c] outline-none"
-                      />
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2.5">
-                      <div className="space-y-1">
-                        <label className="text-[11px] text-[#a0a0a0] font-medium block">
-                          City <span className="text-[#e5a93c]">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="City"
-                          value={shippingDetails.city}
-                          onChange={(e) => setShippingDetails((p) => ({ ...p, city: e.target.value }))}
-                          className="w-full h-10 rounded-xl bg-[#141414] border border-[#2a2a2a] px-3 text-xs text-white placeholder-[#666] focus:border-[#e5a93c] outline-none"
-                        />
-                      </div>
-                      <div className="space-y-1">
-                        <label className="text-[11px] text-[#a0a0a0] font-medium block">
-                          State <span className="text-[#e5a93c]">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          placeholder="State"
-                          value={shippingDetails.state}
-                          onChange={(e) => setShippingDetails((p) => ({ ...p, state: e.target.value }))}
-                          className="w-full h-10 rounded-xl bg-[#141414] border border-[#2a2a2a] px-3 text-xs text-white placeholder-[#666] focus:border-[#e5a93c] outline-none"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2.5">
-                      <div className="space-y-1">
-                        <label className="text-[11px] text-[#a0a0a0] font-medium block">
-                          Pincode <span className="text-[#e5a93c]">*</span>
-                        </label>
-                        <input
-                          type="text"
-                          maxLength={6}
-                          placeholder="6-digit Pincode"
-                          value={shippingDetails.pincode}
-                          onChange={(e) => setShippingDetails((p) => ({ ...p, pincode: e.target.value.replace(/\D/g, "") }))}
-                          className="w-full h-10 rounded-xl bg-[#141414] border border-[#2a2a2a] px-3 text-xs text-white placeholder-[#666] focus:border-[#e5a93c] outline-none"
-                        />
-                      </div>
-                      {activeCartMode === "wholesale" ? (
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                         <div className="space-y-1">
-                          <label className="text-[11px] text-[#a0a0a0] font-medium block">
-                            GSTIN (Optional)
+                          <label htmlFor="checkout-name" className="text-[11px] text-[#a0a0a0] font-medium block">
+                            Full Name <span className="text-[#e5a93c]" aria-hidden="true">*</span>
                           </label>
                           <input
+                            ref={(el) => {
+                              fieldRefs.current.name = el;
+                            }}
+                            id="checkout-name"
+                            name="name"
                             type="text"
-                            placeholder="GSTIN"
-                            value={shippingDetails.gstin || ""}
-                            onChange={(e) => setShippingDetails((p) => ({ ...p, gstin: e.target.value.toUpperCase() }))}
-                            className="w-full h-10 rounded-xl bg-[#141414] border border-[#2a2a2a] px-3 text-xs text-white placeholder-[#666] focus:border-[#e5a93c] outline-none"
+                            autoComplete="name"
+                            enterKeyHint="next"
+                            required
+                            aria-required="true"
+                            aria-invalid={Boolean(fieldErrors.name)}
+                            aria-describedby={fieldErrors.name ? "checkout-name-error" : undefined}
+                            placeholder="Your Full Name"
+                            value={shippingDetails.name}
+                            onChange={(e) => updateShippingField("name", e.target.value)}
+                            onBlur={() => handleFieldBlur("name")}
+                            className={`w-full min-h-[44px] rounded-xl bg-[#141414] border px-3 text-base sm:text-xs text-white placeholder-[#666] focus:border-[#e5a93c] outline-none ${
+                              fieldErrors.name ? "border-rose-500" : "border-[#2a2a2a]"
+                            }`}
                           />
+                          {fieldErrors.name && (
+                            <p id="checkout-name-error" role="alert" className="text-rose-400 text-[11px]">
+                              {fieldErrors.name}
+                            </p>
+                          )}
                         </div>
-                      ) : (
                         <div className="space-y-1">
-                          <label className="text-[11px] text-[#a0a0a0] font-medium block">
-                            Country
+                          <label htmlFor="checkout-phone" className="text-[11px] text-[#a0a0a0] font-medium block">
+                            Phone Number <span className="text-[#e5a93c]" aria-hidden="true">*</span>
                           </label>
-                          <div className="w-full h-10 rounded-xl bg-[#141414] border border-[#2a2a2a] px-3 text-xs text-[#888] flex items-center">
-                            India (Domestic)
-                          </div>
+                          <input
+                            ref={(el) => {
+                              fieldRefs.current.phone = el;
+                            }}
+                            id="checkout-phone"
+                            name="tel"
+                            type="tel"
+                            inputMode="numeric"
+                            autoComplete="tel"
+                            enterKeyHint="next"
+                            required
+                            aria-required="true"
+                            aria-invalid={Boolean(fieldErrors.phone)}
+                            aria-describedby={fieldErrors.phone ? "checkout-phone-error" : undefined}
+                            maxLength={10}
+                            placeholder="10-digit Mobile"
+                            value={shippingDetails.phone}
+                            onChange={(e) => updateShippingField("phone", e.target.value.replace(/\D/g, ""))}
+                            onBlur={() => handleFieldBlur("phone")}
+                            className={`w-full min-h-[44px] rounded-xl bg-[#141414] border px-3 text-base sm:text-xs text-white placeholder-[#666] focus:border-[#e5a93c] outline-none ${
+                              fieldErrors.phone ? "border-rose-500" : "border-[#2a2a2a]"
+                            }`}
+                          />
+                          {fieldErrors.phone && (
+                            <p id="checkout-phone-error" role="alert" className="text-rose-400 text-[11px]">
+                              {fieldErrors.phone}
+                            </p>
+                          )}
                         </div>
-                      )}
-                    </div>
-
-                    {hasValidAddress && (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (validateAddressFields(false)) {
-                            saveCurrentAddress();
-                            setIsEditingAddress(false);
-                          }
-                        }}
-                        className="w-full py-2 rounded-xl bg-[#1a1a1a] hover:bg-[#252525] border border-[#333] text-xs font-medium text-white transition-colors cursor-pointer"
-                      >
-                        Save & Confirm Address
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-
-              {/* Minimum Order / Progress & Checkout Action */}
-              <div className="w-full bg-[#0d0d0d] border border-[#222222] rounded-[22px] p-5 shadow-lg space-y-4">
-                {activeCartMode === "wholesale" ? (
-                  <div className="space-y-3">
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-[#8e8e93]">B2B Order Minimum Progress</span>
-                        <span className="text-[#e5a93c] font-semibold">₹{subtotal.toFixed(0)} / ₹{b2bMinCart.toLocaleString("en-IN")}</span>
                       </div>
-                      <div className="w-full h-2 rounded-full bg-[#1c1c1c] overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-[#d99726] to-[#f5c767] rounded-full transition-all duration-300"
-                          style={{ width: `${b2bProgressPercent}%` }}
+
+                      <div className="space-y-1">
+                        <label htmlFor="checkout-email" className="text-[11px] text-[#a0a0a0] font-medium block">
+                          Email Address <span className="text-[#e5a93c]" aria-hidden="true">*</span>
+                          <span className="text-[#666] font-normal ml-1">(for confirmation &amp; bill)</span>
+                        </label>
+                        <input
+                          ref={(el) => {
+                            fieldRefs.current.email = el;
+                          }}
+                          id="checkout-email"
+                          name="email"
+                          type="email"
+                          autoComplete="email"
+                          autoCorrect="off"
+                          autoCapitalize="none"
+                          spellCheck={false}
+                          enterKeyHint="next"
+                          required
+                          aria-required="true"
+                          aria-invalid={Boolean(fieldErrors.email)}
+                          aria-describedby={fieldErrors.email ? "checkout-email-error" : undefined}
+                          placeholder="name@example.com"
+                          value={shippingDetails.email}
+                          onChange={(e) => updateShippingField("email", e.target.value)}
+                          onBlur={() => handleFieldBlur("email")}
+                          className={`w-full min-h-[44px] rounded-xl bg-[#141414] border px-3 text-base sm:text-xs text-white placeholder-[#666] focus:border-[#e5a93c] outline-none ${
+                            fieldErrors.email ? "border-rose-500" : "border-[#2a2a2a]"
+                          }`}
                         />
-                      </div>
-                      {subtotal < b2bMinCart ? (
-                        <p className="text-[#8e8e93] text-xs">
-                          Add <span className="text-[#e5a93c] font-semibold">₹{b2bRemainingCart.toFixed(0)}</span> more to meet wholesale value minimum.
-                        </p>
-                      ) : (
-                        <p className="text-emerald-400 text-xs font-medium flex items-center gap-1">
-                          <Check className="w-3.5 h-3.5" />
-                          <span>Wholesale value minimum met!</span>
-                        </p>
-                      )}
-                    </div>
-
-                    {b2bMinQty > 1 && (
-                      <div className="pt-2 border-t border-[#1c1c1c] space-y-1">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-[#8e8e93]">B2B Total Items Quantity</span>
-                          <span className={`${totalPieces >= b2bMinQty ? "text-emerald-400" : "text-[#e5a93c]"} font-semibold`}>
-                            {totalPieces} / {b2bMinQty} pieces
-                          </span>
-                        </div>
-                        {totalPieces < b2bMinQty ? (
-                          <p className="text-[#8e8e93] text-xs">
-                            Add <span className="text-[#e5a93c] font-semibold">{b2bRemainingPieces}</span> more items to reach minimum wholesale batch size.
-                          </p>
-                        ) : (
-                          <p className="text-emerald-400 text-xs font-medium flex items-center gap-1">
-                            <Check className="w-3.5 h-3.5" />
-                            <span>Wholesale batch quantity requirement met!</span>
+                        {fieldErrors.email && (
+                          <p id="checkout-email-error" role="alert" className="text-rose-400 text-[11px]">
+                            {fieldErrors.email}
                           </p>
                         )}
                       </div>
-                    )}
 
-                    {/* B2B Item MOQ Status */}
-                    {itemsFailingMOQ.length > 0 ? (
-                      <div className="pt-2 border-t border-[#1c1c1c] space-y-1">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-[#8e8e93]">Item MOQ Requirements</span>
-                          <span className="text-rose-400 font-semibold">{itemsFailingMOQ.length} below MOQ</span>
+                      <div className="space-y-1">
+                        <label htmlFor="checkout-address" className="text-[11px] text-[#a0a0a0] font-medium block">
+                          Delivery Address (House / Flat No., Street, Landmark) <span className="text-[#e5a93c]" aria-hidden="true">*</span>
+                        </label>
+                        <textarea
+                          ref={(el) => {
+                            fieldRefs.current.addressLine = el;
+                          }}
+                          id="checkout-address"
+                          name="street-address"
+                          rows={2}
+                          autoComplete="street-address"
+                          enterKeyHint="next"
+                          required
+                          aria-required="true"
+                          aria-invalid={Boolean(fieldErrors.addressLine)}
+                          aria-describedby={fieldErrors.addressLine ? "checkout-address-error" : undefined}
+                          placeholder="e.g. Flat 402, Royal Palms, Link Road"
+                          value={shippingDetails.addressLine}
+                          onChange={(e) => updateShippingField("addressLine", e.target.value)}
+                          onBlur={() => handleFieldBlur("addressLine")}
+                          className={`w-full rounded-xl bg-[#141414] border px-3 py-2.5 text-base sm:text-xs text-white placeholder-[#666] focus:border-[#e5a93c] outline-none resize-y ${
+                            fieldErrors.addressLine ? "border-rose-500" : "border-[#2a2a2a]"
+                          }`}
+                        />
+                        {fieldErrors.addressLine && (
+                          <p id="checkout-address-error" role="alert" className="text-rose-400 text-[11px]">
+                            {fieldErrors.addressLine}
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2.5">
+                        <div className="space-y-1">
+                          <label htmlFor="checkout-city" className="text-[11px] text-[#a0a0a0] font-medium block">
+                            City <span className="text-[#e5a93c]" aria-hidden="true">*</span>
+                          </label>
+                          <input
+                            ref={(el) => {
+                              fieldRefs.current.city = el;
+                            }}
+                            id="checkout-city"
+                            name="city"
+                            type="text"
+                            autoComplete="address-level2"
+                            enterKeyHint="next"
+                            required
+                            aria-required="true"
+                            aria-invalid={Boolean(fieldErrors.city)}
+                            aria-describedby={fieldErrors.city ? "checkout-city-error" : undefined}
+                            placeholder="City"
+                            value={shippingDetails.city}
+                            onChange={(e) => updateShippingField("city", e.target.value)}
+                            onBlur={() => handleFieldBlur("city")}
+                            className={`w-full min-h-[44px] rounded-xl bg-[#141414] border px-3 text-base sm:text-xs text-white placeholder-[#666] focus:border-[#e5a93c] outline-none ${
+                              fieldErrors.city ? "border-rose-500" : "border-[#2a2a2a]"
+                            }`}
+                          />
+                          {fieldErrors.city && (
+                            <p id="checkout-city-error" role="alert" className="text-rose-400 text-[11px]">
+                              {fieldErrors.city}
+                            </p>
+                          )}
                         </div>
-                        <p className="text-amber-400 text-xs">
-                          {itemsFailingMOQ.map((i) => `"${i.name}" (needs ${i.wholesaleMinQty} pcs)`).join(", ")}
-                        </p>
+                        <div className="space-y-1">
+                          <label htmlFor="checkout-state" className="text-[11px] text-[#a0a0a0] font-medium block">
+                            State <span className="text-[#e5a93c]" aria-hidden="true">*</span>
+                          </label>
+                          <input
+                            ref={(el) => {
+                              fieldRefs.current.state = el;
+                            }}
+                            id="checkout-state"
+                            name="state"
+                            type="text"
+                            autoComplete="address-level1"
+                            enterKeyHint="next"
+                            required
+                            aria-required="true"
+                            aria-invalid={Boolean(fieldErrors.state)}
+                            aria-describedby={fieldErrors.state ? "checkout-state-error" : undefined}
+                            placeholder="State"
+                            value={shippingDetails.state}
+                            onChange={(e) => updateShippingField("state", e.target.value)}
+                            onBlur={() => handleFieldBlur("state")}
+                            className={`w-full min-h-[44px] rounded-xl bg-[#141414] border px-3 text-base sm:text-xs text-white placeholder-[#666] focus:border-[#e5a93c] outline-none ${
+                              fieldErrors.state ? "border-rose-500" : "border-[#2a2a2a]"
+                            }`}
+                          />
+                          {fieldErrors.state && (
+                            <p id="checkout-state-error" role="alert" className="text-rose-400 text-[11px]">
+                              {fieldErrors.state}
+                            </p>
+                          )}
+                        </div>
                       </div>
-                    ) : cart.some((i) => (i.wholesaleMinQty ?? 1) > 1) ? (
-                      <div className="pt-2 border-t border-[#1c1c1c]">
-                        <p className="text-emerald-400 text-xs font-medium flex items-center gap-1">
-                          <Check className="w-3.5 h-3.5" />
-                          <span>All product minimum quantities met!</span>
-                        </p>
+
+                      <div className="grid grid-cols-2 gap-2.5">
+                        <div className="space-y-1">
+                          <label htmlFor="checkout-pincode" className="text-[11px] text-[#a0a0a0] font-medium block">
+                            Pincode <span className="text-[#e5a93c]" aria-hidden="true">*</span>
+                          </label>
+                          <input
+                            ref={(el) => {
+                              fieldRefs.current.pincode = el;
+                            }}
+                            id="checkout-pincode"
+                            name="postal-code"
+                            type="text"
+                            inputMode="numeric"
+                            autoComplete="postal-code"
+                            pattern="\d{6}"
+                            enterKeyHint="next"
+                            required
+                            aria-required="true"
+                            aria-invalid={Boolean(fieldErrors.pincode)}
+                            aria-describedby={fieldErrors.pincode ? "checkout-pincode-error" : undefined}
+                            maxLength={6}
+                            placeholder="6-digit Pincode"
+                            value={shippingDetails.pincode}
+                            onChange={(e) => updateShippingField("pincode", e.target.value.replace(/\D/g, ""))}
+                            onBlur={() => handleFieldBlur("pincode")}
+                            className={`w-full min-h-[44px] rounded-xl bg-[#141414] border px-3 text-base sm:text-xs text-white placeholder-[#666] focus:border-[#e5a93c] outline-none ${
+                              fieldErrors.pincode ? "border-rose-500" : "border-[#2a2a2a]"
+                            }`}
+                          />
+                          {fieldErrors.pincode && (
+                            <p id="checkout-pincode-error" role="alert" className="text-rose-400 text-[11px]">
+                              {fieldErrors.pincode}
+                            </p>
+                          )}
+                        </div>
+                        {activeCartMode === "wholesale" ? (
+                          <div className="space-y-1">
+                            <label htmlFor="checkout-gstin" className="text-[11px] text-[#a0a0a0] font-medium block">
+                              GSTIN (Optional)
+                            </label>
+                            <input
+                              id="checkout-gstin"
+                              name="gstin"
+                              type="text"
+                              placeholder="GSTIN"
+                              value={shippingDetails.gstin || ""}
+                              onChange={(e) => updateShippingField("gstin", e.target.value.toUpperCase())}
+                              className="w-full min-h-[44px] rounded-xl bg-[#141414] border border-[#2a2a2a] px-3 text-base sm:text-xs text-white placeholder-[#666] focus:border-[#e5a93c] outline-none"
+                            />
+                          </div>
+                        ) : (
+                          <div className="space-y-1">
+                            <span className="text-[11px] text-[#a0a0a0] font-medium block">
+                              Country
+                            </span>
+                            <div className="w-full min-h-[44px] rounded-xl bg-[#141414] border border-[#2a2a2a] px-3 text-xs text-[#888] flex items-center">
+                              India (Domestic)
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    ) : null}
+
+                    </div>
+
+                  {/* Quick Note Section (Always visible before checkout) */}
+                  <div className="pt-2 border-t border-[#1c1c1c] space-y-1.5">
+                    <label
+                      htmlFor="checkout-quick-note"
+                      className="text-[11px] text-[#e5a93c] font-semibold flex items-center gap-1.5"
+                    >
+                      <FileText className="w-3.5 h-3.5" />
+                      <span>Quick Note (Optional)</span>
+                    </label>
+                    <textarea
+                      id="checkout-quick-note"
+                      name="quickNote"
+                      rows={2}
+                      maxLength={500}
+                      enterKeyHint="done"
+                      placeholder="Add delivery instructions, gift message, ring/chain size preference, or landmark..."
+                      value={shippingDetails.quickNote}
+                      onChange={(e) => updateShippingField("quickNote", e.target.value)}
+                      className="w-full rounded-xl bg-[#141414] border border-[#2a2a2a] px-3 py-2.5 text-base sm:text-xs text-white placeholder-[#666] focus:border-[#e5a93c] outline-none resize-y"
+                    />
                   </div>
-                ) : (
-                  <div className="space-y-3">
-                    {/* B2C Minimum Cart Value Check (if configured) */}
-                    {b2cMinCart > 0 && (
-                      <div className="space-y-1.5 pb-2 border-b border-[#1c1c1c]">
+                </div>
+
+                {/* Minimum Order / Progress & Checkout Action */}
+                <div className="w-full bg-[#0d0d0d] border border-[#222222] rounded-[22px] p-5 shadow-lg space-y-4">
+                  {activeCartMode === "wholesale" ? (
+                    <div className="space-y-3">
+                      <div className="space-y-1.5">
                         <div className="flex items-center justify-between text-xs">
-                          <span className="text-[#8e8e93]">Retail Order Minimum</span>
-                          <span className="text-[#e5a93c] font-semibold">₹{subtotal.toFixed(0)} / ₹{b2cMinCart.toLocaleString("en-IN")}</span>
+                          <span className="text-[#8e8e93]">B2B Order Minimum Progress</span>
+                          <span className="text-[#e5a93c] font-semibold">₹{subtotal.toFixed(0)} / ₹{b2bMinCart.toLocaleString("en-IN")}</span>
                         </div>
-                        <div className="w-full h-1.5 rounded-full bg-[#1c1c1c] overflow-hidden">
+                        <div className="w-full h-2 rounded-full bg-[#1c1c1c] overflow-hidden">
                           <div
                             className="h-full bg-gradient-to-r from-[#d99726] to-[#f5c767] rounded-full transition-all duration-300"
-                            style={{ width: `${b2cProgressPercent}%` }}
+                            style={{ width: `${b2bProgressPercent}%` }}
                           />
                         </div>
-                        {subtotal < b2cMinCart ? (
+                        {subtotal < b2bMinCart ? (
                           <p className="text-[#8e8e93] text-xs">
-                            Add <span className="text-[#e5a93c] font-semibold">₹{b2cRemainingCart.toFixed(0)}</span> more to reach minimum order value.
+                            Add <span className="text-[#e5a93c] font-semibold">₹{b2bRemainingCart.toFixed(0)}</span> more to meet wholesale value minimum.
                           </p>
                         ) : (
                           <p className="text-emerald-400 text-xs font-medium flex items-center gap-1">
                             <Check className="w-3.5 h-3.5" />
-                            <span>Retail minimum order met!</span>
+                            <span>Wholesale value minimum met!</span>
                           </p>
                         )}
                       </div>
-                    )}
 
-                    {/* Free Shipping Progress for Retail */}
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-[#8e8e93]">Free Shipping Progress</span>
-                        <span className="text-[#e5a93c] font-semibold">
-                          ₹{subtotal.toFixed(0)} / ₹{b2cFreeShipThreshold.toLocaleString("en-IN")}
-                        </span>
-                      </div>
-                      <div className="w-full h-2 rounded-full bg-[#1c1c1c] overflow-hidden">
-                        <div
-                          className="h-full bg-gradient-to-r from-emerald-500 to-emerald-300 rounded-full transition-all duration-300"
-                          style={{ width: `${b2cFreeShipPercent}%` }}
-                        />
-                      </div>
-                      {subtotal >= b2cFreeShipThreshold ? (
-                        <p className="text-emerald-400 text-xs font-medium flex items-center gap-1">
-                          <Check className="w-3.5 h-3.5" />
-                          <span>Congratulations! Free Shipping Unlocked!</span>
-                        </p>
-                      ) : (
-                        <p className="text-[#8e8e93] text-xs">
-                          Add <span className="text-emerald-400 font-semibold">₹{b2cFreeShipRemaining.toFixed(0)}</span> more to get FREE Delivery!
-                        </p>
+                      {b2bMinQty > 1 && (
+                        <div className="pt-2 border-t border-[#1c1c1c] space-y-1">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-[#8e8e93]">B2B Total Items Quantity</span>
+                            <span className={`${totalPieces >= b2bMinQty ? "text-emerald-400" : "text-[#e5a93c]"} font-semibold`}>
+                              {totalPieces} / {b2bMinQty} pieces
+                            </span>
+                          </div>
+                          {totalPieces < b2bMinQty ? (
+                            <p className="text-[#8e8e93] text-xs">
+                              Add <span className="text-[#e5a93c] font-semibold">{b2bRemainingPieces}</span> more items to reach minimum wholesale batch size.
+                            </p>
+                          ) : (
+                            <p className="text-emerald-400 text-xs font-medium flex items-center gap-1">
+                              <Check className="w-3.5 h-3.5" />
+                              <span>Wholesale batch quantity requirement met!</span>
+                            </p>
+                          )}
+                        </div>
                       )}
-                    </div>
-                  </div>
-                )}
 
-                {/* Proceed to Checkout Button */}
-                <button
-                  type="button"
-                  onClick={() => handleCheckout()}
-                  disabled={isCheckingOut}
-                  className={`w-full h-[52px] rounded-[16px] font-semibold text-sm sm:text-base flex items-center justify-center gap-2 shadow-xl transition-all cursor-pointer ${
-                    (activeCartMode === "wholesale" ? isWholesaleMinMet : isRetailMinMet)
-                      ? "bg-gradient-to-r from-[#e5a93c] to-[#f5c767] hover:opacity-95 active:scale-[0.99] text-[#111111]"
-                      : "bg-[#1c160c] border border-[#e5a93c]/50 text-[#e5a93c] hover:bg-[#e5a93c] hover:text-black"
-                  }`}
-                >
-                  {isCheckingOut ? (
-                    <div className="flex items-center space-x-2">
-                      <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
-                      <span>Processing Payment...</span>
+                      {/* B2B Item MOQ Status */}
+                      {itemsFailingMOQ.length > 0 ? (
+                        <div className="pt-2 border-t border-[#1c1c1c] space-y-1">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-[#8e8e93]">Item MOQ Requirements</span>
+                            <span className="text-rose-400 font-semibold">{itemsFailingMOQ.length} below MOQ</span>
+                          </div>
+                          <p className="text-amber-400 text-xs">
+                            {itemsFailingMOQ.map((i) => `"${i.name}" (needs ${i.wholesaleMinQty} pcs)`).join(", ")}
+                          </p>
+                        </div>
+                      ) : cart.some((i) => (i.wholesaleMinQty ?? 1) > 1) ? (
+                        <div className="pt-2 border-t border-[#1c1c1c]">
+                          <p className="text-emerald-400 text-xs font-medium flex items-center gap-1">
+                            <Check className="w-3.5 h-3.5" />
+                            <span>All product minimum quantities met!</span>
+                          </p>
+                        </div>
+                      ) : null}
                     </div>
                   ) : (
-                    <>
-                      <span>PAY WITH RAZORPAY • ₹{total.toLocaleString("en-IN")}</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </>
-                  )}
-                </button>
+                    <div className="space-y-3">
+                      {/* B2C Minimum Cart Value Check (if configured) */}
+                      {b2cMinCart > 0 && (
+                        <div className="space-y-1.5 pb-2 border-b border-[#1c1c1c]">
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-[#8e8e93]">Retail Order Minimum</span>
+                            <span className="text-[#e5a93c] font-semibold">₹{subtotal.toFixed(0)} / ₹{b2cMinCart.toLocaleString("en-IN")}</span>
+                          </div>
+                          <div className="w-full h-1.5 rounded-full bg-[#1c1c1c] overflow-hidden">
+                            <div
+                              className="h-full bg-gradient-to-r from-[#d99726] to-[#f5c767] rounded-full transition-all duration-300"
+                              style={{ width: `${b2cProgressPercent}%` }}
+                            />
+                          </div>
+                          {subtotal < b2cMinCart ? (
+                            <p className="text-[#8e8e93] text-xs">
+                              Add <span className="text-[#e5a93c] font-semibold">₹{b2cRemainingCart.toFixed(0)}</span> more to reach minimum order value.
+                            </p>
+                          ) : (
+                            <p className="text-emerald-400 text-xs font-medium flex items-center gap-1">
+                              <Check className="w-3.5 h-3.5" />
+                              <span>Retail minimum order met!</span>
+                            </p>
+                          )}
+                        </div>
+                      )}
 
-                {/* Continue Shopping Button */}
-                <button
-                  type="button"
-                  onClick={navShop}
-                  className="w-full h-[48px] rounded-[16px] bg-[#141414] hover:bg-[#1c1c1c] border border-[#2a2a2a] hover:border-[#e5a93c]/60 text-[#c5c5c5] hover:text-white font-medium text-sm flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.99]"
-                >
-                  <ArrowLeft className="w-4 h-4 text-[#e5a93c]" />
-                  <span>Continue Shopping</span>
-                </button>
-              </div>
+                      {/* Free Shipping Progress for Retail */}
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-[#8e8e93]">Free Shipping Progress</span>
+                          <span className="text-[#e5a93c] font-semibold">
+                            ₹{subtotal.toFixed(0)} / ₹{b2cFreeShipThreshold.toLocaleString("en-IN")}
+                          </span>
+                        </div>
+                        <div className="w-full h-2 rounded-full bg-[#1c1c1c] overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-emerald-500 to-emerald-300 rounded-full transition-all duration-300"
+                            style={{ width: `${b2cFreeShipPercent}%` }}
+                          />
+                        </div>
+                        {subtotal >= b2cFreeShipThreshold ? (
+                          <p className="text-emerald-400 text-xs font-medium flex items-center gap-1">
+                            <Check className="w-3.5 h-3.5" />
+                            <span>Congratulations! Free Shipping Unlocked!</span>
+                          </p>
+                        ) : (
+                          <p className="text-[#8e8e93] text-xs">
+                            Add <span className="text-emerald-400 font-semibold">₹{b2cFreeShipRemaining.toFixed(0)}</span> more to get FREE Delivery!
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Proceed to Checkout Button */}
+                  <button
+                    type="submit"
+                    disabled={isCheckingOut}
+                    className={`w-full h-[52px] rounded-[16px] font-semibold text-sm sm:text-base flex items-center justify-center gap-2 shadow-xl transition-all cursor-pointer ${
+                      (activeCartMode === "wholesale" ? isWholesaleMinMet : isRetailMinMet)
+                        ? "bg-gradient-to-r from-[#e5a93c] to-[#f5c767] hover:opacity-95 active:scale-[0.99] text-[#111111]"
+                        : "bg-[#1c160c] border border-[#e5a93c]/50 text-[#e5a93c] hover:bg-[#e5a93c] hover:text-black"
+                    }`}
+                  >
+                    {isCheckingOut ? (
+                      <div className="flex items-center space-x-2">
+                        <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                        <span>Processing Payment...</span>
+                      </div>
+                    ) : (
+                      <>
+                        <span>PAY WITH RAZORPAY • ₹{total.toLocaleString("en-IN")}</span>
+                        <ArrowRight className="w-4 h-4" />
+                      </>
+                    )}
+                  </button>
+
+                  {/* Continue Shopping Button */}
+                  <button
+                    type="button"
+                    onClick={navShop}
+                    className="w-full h-[48px] rounded-[16px] bg-[#141414] hover:bg-[#1c1c1c] border border-[#2a2a2a] hover:border-[#e5a93c]/60 text-[#c5c5c5] hover:text-white font-medium text-sm flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.99]"
+                  >
+                    <ArrowLeft className="w-4 h-4 text-[#e5a93c]" />
+                    <span>Continue Shopping</span>
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         )}

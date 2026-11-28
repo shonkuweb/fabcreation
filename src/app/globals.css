@@ -71,3 +71,17 @@ input[type="number"]::-webkit-outer-spin-button {
 input[type="number"] {
   -moz-appearance: textfield;
 }
+
+/* Keep browser autofill consistent with dark-theme form fields */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus {
+  -webkit-text-fill-color: #ffffff;
+  -webkit-box-shadow: 0 0 0 1000px #141414 inset;
+  box-shadow: 0 0 0 1000px #141414 inset;
+  caret-color: #e5a93c;
+  transition: background-color 5000s ease-in-out 0s;
+}

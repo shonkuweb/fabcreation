@@ -20,6 +20,8 @@ import {
   AlertCircle,
   MapPin,
   FileText,
+  Lock,
+  Building2,
 } from "lucide-react";
 import CategoriesModal from "@/components/CategoriesModal";
 import StoreModeToggle from "@/components/StoreModeToggle";
@@ -808,10 +810,14 @@ export default function CartScreen({
   };
 
   return (
-    <div className="relative min-h-screen w-full bg-[#050505] text-white flex flex-col items-center justify-start pb-28 select-none">
+    <div className="relative min-h-screen w-full bg-[#050505] text-white flex flex-col items-center justify-start pb-28 md:pb-12">
       {/* Toast Notification */}
       {notification && (
-        <div className="fixed top-3 z-50 px-4 py-2 bg-[#1c160c] border border-[#e5a93c] text-[#f5c767] text-xs rounded-full shadow-2xl animate-fade-in">
+        <div
+          role="status"
+          aria-live="polite"
+          className="fixed top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2 bg-[#1c160c] border border-[#e5a93c] text-[#f5c767] text-xs sm:text-sm rounded-full shadow-2xl animate-fade-in"
+        >
           {notification}
         </div>
       )}
@@ -828,11 +834,11 @@ export default function CartScreen({
         </div>
 
         {/* Top Header Bar */}
-        <div className="flex items-center justify-between py-2 mb-4">
+        <div className="flex items-center justify-between py-2 mb-5">
           <button
             type="button"
             onClick={navShop}
-            className="h-10 px-3.5 rounded-full bg-[#141414] border border-[#262626] flex items-center justify-center gap-2 text-white hover:text-[#e5a93c] hover:border-[#e5a93c]/50 transition-colors cursor-pointer text-xs font-medium"
+            className="h-10 px-3.5 rounded-full bg-[#141414] border border-[#262626] flex items-center justify-center gap-2 text-white hover:text-[#e5a93c] hover:border-[#e5a93c]/50 transition-colors cursor-pointer text-xs sm:text-sm font-medium"
             title="Continue Shopping"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -851,9 +857,10 @@ export default function CartScreen({
             </p>
           </div>
           <button
+            type="button"
             onClick={handleClearActiveCart}
             disabled={cart.length === 0}
-            className="text-xs sm:text-sm text-[#8e8e93] hover:text-rose-400 transition-colors disabled:opacity-0 cursor-pointer px-2 py-1 rounded-lg hover:bg-white/5"
+            className="text-xs sm:text-sm text-[#8e8e93] hover:text-rose-400 transition-colors disabled:opacity-0 cursor-pointer px-2.5 py-1.5 rounded-lg hover:bg-white/5"
           >
             Clear Cart
           </button>
@@ -894,185 +901,137 @@ export default function CartScreen({
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start mb-12">
-            {/* Left Column: Cart Items List (lg:col-span-7 xl:col-span-8) */}
-            <div className="lg:col-span-7 xl:col-span-8 space-y-3.5">
-              <div className="flex items-center justify-between pb-2 border-b border-[#1f1f1f]">
-                <span className="text-sm text-[#8e8e93] font-medium">
-                  {cart.length} Item{cart.length > 1 ? "s" : ""} in Cart
-                </span>
-                <span className="text-xs text-[#e5a93c]">
-                  {activeCartMode === "wholesale" ? "Wholesale Pricing Applied" : "Retail Prices"}
-                </span>
-              </div>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 xl:gap-8 items-start mb-12">
+            {/* Left Column: Cart Items + Checkout Form (lg:col-span-7 xl:col-span-8) */}
+            <div className="lg:col-span-7 xl:col-span-8 space-y-6">
+              {/* Cart Items List */}
+              <div className="space-y-3.5">
+                <div className="flex items-center justify-between pb-2 border-b border-[#1f1f1f]">
+                  <span className="text-sm text-[#8e8e93] font-medium">
+                    {cart.length} Item{cart.length > 1 ? "s" : ""} in Cart
+                  </span>
+                  <span className="text-xs text-[#e5a93c]">
+                    {activeCartMode === "wholesale" ? "Wholesale Pricing Applied" : "Retail Prices"}
+                  </span>
+                </div>
 
-              {cart.map((item) => (
-                <div
-                  key={item.id}
-                  className="w-full bg-[#0d0d0d] border border-[#222222] hover:border-[#333] transition-colors rounded-[18px] p-3.5 sm:p-4 shadow-md flex items-center gap-3.5 sm:gap-5"
-                >
-                  {/* Thumbnail */}
-                  <div className="relative w-[78px] h-[78px] sm:w-[92px] sm:h-[92px] rounded-xl overflow-hidden bg-[#141414] shrink-0 border border-[#1f1f1f]">
-                    <Image
-                      src={item.image}
-                      alt={item.name}
-                      fill
-                      unoptimized
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = "/images/products/moon-necklace.jpg";
-                      }}
-                      className="object-cover"
-                    />
-                  </div>
+                {cart.map((item) => (
+                  <div
+                    key={item.id}
+                    className="w-full bg-[#0d0d0d] border border-[#222222] hover:border-[#333] transition-colors rounded-[18px] p-3.5 sm:p-4 shadow-md flex items-center gap-3.5 sm:gap-5"
+                  >
+                    {/* Thumbnail */}
+                    <div className="relative w-[78px] h-[78px] sm:w-[92px] sm:h-[92px] rounded-xl overflow-hidden bg-[#141414] shrink-0 border border-[#1f1f1f]">
+                      <Image
+                        src={item.image}
+                        alt={item.name}
+                        fill
+                        unoptimized
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = "/images/products/moon-necklace.jpg";
+                        }}
+                        className="object-cover"
+                      />
+                    </div>
 
-                  {/* Details */}
-                  <div className="flex-1 flex flex-col justify-between min-h-[78px] sm:min-h-[92px]">
-                    {/* Title + Trash */}
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center gap-2.5">
-                        <button
-                          type="button"
-                          onClick={() => toggleSelectItem(item.id)}
-                          className={`w-[18px] h-[18px] rounded-[5px] flex items-center justify-center transition-all cursor-pointer shrink-0 ${
-                            selectedItems.includes(item.id)
-                              ? "bg-[#e5a93c] text-black"
-                              : "border border-[#444444] bg-[#111111]"
-                          }`}
-                        >
-                          {selectedItems.includes(item.id) && <Check className="w-3 h-3 stroke-[3]" />}
-                        </button>
-                        <div>
-                          <h3 className="text-white text-sm sm:text-base font-medium leading-tight">
-                            {item.name}
-                          </h3>
-                          <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                            <span className="text-[11px] text-[#8e8e93]">
-                              Qty: {item.quantity} × ₹{item.price}
-                            </span>
-                            {activeCartMode === "wholesale" && (item.wholesaleMinQty ?? 1) > 1 && (
-                              <span className="px-1.5 py-0.2 rounded bg-amber-950/60 border border-amber-800/50 text-[#f5c767] text-[10px] font-semibold">
-                                MOQ: {item.wholesaleMinQty} pcs
+                    {/* Details */}
+                    <div className="flex-1 flex flex-col justify-between min-h-[78px] sm:min-h-[92px]">
+                      {/* Title + Trash */}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-2.5">
+                          <button
+                            type="button"
+                            onClick={() => toggleSelectItem(item.id)}
+                            aria-label={`Select ${item.name}`}
+                            aria-pressed={selectedItems.includes(item.id)}
+                            className={`w-[24px] h-[24px] rounded-[6px] flex items-center justify-center transition-all cursor-pointer shrink-0 ${
+                              selectedItems.includes(item.id)
+                                ? "bg-[#e5a93c] text-black"
+                                : "border border-[#444444] bg-[#111111]"
+                            }`}
+                          >
+                            {selectedItems.includes(item.id) && <Check className="w-3.5 h-3.5 stroke-[3]" aria-hidden="true" />}
+                          </button>
+                          <div>
+                            <h3 className="text-white text-sm sm:text-base font-medium leading-tight">
+                              {item.name}
+                            </h3>
+                            <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                              <span className="text-[11px] sm:text-xs text-[#8e8e93]">
+                                Qty: {item.quantity} × ₹{item.price}
                               </span>
+                              {activeCartMode === "wholesale" && (item.wholesaleMinQty ?? 1) > 1 && (
+                                <span className="px-1.5 py-0.2 rounded bg-amber-950/60 border border-amber-800/50 text-[#f5c767] text-[10px] font-semibold">
+                                  MOQ: {item.wholesaleMinQty} pcs
+                                </span>
+                              )}
+                            </div>
+                            {activeCartMode === "wholesale" && (item.wholesaleMinQty ?? 1) > 1 && item.quantity < (item.wholesaleMinQty ?? 1) && (
+                              <p className="text-rose-400 text-[10.5px] font-medium pt-0.5">
+                                ⚠️ Needs min. {item.wholesaleMinQty} pcs for wholesale
+                              </p>
                             )}
                           </div>
-                          {activeCartMode === "wholesale" && (item.wholesaleMinQty ?? 1) > 1 && item.quantity < (item.wholesaleMinQty ?? 1) && (
-                            <p className="text-rose-400 text-[10.5px] font-medium pt-0.5">
-                              ⚠️ Needs min. {item.wholesaleMinQty} pcs for wholesale
-                            </p>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={() => handleRemove(item.id)}
+                          aria-label={`Remove ${item.name} from cart`}
+                          className="text-[#8e8e93] hover:text-rose-400 p-1.5 transition-colors cursor-pointer rounded-lg hover:bg-rose-500/10"
+                          title="Remove item"
+                        >
+                          <Trash2 className="w-4 h-4" aria-hidden="true" />
+                        </button>
+                      </div>
+
+                      {/* Price + Stepper */}
+                      <div className="flex items-center justify-between pt-2">
+                        <div className="flex items-baseline gap-1.5">
+                          <span className="text-[#e5a93c] text-base sm:text-lg font-semibold">
+                            ₹{(item.price * item.quantity).toFixed(1)}
+                          </span>
+                          {item.quantity > 1 && (
+                            <span className="text-xs text-[#8e8e93]">
+                              (₹{item.price} each)
+                            </span>
                           )}
                         </div>
-                      </div>
 
-                      <button
-                        type="button"
-                        onClick={() => handleRemove(item.id)}
-                        className="text-[#8e8e93] hover:text-rose-400 p-1.5 transition-colors cursor-pointer rounded-lg hover:bg-rose-500/10"
-                        title="Remove item"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-
-                    {/* Price + Stepper */}
-                    <div className="flex items-center justify-between pt-2">
-                      <div className="flex items-baseline gap-1.5">
-                        <span className="text-[#e5a93c] text-base sm:text-lg font-semibold">
-                          ₹{(item.price * item.quantity).toFixed(1)}
-                        </span>
-                        {item.quantity > 1 && (
-                          <span className="text-xs text-[#8e8e93]">
-                            (₹{item.price} each)
+                        {/* Stepper */}
+                        <div className="flex items-center h-[36px] rounded-[10px] bg-[#141414] border border-[#2a2a2a] px-2 gap-2.5">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const minAllowed = activeCartMode === "wholesale" ? Math.max(1, item.wholesaleMinQty || 1) : 1;
+                              handleUpdateQty(item.id, Math.max(minAllowed, item.quantity - 1));
+                            }}
+                            disabled={activeCartMode === "wholesale" && item.quantity <= (item.wholesaleMinQty || 1)}
+                            aria-label={`Decrease quantity of ${item.name}`}
+                            className="min-w-[24px] min-h-[24px] text-[#8e8e93] hover:text-white text-sm font-bold px-1.5 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
+                            title={activeCartMode === "wholesale" && item.quantity <= (item.wholesaleMinQty || 1) ? `Minimum wholesale quantity is ${item.wholesaleMinQty || 1}` : "Decrease"}
+                          >
+                            -
+                          </button>
+                          <span className="text-white text-xs sm:text-sm font-semibold min-w-[18px] text-center">
+                            {item.quantity}
                           </span>
-                        )}
-                      </div>
-
-                      {/* Stepper */}
-                      <div className="flex items-center h-[34px] rounded-[10px] bg-[#141414] border border-[#2a2a2a] px-2 gap-3">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const minAllowed = activeCartMode === "wholesale" ? Math.max(1, item.wholesaleMinQty || 1) : 1;
-                            handleUpdateQty(item.id, Math.max(minAllowed, item.quantity - 1));
-                          }}
-                          disabled={activeCartMode === "wholesale" && item.quantity <= (item.wholesaleMinQty || 1)}
-                          className="text-[#8e8e93] hover:text-white text-sm font-bold px-1.5 cursor-pointer disabled:opacity-30 disabled:cursor-not-allowed"
-                          title={activeCartMode === "wholesale" && item.quantity <= (item.wholesaleMinQty || 1) ? `Minimum wholesale quantity is ${item.wholesaleMinQty || 1}` : "Decrease"}
-                        >
-                          -
-                        </button>
-                        <span className="text-white text-xs sm:text-sm font-semibold min-w-[16px] text-center">
-                          {item.quantity}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => handleUpdateQty(item.id, item.quantity + 1)}
-                          className="text-[#8e8e93] hover:text-white text-sm font-bold px-1.5 cursor-pointer"
-                        >
-                          +
-                        </button>
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateQty(item.id, item.quantity + 1)}
+                            aria-label={`Increase quantity of ${item.name}`}
+                            className="min-w-[24px] min-h-[24px] text-[#8e8e93] hover:text-white text-sm font-bold px-1.5 cursor-pointer"
+                          >
+                            +
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Right Column: Sticky Summary & Checkout CTA (lg:col-span-5 xl:col-span-4) */}
-            <div className="lg:col-span-5 xl:col-span-4 space-y-4 lg:sticky lg:top-6">
-              {/* Order Summary Card */}
-              <div className="w-full bg-[#0d0d0d] border border-[#222222] rounded-[22px] p-5 shadow-lg space-y-3.5">
-                <h4 className="text-white text-base sm:text-lg font-serif font-medium pb-2 border-b border-[#1c1c1c]">
-                  Order Summary ({activeCartMode === "wholesale" ? "Wholesale" : "Retail"})
-                </h4>
-
-                <div className="space-y-2.5 text-sm">
-                  <div className="flex items-center justify-between text-[#8e8e93]">
-                    <span>Items Subtotal</span>
-                    <span className="text-white font-medium">₹{subtotal.toFixed(1)}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-[#8e8e93]">
-                    <span>GST (3%)</span>
-                    <span className="text-white font-medium">₹{gst.toFixed(1)}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-[#8e8e93]">
-                    <span>Shipping</span>
-                    {shipping === 0 ? (
-                      <span className="text-emerald-400 font-semibold flex items-center gap-1">
-                        <Check className="w-3.5 h-3.5" /> FREE
-                      </span>
-                    ) : (
-                      <span className="text-white font-medium">₹{shipping.toFixed(1)}</span>
-                    )}
-                  </div>
-                  <div className="pt-3 border-t border-[#1c1c1c] flex items-center justify-between text-base sm:text-lg">
-                    <span className="text-white font-semibold">Total Payable</span>
-                    <span className="text-[#e5a93c] text-xl font-bold">₹{total.toFixed(1)}</span>
-                  </div>
-                </div>
+                ))}
               </div>
 
-              {/* Shipping Information Box */}
-              <div className="w-full rounded-[20px] border border-[#4a3816] bg-[#140f07] p-4 flex items-start gap-3.5 shadow-sm">
-                <div className="w-9 h-9 rounded-full bg-[#1e170a] border border-[#e5a93c]/40 flex items-center justify-center text-[#e5a93c] shrink-0 mt-0.5">
-                  <Truck className="w-4 h-4 text-[#e5a93c]" />
-                </div>
-                <div className="flex-1">
-                  <h5 className="text-[#e5a93c] text-sm font-semibold mb-0.5">
-                    {activeCartMode === "wholesale" ? "B2B Wholesale Shipping" : "Retail Fast Shipping"}
-                  </h5>
-                  <p className="text-[#a8a8a8] text-xs leading-relaxed">
-                    {activeCartMode === "wholesale"
-                      ? b2bDeliveryCharge === 0
-                        ? "100% Free B2B delivery for all wholesale partner orders. Dispatched within 24-48 business hours with GST invoice."
-                        : `Standard B2B delivery is ₹${b2bDeliveryCharge}. Orders are dispatched within 24-48 business hours with official GST invoice.`
-                      : subtotal >= b2cFreeShipThreshold
-                      ? `🎉 Free Delivery qualified! Orders over ₹${b2cFreeShipThreshold.toLocaleString("en-IN")} enjoy complimentary insured shipping across India.`
-                      : `Standard retail delivery is ₹${b2cDeliveryCharge}. Add ₹${b2cFreeShipRemaining.toFixed(0)} more to get 100% FREE Delivery!`}
-                  </p>
-                </div>
-              </div>
-
-              {/* Checkout Details & Quick Note Form */}
+              {/* Checkout Details & Quick Note Form (Main Workspace on Desktop) */}
               <form
                 id="checkout-form"
                 aria-labelledby="checkout-details-heading"
@@ -1081,101 +1040,140 @@ export default function CartScreen({
                   handleCheckout();
                 }}
                 noValidate
-                className="space-y-4"
               >
-                {/* Delivery Address & Contact Details Card */}
-                <div className="w-full bg-[#0d0d0d] border border-[#222222] rounded-[22px] p-5 shadow-lg space-y-3.5">
-                  <div className="flex items-center justify-between pb-2 border-b border-[#1c1c1c]">
-                    <div className="flex items-center gap-2">
-                      <div className="w-7 h-7 rounded-lg bg-[#1c160c] border border-[#e5a93c]/40 flex items-center justify-center text-[#e5a93c]">
-                        <MapPin className="w-4 h-4" />
+                <div className="w-full bg-[#0d0d0d] border border-[#222222] rounded-[22px] p-5 sm:p-6 lg:p-7 shadow-lg space-y-6">
+                  {/* Card Header */}
+                  <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-[#1c1c1c]">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-[#1c160c] border border-[#e5a93c]/40 flex items-center justify-center text-[#e5a93c] shrink-0">
+                        <MapPin className="w-4 h-4" aria-hidden="true" />
                       </div>
                       <div>
-                        <h4
+                        <h2
                           id="checkout-details-heading"
-                          className="text-white text-sm sm:text-base font-semibold leading-tight"
+                          className="text-white text-base sm:text-lg font-serif font-medium leading-tight"
                         >
                           Checkout Form
-                        </h4>
-                        <p className="text-[11px] text-[#8e8e93]">
-                          Please fill in all details before proceeding to checkout
+                        </h2>
+                        <p className="text-xs sm:text-[13px] text-[#8e8e93] mt-0.5">
+                          Please fill in your contact and delivery details before proceeding to payment
                         </p>
                       </div>
                     </div>
+
+                    {hasValidAddress ? (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 text-xs font-medium">
+                        <Check className="w-3.5 h-3.5" aria-hidden="true" />
+                        <span>Details Complete</span>
+                      </span>
+                    ) : (
+                      <span className="text-xs text-[#8e8e93]">
+                        <span className="text-[#e5a93c]" aria-hidden="true">*</span> Required fields
+                      </span>
+                    )}
                   </div>
 
-                    <div className="space-y-3">
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                        <div className="space-y-1">
-                          <label htmlFor="checkout-name" className="text-[11px] text-[#a0a0a0] font-medium block">
-                            Full Name <span className="text-[#e5a93c]" aria-hidden="true">*</span>
-                          </label>
-                          <input
-                            ref={(el) => {
-                              fieldRefs.current.name = el;
-                            }}
-                            id="checkout-name"
-                            name="name"
-                            type="text"
-                            autoComplete="name"
-                            enterKeyHint="next"
-                            required
-                            aria-required="true"
-                            aria-invalid={Boolean(fieldErrors.name)}
-                            aria-describedby={fieldErrors.name ? "checkout-name-error" : undefined}
-                            placeholder="Your Full Name"
-                            value={shippingDetails.name}
-                            onChange={(e) => updateShippingField("name", e.target.value)}
-                            onBlur={() => handleFieldBlur("name")}
-                            className={`w-full min-h-[44px] rounded-xl bg-[#141414] border px-3 text-base sm:text-xs text-white placeholder-[#666] focus:border-[#e5a93c] outline-none ${
-                              fieldErrors.name ? "border-rose-500" : "border-[#2a2a2a]"
-                            }`}
-                          />
-                          {fieldErrors.name && (
-                            <p id="checkout-name-error" role="alert" className="text-rose-400 text-[11px]">
-                              {fieldErrors.name}
-                            </p>
-                          )}
-                        </div>
-                        <div className="space-y-1">
-                          <label htmlFor="checkout-phone" className="text-[11px] text-[#a0a0a0] font-medium block">
-                            Phone Number <span className="text-[#e5a93c]" aria-hidden="true">*</span>
-                          </label>
-                          <input
-                            ref={(el) => {
-                              fieldRefs.current.phone = el;
-                            }}
-                            id="checkout-phone"
-                            name="tel"
-                            type="tel"
-                            inputMode="numeric"
-                            autoComplete="tel"
-                            enterKeyHint="next"
-                            required
-                            aria-required="true"
-                            aria-invalid={Boolean(fieldErrors.phone)}
-                            aria-describedby={fieldErrors.phone ? "checkout-phone-error" : undefined}
-                            maxLength={10}
-                            placeholder="10-digit Mobile"
-                            value={shippingDetails.phone}
-                            onChange={(e) => updateShippingField("phone", e.target.value.replace(/\D/g, ""))}
-                            onBlur={() => handleFieldBlur("phone")}
-                            className={`w-full min-h-[44px] rounded-xl bg-[#141414] border px-3 text-base sm:text-xs text-white placeholder-[#666] focus:border-[#e5a93c] outline-none ${
-                              fieldErrors.phone ? "border-rose-500" : "border-[#2a2a2a]"
-                            }`}
-                          />
-                          {fieldErrors.phone && (
-                            <p id="checkout-phone-error" role="alert" className="text-rose-400 text-[11px]">
-                              {fieldErrors.phone}
-                            </p>
-                          )}
-                        </div>
+                  {/* Section 1: Contact Information */}
+                  <fieldset className="space-y-4">
+                    <legend className="text-xs uppercase tracking-wider text-[#e5a93c] font-semibold mb-1">
+                      1. Contact Information
+                    </legend>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label
+                          htmlFor="checkout-name"
+                          className="text-xs sm:text-[13px] text-[#d4d4d8] font-medium block"
+                        >
+                          Full Name <span className="text-[#e5a93c]" aria-hidden="true">*</span>
+                        </label>
+                        <input
+                          ref={(el) => {
+                            fieldRefs.current.name = el;
+                          }}
+                          id="checkout-name"
+                          name="name"
+                          type="text"
+                          autoComplete="name"
+                          enterKeyHint="next"
+                          required
+                          aria-required="true"
+                          aria-invalid={Boolean(fieldErrors.name)}
+                          aria-describedby={fieldErrors.name ? "checkout-name-error" : undefined}
+                          placeholder="Your full name"
+                          value={shippingDetails.name}
+                          onChange={(e) => updateShippingField("name", e.target.value)}
+                          onBlur={() => handleFieldBlur("name")}
+                          className={`w-full min-h-[46px] rounded-xl bg-[#141414] border px-3.5 py-2.5 text-base text-white placeholder-[#73737c] transition-colors focus:border-[#e5a93c] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#e5a93c]/60 focus-visible:outline-offset-1 ${
+                            fieldErrors.name
+                              ? "border-rose-500 bg-rose-950/20"
+                              : "border-[#2e2e32] hover:border-[#424248]"
+                          }`}
+                        />
+                        {fieldErrors.name && (
+                          <p
+                            id="checkout-name-error"
+                            role="alert"
+                            className="text-rose-400 text-xs flex items-center gap-1.5 pt-0.5"
+                          >
+                            <AlertCircle className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                            <span>{fieldErrors.name}</span>
+                          </p>
+                        )}
                       </div>
 
-                      <div className="space-y-1">
-                        <label htmlFor="checkout-email" className="text-[11px] text-[#a0a0a0] font-medium block">
+                      <div className="space-y-1.5">
+                        <label
+                          htmlFor="checkout-phone"
+                          className="text-xs sm:text-[13px] text-[#d4d4d8] font-medium block"
+                        >
+                          Phone Number <span className="text-[#e5a93c]" aria-hidden="true">*</span>
+                          <span className="text-[#8e8e93] font-normal ml-1.5">(10-digit mobile)</span>
+                        </label>
+                        <input
+                          ref={(el) => {
+                            fieldRefs.current.phone = el;
+                          }}
+                          id="checkout-phone"
+                          name="tel"
+                          type="tel"
+                          inputMode="numeric"
+                          autoComplete="tel"
+                          enterKeyHint="next"
+                          required
+                          aria-required="true"
+                          aria-invalid={Boolean(fieldErrors.phone)}
+                          aria-describedby={fieldErrors.phone ? "checkout-phone-error" : undefined}
+                          maxLength={10}
+                          placeholder="10-digit mobile number"
+                          value={shippingDetails.phone}
+                          onChange={(e) => updateShippingField("phone", e.target.value.replace(/\D/g, ""))}
+                          onBlur={() => handleFieldBlur("phone")}
+                          className={`w-full min-h-[46px] rounded-xl bg-[#141414] border px-3.5 py-2.5 text-base text-white placeholder-[#73737c] transition-colors focus:border-[#e5a93c] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#e5a93c]/60 focus-visible:outline-offset-1 ${
+                            fieldErrors.phone
+                              ? "border-rose-500 bg-rose-950/20"
+                              : "border-[#2e2e32] hover:border-[#424248]"
+                          }`}
+                        />
+                        {fieldErrors.phone && (
+                          <p
+                            id="checkout-phone-error"
+                            role="alert"
+                            className="text-rose-400 text-xs flex items-center gap-1.5 pt-0.5"
+                          >
+                            <AlertCircle className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                            <span>{fieldErrors.phone}</span>
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="space-y-1.5 md:col-span-2">
+                        <label
+                          htmlFor="checkout-email"
+                          className="text-xs sm:text-[13px] text-[#d4d4d8] font-medium block"
+                        >
                           Email Address <span className="text-[#e5a93c]" aria-hidden="true">*</span>
-                          <span className="text-[#666] font-normal ml-1">(for confirmation &amp; bill)</span>
+                          <span className="text-[#8e8e93] font-normal ml-1.5">(for order confirmation &amp; GST bill)</span>
                         </label>
                         <input
                           ref={(el) => {
@@ -1197,360 +1195,500 @@ export default function CartScreen({
                           value={shippingDetails.email}
                           onChange={(e) => updateShippingField("email", e.target.value)}
                           onBlur={() => handleFieldBlur("email")}
-                          className={`w-full min-h-[44px] rounded-xl bg-[#141414] border px-3 text-base sm:text-xs text-white placeholder-[#666] focus:border-[#e5a93c] outline-none ${
-                            fieldErrors.email ? "border-rose-500" : "border-[#2a2a2a]"
+                          className={`w-full min-h-[46px] rounded-xl bg-[#141414] border px-3.5 py-2.5 text-base text-white placeholder-[#73737c] transition-colors focus:border-[#e5a93c] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#e5a93c]/60 focus-visible:outline-offset-1 ${
+                            fieldErrors.email
+                              ? "border-rose-500 bg-rose-950/20"
+                              : "border-[#2e2e32] hover:border-[#424248]"
                           }`}
                         />
                         {fieldErrors.email && (
-                          <p id="checkout-email-error" role="alert" className="text-rose-400 text-[11px]">
-                            {fieldErrors.email}
+                          <p
+                            id="checkout-email-error"
+                            role="alert"
+                            className="text-rose-400 text-xs flex items-center gap-1.5 pt-0.5"
+                          >
+                            <AlertCircle className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                            <span>{fieldErrors.email}</span>
                           </p>
                         )}
                       </div>
+                    </div>
+                  </fieldset>
 
-                      <div className="space-y-1">
-                        <label htmlFor="checkout-address" className="text-[11px] text-[#a0a0a0] font-medium block">
-                          Delivery Address (House / Flat No., Street, Landmark) <span className="text-[#e5a93c]" aria-hidden="true">*</span>
+                  {/* Section 2: Delivery Address */}
+                  <fieldset className="pt-5 border-t border-[#1c1c1c] space-y-4">
+                    <legend className="w-full flex flex-wrap items-center justify-between gap-2 text-xs uppercase tracking-wider text-[#e5a93c] font-semibold">
+                      <span>2. Delivery Address</span>
+                      <span className="normal-case tracking-normal font-normal text-[11px] text-[#8e8e93] px-2.5 py-0.5 rounded-full bg-[#141414] border border-[#262626]">
+                        India (Domestic Shipping)
+                      </span>
+                    </legend>
+
+                    <div className="space-y-1.5">
+                      <label
+                        htmlFor="checkout-address"
+                        className="text-xs sm:text-[13px] text-[#d4d4d8] font-medium block"
+                      >
+                        Street Address (House / Flat No., Building, Landmark) <span className="text-[#e5a93c]" aria-hidden="true">*</span>
+                      </label>
+                      <textarea
+                        ref={(el) => {
+                          fieldRefs.current.addressLine = el;
+                        }}
+                        id="checkout-address"
+                        name="street-address"
+                        rows={2}
+                        autoComplete="street-address"
+                        required
+                        aria-required="true"
+                        aria-invalid={Boolean(fieldErrors.addressLine)}
+                        aria-describedby={fieldErrors.addressLine ? "checkout-address-error" : undefined}
+                        placeholder="e.g. Flat 402, Royal Palms, Link Road, near City Mall"
+                        value={shippingDetails.addressLine}
+                        onChange={(e) => updateShippingField("addressLine", e.target.value)}
+                        onBlur={() => handleFieldBlur("addressLine")}
+                        className={`w-full min-h-[76px] rounded-xl bg-[#141414] border px-3.5 py-2.5 text-base text-white placeholder-[#73737c] transition-colors focus:border-[#e5a93c] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#e5a93c]/60 focus-visible:outline-offset-1 resize-y ${
+                          fieldErrors.addressLine
+                            ? "border-rose-500 bg-rose-950/20"
+                            : "border-[#2e2e32] hover:border-[#424248]"
+                        }`}
+                      />
+                      {fieldErrors.addressLine && (
+                        <p
+                          id="checkout-address-error"
+                          role="alert"
+                          className="text-rose-400 text-xs flex items-center gap-1.5 pt-0.5"
+                        >
+                          <AlertCircle className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                          <span>{fieldErrors.addressLine}</span>
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="space-y-1.5">
+                        <label
+                          htmlFor="checkout-city"
+                          className="text-xs sm:text-[13px] text-[#d4d4d8] font-medium block"
+                        >
+                          City <span className="text-[#e5a93c]" aria-hidden="true">*</span>
                         </label>
-                        <textarea
+                        <input
                           ref={(el) => {
-                            fieldRefs.current.addressLine = el;
+                            fieldRefs.current.city = el;
                           }}
-                          id="checkout-address"
-                          name="street-address"
-                          rows={2}
-                          autoComplete="street-address"
+                          id="checkout-city"
+                          name="city"
+                          type="text"
+                          autoComplete="address-level2"
                           enterKeyHint="next"
                           required
                           aria-required="true"
-                          aria-invalid={Boolean(fieldErrors.addressLine)}
-                          aria-describedby={fieldErrors.addressLine ? "checkout-address-error" : undefined}
-                          placeholder="e.g. Flat 402, Royal Palms, Link Road"
-                          value={shippingDetails.addressLine}
-                          onChange={(e) => updateShippingField("addressLine", e.target.value)}
-                          onBlur={() => handleFieldBlur("addressLine")}
-                          className={`w-full rounded-xl bg-[#141414] border px-3 py-2.5 text-base sm:text-xs text-white placeholder-[#666] focus:border-[#e5a93c] outline-none resize-y ${
-                            fieldErrors.addressLine ? "border-rose-500" : "border-[#2a2a2a]"
+                          aria-invalid={Boolean(fieldErrors.city)}
+                          aria-describedby={fieldErrors.city ? "checkout-city-error" : undefined}
+                          placeholder="City"
+                          value={shippingDetails.city}
+                          onChange={(e) => updateShippingField("city", e.target.value)}
+                          onBlur={() => handleFieldBlur("city")}
+                          className={`w-full min-h-[46px] rounded-xl bg-[#141414] border px-3.5 py-2.5 text-base text-white placeholder-[#73737c] transition-colors focus:border-[#e5a93c] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#e5a93c]/60 focus-visible:outline-offset-1 ${
+                            fieldErrors.city
+                              ? "border-rose-500 bg-rose-950/20"
+                              : "border-[#2e2e32] hover:border-[#424248]"
                           }`}
                         />
-                        {fieldErrors.addressLine && (
-                          <p id="checkout-address-error" role="alert" className="text-rose-400 text-[11px]">
-                            {fieldErrors.addressLine}
+                        {fieldErrors.city && (
+                          <p
+                            id="checkout-city-error"
+                            role="alert"
+                            className="text-rose-400 text-xs flex items-center gap-1.5 pt-0.5"
+                          >
+                            <AlertCircle className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                            <span>{fieldErrors.city}</span>
                           </p>
                         )}
                       </div>
 
-                      <div className="grid grid-cols-2 gap-2.5">
-                        <div className="space-y-1">
-                          <label htmlFor="checkout-city" className="text-[11px] text-[#a0a0a0] font-medium block">
-                            City <span className="text-[#e5a93c]" aria-hidden="true">*</span>
-                          </label>
-                          <input
-                            ref={(el) => {
-                              fieldRefs.current.city = el;
-                            }}
-                            id="checkout-city"
-                            name="city"
-                            type="text"
-                            autoComplete="address-level2"
-                            enterKeyHint="next"
-                            required
-                            aria-required="true"
-                            aria-invalid={Boolean(fieldErrors.city)}
-                            aria-describedby={fieldErrors.city ? "checkout-city-error" : undefined}
-                            placeholder="City"
-                            value={shippingDetails.city}
-                            onChange={(e) => updateShippingField("city", e.target.value)}
-                            onBlur={() => handleFieldBlur("city")}
-                            className={`w-full min-h-[44px] rounded-xl bg-[#141414] border px-3 text-base sm:text-xs text-white placeholder-[#666] focus:border-[#e5a93c] outline-none ${
-                              fieldErrors.city ? "border-rose-500" : "border-[#2a2a2a]"
-                            }`}
-                          />
-                          {fieldErrors.city && (
-                            <p id="checkout-city-error" role="alert" className="text-rose-400 text-[11px]">
-                              {fieldErrors.city}
-                            </p>
-                          )}
-                        </div>
-                        <div className="space-y-1">
-                          <label htmlFor="checkout-state" className="text-[11px] text-[#a0a0a0] font-medium block">
-                            State <span className="text-[#e5a93c]" aria-hidden="true">*</span>
-                          </label>
-                          <input
-                            ref={(el) => {
-                              fieldRefs.current.state = el;
-                            }}
-                            id="checkout-state"
-                            name="state"
-                            type="text"
-                            autoComplete="address-level1"
-                            enterKeyHint="next"
-                            required
-                            aria-required="true"
-                            aria-invalid={Boolean(fieldErrors.state)}
-                            aria-describedby={fieldErrors.state ? "checkout-state-error" : undefined}
-                            placeholder="State"
-                            value={shippingDetails.state}
-                            onChange={(e) => updateShippingField("state", e.target.value)}
-                            onBlur={() => handleFieldBlur("state")}
-                            className={`w-full min-h-[44px] rounded-xl bg-[#141414] border px-3 text-base sm:text-xs text-white placeholder-[#666] focus:border-[#e5a93c] outline-none ${
-                              fieldErrors.state ? "border-rose-500" : "border-[#2a2a2a]"
-                            }`}
-                          />
-                          {fieldErrors.state && (
-                            <p id="checkout-state-error" role="alert" className="text-rose-400 text-[11px]">
-                              {fieldErrors.state}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-2.5">
-                        <div className="space-y-1">
-                          <label htmlFor="checkout-pincode" className="text-[11px] text-[#a0a0a0] font-medium block">
-                            Pincode <span className="text-[#e5a93c]" aria-hidden="true">*</span>
-                          </label>
-                          <input
-                            ref={(el) => {
-                              fieldRefs.current.pincode = el;
-                            }}
-                            id="checkout-pincode"
-                            name="postal-code"
-                            type="text"
-                            inputMode="numeric"
-                            autoComplete="postal-code"
-                            pattern="\d{6}"
-                            enterKeyHint="next"
-                            required
-                            aria-required="true"
-                            aria-invalid={Boolean(fieldErrors.pincode)}
-                            aria-describedby={fieldErrors.pincode ? "checkout-pincode-error" : undefined}
-                            maxLength={6}
-                            placeholder="6-digit Pincode"
-                            value={shippingDetails.pincode}
-                            onChange={(e) => updateShippingField("pincode", e.target.value.replace(/\D/g, ""))}
-                            onBlur={() => handleFieldBlur("pincode")}
-                            className={`w-full min-h-[44px] rounded-xl bg-[#141414] border px-3 text-base sm:text-xs text-white placeholder-[#666] focus:border-[#e5a93c] outline-none ${
-                              fieldErrors.pincode ? "border-rose-500" : "border-[#2a2a2a]"
-                            }`}
-                          />
-                          {fieldErrors.pincode && (
-                            <p id="checkout-pincode-error" role="alert" className="text-rose-400 text-[11px]">
-                              {fieldErrors.pincode}
-                            </p>
-                          )}
-                        </div>
-                        {activeCartMode === "wholesale" ? (
-                          <div className="space-y-1">
-                            <label htmlFor="checkout-gstin" className="text-[11px] text-[#a0a0a0] font-medium block">
-                              GSTIN (Optional)
-                            </label>
-                            <input
-                              id="checkout-gstin"
-                              name="gstin"
-                              type="text"
-                              placeholder="GSTIN"
-                              value={shippingDetails.gstin || ""}
-                              onChange={(e) => updateShippingField("gstin", e.target.value.toUpperCase())}
-                              className="w-full min-h-[44px] rounded-xl bg-[#141414] border border-[#2a2a2a] px-3 text-base sm:text-xs text-white placeholder-[#666] focus:border-[#e5a93c] outline-none"
-                            />
-                          </div>
-                        ) : (
-                          <div className="space-y-1">
-                            <span className="text-[11px] text-[#a0a0a0] font-medium block">
-                              Country
-                            </span>
-                            <div className="w-full min-h-[44px] rounded-xl bg-[#141414] border border-[#2a2a2a] px-3 text-xs text-[#888] flex items-center">
-                              India (Domestic)
-                            </div>
-                          </div>
+                      <div className="space-y-1.5">
+                        <label
+                          htmlFor="checkout-state"
+                          className="text-xs sm:text-[13px] text-[#d4d4d8] font-medium block"
+                        >
+                          State <span className="text-[#e5a93c]" aria-hidden="true">*</span>
+                        </label>
+                        <input
+                          ref={(el) => {
+                            fieldRefs.current.state = el;
+                          }}
+                          id="checkout-state"
+                          name="state"
+                          type="text"
+                          autoComplete="address-level1"
+                          enterKeyHint="next"
+                          required
+                          aria-required="true"
+                          aria-invalid={Boolean(fieldErrors.state)}
+                          aria-describedby={fieldErrors.state ? "checkout-state-error" : undefined}
+                          placeholder="State"
+                          value={shippingDetails.state}
+                          onChange={(e) => updateShippingField("state", e.target.value)}
+                          onBlur={() => handleFieldBlur("state")}
+                          className={`w-full min-h-[46px] rounded-xl bg-[#141414] border px-3.5 py-2.5 text-base text-white placeholder-[#73737c] transition-colors focus:border-[#e5a93c] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#e5a93c]/60 focus-visible:outline-offset-1 ${
+                            fieldErrors.state
+                              ? "border-rose-500 bg-rose-950/20"
+                              : "border-[#2e2e32] hover:border-[#424248]"
+                          }`}
+                        />
+                        {fieldErrors.state && (
+                          <p
+                            id="checkout-state-error"
+                            role="alert"
+                            className="text-rose-400 text-xs flex items-center gap-1.5 pt-0.5"
+                          >
+                            <AlertCircle className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                            <span>{fieldErrors.state}</span>
+                          </p>
                         )}
                       </div>
 
+                      <div className="space-y-1.5">
+                        <label
+                          htmlFor="checkout-pincode"
+                          className="text-xs sm:text-[13px] text-[#d4d4d8] font-medium block"
+                        >
+                          Pincode <span className="text-[#e5a93c]" aria-hidden="true">*</span>
+                        </label>
+                        <input
+                          ref={(el) => {
+                            fieldRefs.current.pincode = el;
+                          }}
+                          id="checkout-pincode"
+                          name="postal-code"
+                          type="text"
+                          inputMode="numeric"
+                          autoComplete="postal-code"
+                          pattern="\d{6}"
+                          enterKeyHint="next"
+                          required
+                          aria-required="true"
+                          aria-invalid={Boolean(fieldErrors.pincode)}
+                          aria-describedby={fieldErrors.pincode ? "checkout-pincode-error" : undefined}
+                          maxLength={6}
+                          placeholder="6-digit Pincode"
+                          value={shippingDetails.pincode}
+                          onChange={(e) => updateShippingField("pincode", e.target.value.replace(/\D/g, ""))}
+                          onBlur={() => handleFieldBlur("pincode")}
+                          className={`w-full min-h-[46px] rounded-xl bg-[#141414] border px-3.5 py-2.5 text-base text-white placeholder-[#73737c] transition-colors focus:border-[#e5a93c] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#e5a93c]/60 focus-visible:outline-offset-1 ${
+                            fieldErrors.pincode
+                              ? "border-rose-500 bg-rose-950/20"
+                              : "border-[#2e2e32] hover:border-[#424248]"
+                          }`}
+                        />
+                        {fieldErrors.pincode && (
+                          <p
+                            id="checkout-pincode-error"
+                            role="alert"
+                            className="text-rose-400 text-xs flex items-center gap-1.5 pt-0.5"
+                          >
+                            <AlertCircle className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+                            <span>{fieldErrors.pincode}</span>
+                          </p>
+                        )}
+                      </div>
                     </div>
 
-                  {/* Quick Note Section (Always visible before checkout) */}
-                  <div className="pt-2 border-t border-[#1c1c1c] space-y-1.5">
-                    <label
-                      htmlFor="checkout-quick-note"
-                      className="text-[11px] text-[#e5a93c] font-semibold flex items-center gap-1.5"
-                    >
-                      <FileText className="w-3.5 h-3.5" />
-                      <span>Quick Note (Optional)</span>
+                    {activeCartMode === "wholesale" && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+                        <div className="space-y-1.5">
+                          <label
+                            htmlFor="checkout-business-name"
+                            className="text-xs sm:text-[13px] text-[#d4d4d8] font-medium flex items-center gap-1.5"
+                          >
+                            <Building2 className="w-3.5 h-3.5 text-[#e5a93c]" aria-hidden="true" />
+                            <span>Business / Store Name (Optional)</span>
+                          </label>
+                          <input
+                            id="checkout-business-name"
+                            name="organization"
+                            type="text"
+                            autoComplete="organization"
+                            enterKeyHint="next"
+                            placeholder="Your store or firm name"
+                            value={shippingDetails.businessName}
+                            onChange={(e) => updateShippingField("businessName", e.target.value)}
+                            className="w-full min-h-[46px] rounded-xl bg-[#141414] border border-[#2e2e32] hover:border-[#424248] px-3.5 py-2.5 text-base text-white placeholder-[#73737c] transition-colors focus:border-[#e5a93c] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#e5a93c]/60 focus-visible:outline-offset-1"
+                          />
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <label
+                            htmlFor="checkout-gstin"
+                            className="text-xs sm:text-[13px] text-[#d4d4d8] font-medium block"
+                          >
+                            GSTIN (Optional)
+                          </label>
+                          <input
+                            id="checkout-gstin"
+                            name="gstin"
+                            type="text"
+                            enterKeyHint="next"
+                            placeholder="15-character GSTIN"
+                            value={shippingDetails.gstin || ""}
+                            onChange={(e) => updateShippingField("gstin", e.target.value.toUpperCase())}
+                            className="w-full min-h-[46px] rounded-xl bg-[#141414] border border-[#2e2e32] hover:border-[#424248] px-3.5 py-2.5 text-base text-white placeholder-[#73737c] transition-colors focus:border-[#e5a93c] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#e5a93c]/60 focus-visible:outline-offset-1"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </fieldset>
+
+                  {/* Section 3: Order Notes */}
+                  <fieldset className="pt-5 border-t border-[#1c1c1c] space-y-2">
+                    <legend className="w-full flex items-center justify-between gap-2 text-xs uppercase tracking-wider text-[#e5a93c] font-semibold">
+                      <span className="flex items-center gap-1.5">
+                        <FileText className="w-3.5 h-3.5" aria-hidden="true" />
+                        <span>3. Order Notes (Optional)</span>
+                      </span>
+                      <span className="normal-case tracking-normal font-normal text-[11px] text-[#8e8e93] tabular-nums">
+                        {shippingDetails.quickNote.length}/500
+                      </span>
+                    </legend>
+                    <label htmlFor="checkout-quick-note" className="text-xs sm:text-[13px] text-[#a1a1aa] block">
+                      Delivery instructions, gift message, or ring/chain size preference
                     </label>
                     <textarea
                       id="checkout-quick-note"
                       name="quickNote"
                       rows={2}
                       maxLength={500}
-                      enterKeyHint="done"
                       placeholder="Add delivery instructions, gift message, ring/chain size preference, or landmark..."
                       value={shippingDetails.quickNote}
                       onChange={(e) => updateShippingField("quickNote", e.target.value)}
-                      className="w-full rounded-xl bg-[#141414] border border-[#2a2a2a] px-3 py-2.5 text-base sm:text-xs text-white placeholder-[#666] focus:border-[#e5a93c] outline-none resize-y"
+                      className="w-full min-h-[72px] rounded-xl bg-[#141414] border border-[#2e2e32] hover:border-[#424248] px-3.5 py-2.5 text-base text-white placeholder-[#73737c] transition-colors focus:border-[#e5a93c] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#e5a93c]/60 focus-visible:outline-offset-1 resize-y"
                     />
-                  </div>
-                </div>
-
-                {/* Minimum Order / Progress & Checkout Action */}
-                <div className="w-full bg-[#0d0d0d] border border-[#222222] rounded-[22px] p-5 shadow-lg space-y-4">
-                  {activeCartMode === "wholesale" ? (
-                    <div className="space-y-3">
-                      <div className="space-y-1.5">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-[#8e8e93]">B2B Order Minimum Progress</span>
-                          <span className="text-[#e5a93c] font-semibold">₹{subtotal.toFixed(0)} / ₹{b2bMinCart.toLocaleString("en-IN")}</span>
-                        </div>
-                        <div className="w-full h-2 rounded-full bg-[#1c1c1c] overflow-hidden">
-                          <div
-                            className="h-full bg-gradient-to-r from-[#d99726] to-[#f5c767] rounded-full transition-all duration-300"
-                            style={{ width: `${b2bProgressPercent}%` }}
-                          />
-                        </div>
-                        {subtotal < b2bMinCart ? (
-                          <p className="text-[#8e8e93] text-xs">
-                            Add <span className="text-[#e5a93c] font-semibold">₹{b2bRemainingCart.toFixed(0)}</span> more to meet wholesale value minimum.
-                          </p>
-                        ) : (
-                          <p className="text-emerald-400 text-xs font-medium flex items-center gap-1">
-                            <Check className="w-3.5 h-3.5" />
-                            <span>Wholesale value minimum met!</span>
-                          </p>
-                        )}
-                      </div>
-
-                      {b2bMinQty > 1 && (
-                        <div className="pt-2 border-t border-[#1c1c1c] space-y-1">
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-[#8e8e93]">B2B Total Items Quantity</span>
-                            <span className={`${totalPieces >= b2bMinQty ? "text-emerald-400" : "text-[#e5a93c]"} font-semibold`}>
-                              {totalPieces} / {b2bMinQty} pieces
-                            </span>
-                          </div>
-                          {totalPieces < b2bMinQty ? (
-                            <p className="text-[#8e8e93] text-xs">
-                              Add <span className="text-[#e5a93c] font-semibold">{b2bRemainingPieces}</span> more items to reach minimum wholesale batch size.
-                            </p>
-                          ) : (
-                            <p className="text-emerald-400 text-xs font-medium flex items-center gap-1">
-                              <Check className="w-3.5 h-3.5" />
-                              <span>Wholesale batch quantity requirement met!</span>
-                            </p>
-                          )}
-                        </div>
-                      )}
-
-                      {/* B2B Item MOQ Status */}
-                      {itemsFailingMOQ.length > 0 ? (
-                        <div className="pt-2 border-t border-[#1c1c1c] space-y-1">
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-[#8e8e93]">Item MOQ Requirements</span>
-                            <span className="text-rose-400 font-semibold">{itemsFailingMOQ.length} below MOQ</span>
-                          </div>
-                          <p className="text-amber-400 text-xs">
-                            {itemsFailingMOQ.map((i) => `"${i.name}" (needs ${i.wholesaleMinQty} pcs)`).join(", ")}
-                          </p>
-                        </div>
-                      ) : cart.some((i) => (i.wholesaleMinQty ?? 1) > 1) ? (
-                        <div className="pt-2 border-t border-[#1c1c1c]">
-                          <p className="text-emerald-400 text-xs font-medium flex items-center gap-1">
-                            <Check className="w-3.5 h-3.5" />
-                            <span>All product minimum quantities met!</span>
-                          </p>
-                        </div>
-                      ) : null}
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      {/* B2C Minimum Cart Value Check (if configured) */}
-                      {b2cMinCart > 0 && (
-                        <div className="space-y-1.5 pb-2 border-b border-[#1c1c1c]">
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-[#8e8e93]">Retail Order Minimum</span>
-                            <span className="text-[#e5a93c] font-semibold">₹{subtotal.toFixed(0)} / ₹{b2cMinCart.toLocaleString("en-IN")}</span>
-                          </div>
-                          <div className="w-full h-1.5 rounded-full bg-[#1c1c1c] overflow-hidden">
-                            <div
-                              className="h-full bg-gradient-to-r from-[#d99726] to-[#f5c767] rounded-full transition-all duration-300"
-                              style={{ width: `${b2cProgressPercent}%` }}
-                            />
-                          </div>
-                          {subtotal < b2cMinCart ? (
-                            <p className="text-[#8e8e93] text-xs">
-                              Add <span className="text-[#e5a93c] font-semibold">₹{b2cRemainingCart.toFixed(0)}</span> more to reach minimum order value.
-                            </p>
-                          ) : (
-                            <p className="text-emerald-400 text-xs font-medium flex items-center gap-1">
-                              <Check className="w-3.5 h-3.5" />
-                              <span>Retail minimum order met!</span>
-                            </p>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Free Shipping Progress for Retail */}
-                      <div className="space-y-1.5">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="text-[#8e8e93]">Free Shipping Progress</span>
-                          <span className="text-[#e5a93c] font-semibold">
-                            ₹{subtotal.toFixed(0)} / ₹{b2cFreeShipThreshold.toLocaleString("en-IN")}
-                          </span>
-                        </div>
-                        <div className="w-full h-2 rounded-full bg-[#1c1c1c] overflow-hidden">
-                          <div
-                            className="h-full bg-gradient-to-r from-emerald-500 to-emerald-300 rounded-full transition-all duration-300"
-                            style={{ width: `${b2cFreeShipPercent}%` }}
-                          />
-                        </div>
-                        {subtotal >= b2cFreeShipThreshold ? (
-                          <p className="text-emerald-400 text-xs font-medium flex items-center gap-1">
-                            <Check className="w-3.5 h-3.5" />
-                            <span>Congratulations! Free Shipping Unlocked!</span>
-                          </p>
-                        ) : (
-                          <p className="text-[#8e8e93] text-xs">
-                            Add <span className="text-emerald-400 font-semibold">₹{b2cFreeShipRemaining.toFixed(0)}</span> more to get FREE Delivery!
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Proceed to Checkout Button */}
-                  <button
-                    type="submit"
-                    disabled={isCheckingOut}
-                    className={`w-full h-[52px] rounded-[16px] font-semibold text-sm sm:text-base flex items-center justify-center gap-2 shadow-xl transition-all cursor-pointer ${
-                      (activeCartMode === "wholesale" ? isWholesaleMinMet : isRetailMinMet)
-                        ? "bg-gradient-to-r from-[#e5a93c] to-[#f5c767] hover:opacity-95 active:scale-[0.99] text-[#111111]"
-                        : "bg-[#1c160c] border border-[#e5a93c]/50 text-[#e5a93c] hover:bg-[#e5a93c] hover:text-black"
-                    }`}
-                  >
-                    {isCheckingOut ? (
-                      <div className="flex items-center space-x-2">
-                        <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
-                        <span>Processing Payment...</span>
-                      </div>
-                    ) : (
-                      <>
-                        <span>PAY WITH RAZORPAY • ₹{total.toLocaleString("en-IN")}</span>
-                        <ArrowRight className="w-4 h-4" />
-                      </>
-                    )}
-                  </button>
-
-                  {/* Continue Shopping Button */}
-                  <button
-                    type="button"
-                    onClick={navShop}
-                    className="w-full h-[48px] rounded-[16px] bg-[#141414] hover:bg-[#1c1c1c] border border-[#2a2a2a] hover:border-[#e5a93c]/60 text-[#c5c5c5] hover:text-white font-medium text-sm flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.99]"
-                  >
-                    <ArrowLeft className="w-4 h-4 text-[#e5a93c]" />
-                    <span>Continue Shopping</span>
-                  </button>
+                  </fieldset>
                 </div>
               </form>
             </div>
+
+            {/* Right Column: Sticky Order Summary & Checkout CTA (lg:col-span-5 xl:col-span-4) */}
+            <aside className="lg:col-span-5 xl:col-span-4 space-y-4 lg:sticky lg:top-6">
+              {/* Order Summary Card */}
+              <div className="w-full bg-[#0d0d0d] border border-[#222222] rounded-[22px] p-5 sm:p-6 shadow-lg space-y-3.5">
+                <h3 className="text-white text-base sm:text-lg font-serif font-medium pb-2.5 border-b border-[#1c1c1c]">
+                  Order Summary ({activeCartMode === "wholesale" ? "Wholesale" : "Retail"})
+                </h3>
+
+                <div className="space-y-2.5 text-sm">
+                  <div className="flex items-center justify-between text-[#8e8e93]">
+                    <span>Items Subtotal ({totalPieces} pcs)</span>
+                    <span className="text-white font-medium">₹{subtotal.toFixed(1)}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-[#8e8e93]">
+                    <span>GST (3%)</span>
+                    <span className="text-white font-medium">₹{gst.toFixed(1)}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-[#8e8e93]">
+                    <span>Shipping</span>
+                    {shipping === 0 ? (
+                      <span className="text-emerald-400 font-semibold flex items-center gap-1">
+                        <Check className="w-3.5 h-3.5" aria-hidden="true" /> FREE
+                      </span>
+                    ) : (
+                      <span className="text-white font-medium">₹{shipping.toFixed(1)}</span>
+                    )}
+                  </div>
+                  <div className="pt-3 border-t border-[#1c1c1c] flex items-center justify-between text-base sm:text-lg">
+                    <span className="text-white font-semibold">Total Payable</span>
+                    <span className="text-[#e5a93c] text-xl font-bold">₹{total.toFixed(1)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Shipping Information Box */}
+              <div className="w-full rounded-[20px] border border-[#4a3816] bg-[#140f07] p-4 flex items-start gap-3.5 shadow-sm">
+                <div className="w-9 h-9 rounded-full bg-[#1e170a] border border-[#e5a93c]/40 flex items-center justify-center text-[#e5a93c] shrink-0 mt-0.5">
+                  <Truck className="w-4 h-4 text-[#e5a93c]" aria-hidden="true" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-[#e5a93c] text-sm font-semibold mb-0.5">
+                    {activeCartMode === "wholesale" ? "B2B Wholesale Shipping" : "Retail Fast Shipping"}
+                  </h4>
+                  <p className="text-[#a8a8a8] text-xs leading-relaxed">
+                    {activeCartMode === "wholesale"
+                      ? b2bDeliveryCharge === 0
+                        ? "100% Free B2B delivery for all wholesale partner orders. Dispatched within 24-48 business hours with GST invoice."
+                        : `Standard B2B delivery is ₹${b2bDeliveryCharge}. Orders are dispatched within 24-48 business hours with official GST invoice.`
+                      : subtotal >= b2cFreeShipThreshold
+                      ? `🎉 Free Delivery qualified! Orders over ₹${b2cFreeShipThreshold.toLocaleString("en-IN")} enjoy complimentary insured shipping across India.`
+                      : `Standard retail delivery is ₹${b2cDeliveryCharge}. Add ₹${b2cFreeShipRemaining.toFixed(0)} more to get 100% FREE Delivery!`}
+                  </p>
+                </div>
+              </div>
+
+              {/* Minimum Order / Progress & Checkout Action */}
+              <div className="w-full bg-[#0d0d0d] border border-[#222222] rounded-[22px] p-5 sm:p-6 shadow-lg space-y-4">
+                {activeCartMode === "wholesale" ? (
+                  <div className="space-y-3">
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-[#8e8e93]">B2B Order Minimum Progress</span>
+                        <span className="text-[#e5a93c] font-semibold">₹{subtotal.toFixed(0)} / ₹{b2bMinCart.toLocaleString("en-IN")}</span>
+                      </div>
+                      <div className="w-full h-2 rounded-full bg-[#1c1c1c] overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-[#d99726] to-[#f5c767] rounded-full transition-all duration-300"
+                          style={{ width: `${b2bProgressPercent}%` }}
+                        />
+                      </div>
+                      {subtotal < b2bMinCart ? (
+                        <p className="text-[#8e8e93] text-xs">
+                          Add <span className="text-[#e5a93c] font-semibold">₹{b2bRemainingCart.toFixed(0)}</span> more to meet wholesale value minimum.
+                        </p>
+                      ) : (
+                        <p className="text-emerald-400 text-xs font-medium flex items-center gap-1">
+                          <Check className="w-3.5 h-3.5" aria-hidden="true" />
+                          <span>Wholesale value minimum met!</span>
+                        </p>
+                      )}
+                    </div>
+
+                    {b2bMinQty > 1 && (
+                      <div className="pt-2 border-t border-[#1c1c1c] space-y-1">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-[#8e8e93]">B2B Total Items Quantity</span>
+                          <span className={`${totalPieces >= b2bMinQty ? "text-emerald-400" : "text-[#e5a93c]"} font-semibold`}>
+                            {totalPieces} / {b2bMinQty} pieces
+                          </span>
+                        </div>
+                        {totalPieces < b2bMinQty ? (
+                          <p className="text-[#8e8e93] text-xs">
+                            Add <span className="text-[#e5a93c] font-semibold">{b2bRemainingPieces}</span> more items to reach minimum wholesale batch size.
+                          </p>
+                        ) : (
+                          <p className="text-emerald-400 text-xs font-medium flex items-center gap-1">
+                            <Check className="w-3.5 h-3.5" aria-hidden="true" />
+                            <span>Wholesale batch quantity requirement met!</span>
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* B2B Item MOQ Status */}
+                    {itemsFailingMOQ.length > 0 ? (
+                      <div className="pt-2 border-t border-[#1c1c1c] space-y-1">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-[#8e8e93]">Item MOQ Requirements</span>
+                          <span className="text-rose-400 font-semibold">{itemsFailingMOQ.length} below MOQ</span>
+                        </div>
+                        <p className="text-amber-400 text-xs">
+                          {itemsFailingMOQ.map((i) => `"${i.name}" (needs ${i.wholesaleMinQty} pcs)`).join(", ")}
+                        </p>
+                      </div>
+                    ) : cart.some((i) => (i.wholesaleMinQty ?? 1) > 1) ? (
+                      <div className="pt-2 border-t border-[#1c1c1c]">
+                        <p className="text-emerald-400 text-xs font-medium flex items-center gap-1">
+                          <Check className="w-3.5 h-3.5" aria-hidden="true" />
+                          <span>All product minimum quantities met!</span>
+                        </p>
+                      </div>
+                    ) : null}
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {/* B2C Minimum Cart Value Check (if configured) */}
+                    {b2cMinCart > 0 && (
+                      <div className="space-y-1.5 pb-2 border-b border-[#1c1c1c]">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-[#8e8e93]">Retail Order Minimum</span>
+                          <span className="text-[#e5a93c] font-semibold">₹{subtotal.toFixed(0)} / ₹{b2cMinCart.toLocaleString("en-IN")}</span>
+                        </div>
+                        <div className="w-full h-1.5 rounded-full bg-[#1c1c1c] overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-[#d99726] to-[#f5c767] rounded-full transition-all duration-300"
+                            style={{ width: `${b2cProgressPercent}%` }}
+                          />
+                        </div>
+                        {subtotal < b2cMinCart ? (
+                          <p className="text-[#8e8e93] text-xs">
+                            Add <span className="text-[#e5a93c] font-semibold">₹{b2cRemainingCart.toFixed(0)}</span> more to reach minimum order value.
+                          </p>
+                        ) : (
+                          <p className="text-emerald-400 text-xs font-medium flex items-center gap-1">
+                            <Check className="w-3.5 h-3.5" aria-hidden="true" />
+                            <span>Retail minimum order met!</span>
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Free Shipping Progress for Retail */}
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-[#8e8e93]">Free Shipping Progress</span>
+                        <span className="text-[#e5a93c] font-semibold">
+                          ₹{subtotal.toFixed(0)} / ₹{b2cFreeShipThreshold.toLocaleString("en-IN")}
+                        </span>
+                      </div>
+                      <div className="w-full h-2 rounded-full bg-[#1c1c1c] overflow-hidden">
+                        <div
+                          className="h-full bg-gradient-to-r from-emerald-500 to-emerald-300 rounded-full transition-all duration-300"
+                          style={{ width: `${b2cFreeShipPercent}%` }}
+                        />
+                      </div>
+                      {subtotal >= b2cFreeShipThreshold ? (
+                        <p className="text-emerald-400 text-xs font-medium flex items-center gap-1">
+                          <Check className="w-3.5 h-3.5" aria-hidden="true" />
+                          <span>Congratulations! Free Shipping Unlocked!</span>
+                        </p>
+                      ) : (
+                        <p className="text-[#8e8e93] text-xs">
+                          Add <span className="text-emerald-400 font-semibold">₹{b2cFreeShipRemaining.toFixed(0)}</span> more to get FREE Delivery!
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Proceed to Checkout Button (submits #checkout-form) */}
+                <button
+                  type="submit"
+                  form="checkout-form"
+                  disabled={isCheckingOut}
+                  className={`w-full h-[52px] rounded-[16px] font-semibold text-sm sm:text-base flex items-center justify-center gap-2 shadow-xl transition-all cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#f5c767] focus-visible:outline-offset-2 ${
+                    (activeCartMode === "wholesale" ? isWholesaleMinMet : isRetailMinMet)
+                      ? "bg-gradient-to-r from-[#e5a93c] to-[#f5c767] hover:opacity-95 active:scale-[0.99] text-[#111111]"
+                      : "bg-[#1c160c] border border-[#e5a93c]/50 text-[#e5a93c] hover:bg-[#e5a93c] hover:text-black"
+                  }`}
+                >
+                  {isCheckingOut ? (
+                    <div className="flex items-center space-x-2">
+                      <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+                      <span>Processing Payment...</span>
+                    </div>
+                  ) : (
+                    <>
+                      <span>PAY WITH RAZORPAY • ₹{total.toLocaleString("en-IN")}</span>
+                      <ArrowRight className="w-4 h-4" aria-hidden="true" />
+                    </>
+                  )}
+                </button>
+
+                {/* Continue Shopping Button */}
+                <button
+                  type="button"
+                  onClick={navShop}
+                  className="w-full h-[46px] rounded-[16px] bg-[#141414] hover:bg-[#1c1c1c] border border-[#2a2a2a] hover:border-[#e5a93c]/60 text-[#c5c5c5] hover:text-white font-medium text-sm flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-[0.99]"
+                >
+                  <ArrowLeft className="w-4 h-4 text-[#e5a93c]" aria-hidden="true" />
+                  <span>Continue Shopping</span>
+                </button>
+
+                <p className="text-[11px] text-[#8e8e93] flex items-center justify-center gap-1.5 pt-1">
+                  <Lock className="w-3 h-3 text-[#e5a93c]" aria-hidden="true" />
+                  <span>256-bit Encrypted Checkout • UPI, Cards &amp; NetBanking</span>
+                </p>
+              </div>
+            </aside>
           </div>
         )}
 

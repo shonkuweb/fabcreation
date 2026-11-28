@@ -29,6 +29,7 @@ import {
   toggleWishlistByMode,
   getWishlistItems,
   getCartCount,
+  isUserLoggedIn,
 } from "@/lib/cart";
 
 interface ShopScreenProps {
@@ -218,7 +219,7 @@ export default function ShopScreen({
 
   const handleAddToCart = (product: Product) => {
     if (storeMode === "wholesale") {
-      if (!isWholesaleLoggedIn) {
+      if (!(isWholesaleLoggedIn || isUserLoggedIn("wholesale"))) {
         if (onOpenWholesaleLogin) onOpenWholesaleLogin();
         return;
       }
@@ -230,7 +231,7 @@ export default function ShopScreen({
     }
 
     // Retail Store: User must be logged in to add to cart
-    if (!isRetailLoggedIn) {
+    if (!(isRetailLoggedIn || isUserLoggedIn("retail"))) {
       if (onOpenRetailLogin) {
         onOpenRetailLogin(product);
       }

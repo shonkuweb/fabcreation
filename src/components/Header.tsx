@@ -17,6 +17,7 @@ import {
   Building2,
 } from "lucide-react";
 import type { Category } from "@/lib/db";
+import { isUserLoggedIn } from "@/lib/cart";
 
 interface HeaderProps {
   storeMode: "retail" | "wholesale";
@@ -81,12 +82,7 @@ export default function Header({
   useEffect(() => {
     try {
       const checkAuth = () => {
-        const wholesaleAuth =
-          localStorage.getItem("fc_wholesale_logged_in") === "true";
-        const retailAuth =
-          localStorage.getItem("fc_retail_logged_in") === "true";
-
-        const logged = storeMode === "wholesale" ? wholesaleAuth : retailAuth;
+        const logged = isUserLoggedIn(storeMode);
         setIsLoggedIn(logged);
 
         const name =

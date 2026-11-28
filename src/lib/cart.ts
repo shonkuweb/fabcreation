@@ -4,6 +4,24 @@ import type { OrderItem, Product, UserAddress } from "@/lib/db";
 
 export type StoreMode = "retail" | "wholesale";
 
+/**
+ * Check whether the user is currently logged in for the given store mode.
+ */
+export function isUserLoggedIn(mode: StoreMode): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    if (mode === "wholesale") {
+      return localStorage.getItem("fc_wholesale_logged_in") === "true";
+    }
+    return (
+      localStorage.getItem("fc_retail_logged_in") === "true" ||
+      localStorage.getItem("fc_user_logged_in") === "true"
+    );
+  } catch {
+    return false;
+  }
+}
+
 // Helper to get active user mobile identifier
 export function getActiveUserMobile(mode: StoreMode): string {
   if (typeof window === "undefined") return mode === "wholesale" ? "8726275466" : "guest_retail";

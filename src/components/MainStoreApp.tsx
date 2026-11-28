@@ -16,7 +16,7 @@ import WholesaleGateScreen from "@/components/WholesaleGateScreen";
 import CategoriesScreen from "@/components/CategoriesScreen";
 import type { Product, Category, OrderItem } from "@/lib/db";
 import { type StoreSettings, defaultSettings } from "@/lib/settings";
-import { getCartCount, fetchCartFromServer, addToCartByMode } from "@/lib/cart";
+import { getCartCount, fetchCartFromServer, addToCartByMode, isUserLoggedIn } from "@/lib/cart";
 
 interface MainStoreAppProps {
   initialProducts?: Product[];
@@ -101,7 +101,11 @@ export default function MainStoreApp({
   useEffect(() => {
     let currentMode: "retail" | "wholesale" = "retail";
     try {
-      const urlMode = searchParams?.get("mode");
+      const liveUrlMode =
+        typeof window !== "undefined"
+          ? new URLSearchParams(window.location.search).get("mode")
+          : null;
+      const urlMode = liveUrlMode || searchParams?.get("mode");
       if (urlMode === "wholesale") {
         setStoreMode("wholesale");
         currentMode = "wholesale";
@@ -117,13 +121,8 @@ export default function MainStoreApp({
         setIsWholesaleLoginOpen(true);
       }
 
-      const wholesaleAuth = localStorage.getItem("fc_wholesale_logged_in") === "true";
-      setIsWholesaleLoggedIn(wholesaleAuth);
-
-      const retailAuth =
-        localStorage.getItem("fc_retail_logged_in") === "true" ||
-        localStorage.getItem("fc_user_logged_in") === "true";
-      setIsRetailLoggedIn(retailAuth);
+      setIsWholesaleLoggedIn(isUserLoggedIn("wholesale"));
+      setIsRetailLoggedIn(isUserLoggedIn("retail"));
 
       const mobile =
         currentMode === "wholesale"
@@ -153,13 +152,8 @@ export default function MainStoreApp({
 
     const handleAuthChange = () => {
       try {
-        const wholesaleAuth = localStorage.getItem("fc_wholesale_logged_in") === "true";
-        setIsWholesaleLoggedIn(wholesaleAuth);
-
-        const retailAuth =
-          localStorage.getItem("fc_retail_logged_in") === "true" ||
-          localStorage.getItem("fc_user_logged_in") === "true";
-        setIsRetailLoggedIn(retailAuth);
+        setIsWholesaleLoggedIn(isUserLoggedIn("wholesale"));
+        setIsRetailLoggedIn(isUserLoggedIn("retail"));
 
         const mobile =
           storeMode === "wholesale"
@@ -228,13 +222,25 @@ export default function MainStoreApp({
     }
   }, [searchParams, initialProducts]);
 
+  const buildTabUrl = (params: Record<string, string>) => {
+    const search = new URLSearchParams();
+    if (storeMode === "wholesale") {
+      search.set("mode", "wholesale");
+    }
+    Object.entries(params).forEach(([key, value]) => {
+      if (value) search.set(key, value);
+    });
+    const qs = search.toString();
+    return qs ? `/home?${qs}` : "/home";
+  };
+
   // Seamless in-place tab navigation handlers
   const goToHome = () => {
     startTransition(() => {
       setTab("home");
       window.scrollTo({ top: 0, behavior: "smooth" });
       if (typeof window !== "undefined") {
-        window.history.replaceState(null, "", "/home");
+        window.history.replaceState(null, "", buildTabUrl({}));
       }
     });
   };
@@ -244,7 +250,7 @@ export default function MainStoreApp({
       setTab("categories");
       window.scrollTo({ top: 0, behavior: "smooth" });
       if (typeof window !== "undefined") {
-        window.history.replaceState(null, "", "/home?tab=categories");
+        window.history.replaceState(null, "", buildTabUrl({ tab: "categories" }));
       }
     });
   };
@@ -256,7 +262,9 @@ export default function MainStoreApp({
       setTab("shop");
       window.scrollTo({ top: 0, behavior: "smooth" });
       if (typeof window !== "undefined") {
-        const url = category ? `/home?tab=shop&cat=${encodeURIComponent(category)}` : "/home?tab=shop";
+        const url = category
+          ? buildTabUrl({ tab: "shop", cat: category })
+          : buildTabUrl({ tab: "shop" });
         window.history.replaceState(null, "", url);
       }
     });
@@ -267,7 +275,7 @@ export default function MainStoreApp({
       setTab("cart");
       window.scrollTo({ top: 0, behavior: "smooth" });
       if (typeof window !== "undefined") {
-        window.history.replaceState(null, "", "/home?tab=cart");
+        window.history.replaceState(null, "", buildTabUrl({ tab: "cart" }));
       }
     });
   };
@@ -277,7 +285,7 @@ export default function MainStoreApp({
       setTab("account");
       window.scrollTo({ top: 0, behavior: "smooth" });
       if (typeof window !== "undefined") {
-        window.history.replaceState(null, "", "/home?tab=account");
+        window.history.replaceState(null, "", buildTabUrl({ tab: "account" }));
       }
     });
   };
@@ -294,7 +302,7 @@ export default function MainStoreApp({
         localStorage.setItem("fc_selected_product", JSON.stringify(product));
       } catch {}
       if (typeof window !== "undefined") {
-        window.history.replaceState(null, "", `/home?tab=product&id=${product.id}`);
+        window.history.replaceState(null, "", buildTabUrl({ tab: "product", id: product.id }));
       }
     });
   };
@@ -499,6 +507,7 @@ export default function MainStoreApp({
               settings={settings}
               onSwitchStoreMode={handleSwitchStoreMode}
               isWholesaleLoggedIn={isWholesaleLoggedIn}
+              isRetailLoggedIn={isRetailLoggedIn}
               onOpenWholesaleLogin={() => setIsWholesaleLoginOpen(true)}
               onNavigateHome={goToHome}
               onNavigateShop={goToShop}
@@ -541,6 +550,8 @@ export default function MainStoreApp({
           storeMode={storeMode}
           settings={settings}
           onSwitchStoreMode={handleSwitchStoreMode}
+          isWholesaleLoggedIn={isWholesaleLoggedIn}
+          isRetailLoggedIn={isRetailLoggedIn}
           onOpenWholesaleLogin={() => setIsWholesaleLoginOpen(true)}
           onOpenRetailLogin={openRetailLogin}
           onNavigateHome={goToHome}

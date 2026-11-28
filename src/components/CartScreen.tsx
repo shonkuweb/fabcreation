@@ -36,6 +36,7 @@ import {
   addToCartByMode,
   getAccountAddresses,
   saveAccountAddresses,
+  isUserLoggedIn,
 } from "@/lib/cart";
 
 interface CartScreenProps {
@@ -47,6 +48,7 @@ interface CartScreenProps {
   settings?: Partial<StoreSettings>;
   onSwitchStoreMode?: (mode: "retail" | "wholesale") => void;
   isWholesaleLoggedIn?: boolean;
+  isRetailLoggedIn?: boolean;
   onOpenWholesaleLogin?: () => void;
   onUpdateQuantity?: (id: string, quantity: number) => void;
   onRemoveItem?: (id: string) => void;
@@ -69,6 +71,7 @@ export default function CartScreen({
   settings: propSettings,
   onSwitchStoreMode,
   isWholesaleLoggedIn = false,
+  isRetailLoggedIn = false,
   onOpenWholesaleLogin,
   onUpdateQuantity,
   onRemoveItem,
@@ -550,15 +553,8 @@ export default function CartScreen({
       }
 
       const isRetailAuth =
-        typeof window !== "undefined" &&
-        (localStorage.getItem("fc_retail_logged_in") === "true" ||
-          localStorage.getItem("fc_user_logged_in") === "true") &&
-        Boolean(
-          localStorage.getItem("fc_retail_email") ||
-            localStorage.getItem("fc_retail_mobile") ||
-            localStorage.getItem("fc_user_email") ||
-            localStorage.getItem("fc_user_mobile")
-        );
+        isRetailLoggedIn ||
+        isUserLoggedIn("retail");
       if (!isRetailAuth && !overrideIdentifier) {
         setIsRetailLoginOpen(true);
         return;
@@ -568,8 +564,8 @@ export default function CartScreen({
     // 3. Wholesale Login Check: Must be logged in and meet B2B minimums
     if (activeCartMode === "wholesale") {
       const isWholesaleAuth =
-        typeof window !== "undefined" &&
-        localStorage.getItem("fc_wholesale_logged_in") === "true";
+        isWholesaleLoggedIn ||
+        isUserLoggedIn("wholesale");
       if (!isWholesaleAuth) {
         if (onOpenWholesaleLogin) onOpenWholesaleLogin();
         return;
@@ -614,15 +610,23 @@ export default function CartScreen({
               localStorage.getItem("fc_wholesale_email") ||
               localStorage.getItem("fc_user_mobile")
             : null) ||
-          (userMobile && userMobile !== "8726275466" ? userMobile : "")
+          (userMobile && userMobile !== "8726275466" ? userMobile : "") ||
+          shippingDetails.email.trim() ||
+          shippingDetails.phone.replace(/\D/g, "")
         : storedEmail ||
           (typeof window !== "undefined"
             ? localStorage.getItem("fc_retail_mobile") || localStorage.getItem("fc_user_mobile")
             : null) ||
-          (userMobile && userMobile !== "8726275466" ? userMobile : ""));
+          (userMobile && userMobile !== "8726275466" ? userMobile : "") ||
+          shippingDetails.email.trim() ||
+          shippingDetails.phone.replace(/\D/g, ""));
 
     if (!activeIdentifier) {
-      setIsRetailLoginOpen(true);
+      if (activeCartMode === "wholesale") {
+        onOpenWholesaleLogin?.();
+      } else {
+        setIsRetailLoginOpen(true);
+      }
       return;
     }
 

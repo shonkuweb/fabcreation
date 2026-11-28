@@ -41,6 +41,7 @@ import {
   toggleWishlistByMode,
   getWishlistItems,
   getCartCount,
+  isUserLoggedIn,
 } from "@/lib/cart";
 
 interface ProductDetailsScreenProps {
@@ -55,7 +56,7 @@ interface ProductDetailsScreenProps {
   isWholesaleLoggedIn?: boolean;
   isRetailLoggedIn?: boolean;
   onOpenWholesaleLogin?: () => void;
-  onOpenRetailLogin?: (product?: Product | null) => void;
+  onOpenRetailLogin?: (product?: Product | null, quantity?: number) => void;
   onToggleWishlist?: (productId: string) => void;
   onAddToCart?: (product: Product, quantity?: number) => void;
   onSelectProduct?: (product: Product) => void;
@@ -105,6 +106,35 @@ export default function ProductDetailsScreen({
   const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
   const [notification, setNotification] = useState<string | null>(null);
   const [loading, setLoading] = useState(!initialProduct);
+  const [syncedRetailAuth, setSyncedRetailAuth] = useState<boolean>(
+    () => isRetailLoggedIn || isUserLoggedIn("retail")
+  );
+  const [syncedWholesaleAuth, setSyncedWholesaleAuth] = useState<boolean>(
+    () => isWholesaleLoggedIn || isUserLoggedIn("wholesale")
+  );
+
+  useEffect(() => {
+    setSyncedRetailAuth(isRetailLoggedIn || isUserLoggedIn("retail"));
+  }, [isRetailLoggedIn]);
+
+  useEffect(() => {
+    setSyncedWholesaleAuth(isWholesaleLoggedIn || isUserLoggedIn("wholesale"));
+  }, [isWholesaleLoggedIn]);
+
+  useEffect(() => {
+    const syncAuth = () => {
+      setSyncedRetailAuth(isRetailLoggedIn || isUserLoggedIn("retail"));
+      setSyncedWholesaleAuth(isWholesaleLoggedIn || isUserLoggedIn("wholesale"));
+    };
+    window.addEventListener("retail_auth_changed", syncAuth);
+    window.addEventListener("wholesale_auth_changed", syncAuth);
+    window.addEventListener("storage", syncAuth);
+    return () => {
+      window.removeEventListener("retail_auth_changed", syncAuth);
+      window.removeEventListener("wholesale_auth_changed", syncAuth);
+      window.removeEventListener("storage", syncAuth);
+    };
+  }, [isRetailLoggedIn, isWholesaleLoggedIn]);
 
   const [storeSettings, setStoreSettings] = useState<StoreSettings>({
     ...defaultSettings,
@@ -402,7 +432,7 @@ export default function ProductDetailsScreen({
   const handleAddToCart = () => {
     if (!product) return;
     if (storeMode === "wholesale") {
-      if (!isWholesaleLoggedIn) {
+      if (!(syncedWholesaleAuth || isUserLoggedIn("wholesale"))) {
         if (onOpenWholesaleLogin) onOpenWholesaleLogin();
         return;
       }
@@ -414,8 +444,8 @@ export default function ProductDetailsScreen({
     }
 
     // Retail Store: User must be logged in to add to cart
-    if (!isRetailLoggedIn) {
-      if (onOpenRetailLogin) onOpenRetailLogin(product);
+    if (!(syncedRetailAuth || isUserLoggedIn("retail"))) {
+      if (onOpenRetailLogin) onOpenRetailLogin(product, quantity);
       return;
     }
 
@@ -431,7 +461,7 @@ export default function ProductDetailsScreen({
     e?.stopPropagation();
     const qtyToAdd = storeMode === "wholesale" ? Math.max(1, p.wholesaleMinQty || 1) : 1;
     if (storeMode === "wholesale") {
-      if (!isWholesaleLoggedIn) {
+      if (!(syncedWholesaleAuth || isUserLoggedIn("wholesale"))) {
         if (onOpenWholesaleLogin) onOpenWholesaleLogin();
         return;
       }
@@ -443,8 +473,8 @@ export default function ProductDetailsScreen({
     }
 
     // Retail Store: User must be logged in to add to cart
-    if (!isRetailLoggedIn) {
-      if (onOpenRetailLogin) onOpenRetailLogin(p);
+    if (!(syncedRetailAuth || isUserLoggedIn("retail"))) {
+      if (onOpenRetailLogin) onOpenRetailLogin(p, 1);
       return;
     }
 
@@ -856,7 +886,7 @@ export default function ProductDetailsScreen({
                 <span className="text-[#8e8e93] text-xs block mb-1">
                   {storeMode === "wholesale" ? "B2B Wholesale Price" : "Retail Price"}
                 </span>
-                {storeMode === "wholesale" && !isWholesaleLoggedIn ? (
+                {storeMode === "wholesale" && !syncedWholesaleAuth ? (
                   <button
                     type="button"
                     onClick={onOpenWholesaleLogin}
@@ -1091,7 +1121,7 @@ export default function ProductDetailsScreen({
 
                       {/* Price & Add to Cart */}
                       <div className="flex items-center justify-between pt-1 border-t border-[#181818]/60">
-                        {storeMode === "wholesale" && !isWholesaleLoggedIn ? (
+                        {storeMode === "wholesale" && !syncedWholesaleAuth ? (
                           <button
                             type="button"
                             onClick={(e) => {
